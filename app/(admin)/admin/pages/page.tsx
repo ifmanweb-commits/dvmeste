@@ -53,12 +53,6 @@ export default async function PagesListPage({
             </Link>
           </div>
 
-          <p className="mt-3 text-xs text-gray-600 sm:mt-4 sm:text-sm">
-            Страницы отображаются по адресу /s/[slug]. Специальные slug: courses → /courses, lib → /lib, contacts → /contacts.
-            Главная, connect и каталог психологов редактируются в системных карточках ниже.
-            Шаблон «текст» — единый вид страницы. «Пустой» — выводится как чистый HTML-контент без обрамления.
-          </p>
-
           <div className="mt-4 grid gap-3 md:grid-cols-5">
             <div className="rounded-xl border border-[#5858E2]/20 bg-[#5858E2]/5 p-4">
               <p className="text-sm font-medium text-gray-900">Управление футером</p>
@@ -70,32 +64,6 @@ export default async function PagesListPage({
                 className="mt-3 inline-flex items-center rounded-lg bg-[#5858E2] px-3 py-2 text-xs font-medium text-white hover:bg-[#4848d0]"
               >
                 Открыть футер
-              </Link>
-            </div>
-
-            <div className="rounded-xl border border-[#5858E2]/20 bg-[#5858E2]/5 p-4">
-              <p className="text-sm font-medium text-gray-900">Управление главной</p>
-              <p className="mt-1 text-xs text-gray-600">
-                Прямое редактирование HTML-кода страницы <code>/</code>.
-              </p>
-              <Link
-                href="/admin/pages/home"
-                className="mt-3 inline-flex items-center rounded-lg bg-[#5858E2] px-3 py-2 text-xs font-medium text-white hover:bg-[#4848d0]"
-              >
-                Открыть главную
-              </Link>
-            </div>
-
-            <div className="rounded-xl border border-[#5858E2]/20 bg-[#5858E2]/5 p-4">
-              <p className="text-sm font-medium text-gray-900">Управление connect</p>
-              <p className="mt-1 text-xs text-gray-600">
-                Прямое редактирование HTML-кода страницы <code>/connect</code>.
-              </p>
-              <Link
-                href="/admin/pages/connect"
-                className="mt-3 inline-flex items-center rounded-lg bg-[#5858E2] px-3 py-2 text-xs font-medium text-white hover:bg-[#4848d0]"
-              >
-                Открыть connect
               </Link>
             </div>
 
@@ -112,18 +80,7 @@ export default async function PagesListPage({
               </Link>
             </div>
 
-            <div className="rounded-xl border border-[#5858E2]/20 bg-[#5858E2]/5 p-4">
-              <p className="text-sm font-medium text-gray-900">Управление меню</p>
-              <p className="mt-1 text-xs text-gray-600">
-                Отдельный раздел для добавления, удаления, переименования и сортировки пунктов меню.
-              </p>
-              <Link
-                href="/admin/pages/menu"
-                className="mt-3 inline-flex items-center rounded-lg bg-[#5858E2] px-3 py-2 text-xs font-medium text-white hover:bg-[#4848d0]"
-              >
-                Открыть меню
-              </Link>
-            </div>
+
           </div>
 
           {list.length === 0 ? (

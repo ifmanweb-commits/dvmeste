@@ -13,7 +13,7 @@ export default async function LibPage() {
   const page = await getPageBySlug("lib");
 
   if (page) {
-    return <PageContent title={page.title} template={page.template} content={page.content} />;
+    return <PageContent title={page.adminTitle} template={page.template} content={page.content} />;
   }
 
   return (

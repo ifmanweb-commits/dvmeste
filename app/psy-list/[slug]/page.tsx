@@ -414,7 +414,7 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
                       </Button>
                     </Link>
                     <div className="flex gap-3">
-                      <Link href="/certification-levels">
+                      <Link href="/s/certification-levels">
                       <span className="text-xs text-gray-600 hover:text-[#5858E2] sm:text-sm">
                         Уровни сертификации
                       </span>

@@ -7,7 +7,7 @@ export const HOME_PAGE_TITLE = "Главная страница";
 export const CONNECT_PAGE_SLUG = "connect";
 export const CONNECT_PAGE_TITLE = "Страница Connect";
 
-export type SystemPageKey = "footer" | "connect" | "catalog";
+export type SystemPageKey = "footer" | "catalog";
 
 export const SYSTEM_PAGE_CONFIG: Record<
   SystemPageKey,
@@ -27,14 +27,6 @@ export const SYSTEM_PAGE_CONFIG: Record<
     description: "Этот HTML используется как общий футер на всех публичных страницах сайта.",
     adminPath: "/admin/pages/footer",
     managerPath: "/managers/pages/footer",
-  },
-  connect: {
-    key: "connect",
-    slug: CONNECT_PAGE_SLUG,
-    title: CONNECT_PAGE_TITLE,
-    description: "Этот HTML используется как страница /connect.",
-    adminPath: "/admin/pages/connect",
-    managerPath: "/managers/pages/connect",
   },
   catalog: {
     key: "catalog",

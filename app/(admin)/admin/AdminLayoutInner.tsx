@@ -3,15 +3,21 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { signOut } from "next-auth/react";
 
    
                                                                                                                   
    
 export function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuthPage = pathname === "/admin/login" || pathname === "/admin/forgot-password";
+  const isAuthPage = pathname === "/admin/login";
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
+  const handleLogout = async () => {
+    await signOut({ 
+      redirect: true,
+      callbackUrl: "/auth/login"
+    });
+  };
   if (isAuthPage) {
     return <>{children}</>;
   }
@@ -30,6 +36,18 @@ export function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           </Link>
         </li>
         <li>
+          <Link href="/admin/candidates" onClick={() => setSidebarOpen(false)} className="block rounded-lg px-3.5 py-2.5 text-[15px] font-medium text-foreground hover:bg-[#5858E2]/10 hover:text-[#5858E2]">
+            Кандидаты
+          </Link>
+        </li>
+
+        <li>
+          <Link href="/admin/articles" onClick={() => setSidebarOpen(false)} className="block rounded-lg px-3.5 py-2.5 text-[15px] font-medium text-foreground hover:bg-[#5858E2]/10 hover:text-[#5858E2]">
+            Статьи
+          </Link>
+        </li>
+
+        <li>
           <Link href="/admin/pages" onClick={() => setSidebarOpen(false)} className="block rounded-lg px-3.5 py-2.5 text-[15px] font-medium text-foreground hover:bg-[#5858E2]/10 hover:text-[#5858E2]">
             Страницы сайта
           </Link>
@@ -40,7 +58,11 @@ export function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             Менеджеры
           </Link>
         </li>
-
+        <li>
+          <Link href="/admin/menu" onClick={() => setSidebarOpen(false)} className="block rounded-lg px-3.5 py-2.5 text-[15px] font-medium text-foreground hover:bg-[#5858E2]/10 hover:text-[#5858E2]">
+            Меню
+          </Link>
+        </li>
 
          <li>
           <Link href="/admin/ListDate" onClick={() => setSidebarOpen(false)} className="block rounded-lg px-3.5 py-2.5 text-[15px] font-medium text-foreground hover:bg-[#5858E2]/10 hover:text-[#5858E2]">
@@ -48,11 +70,7 @@ export function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           </Link>
         </li>
 
-        <li>
-          <Link href="/admin/articles" onClick={() => setSidebarOpen(false)} className="block rounded-lg px-3.5 py-2.5 text-[15px] font-medium text-foreground hover:bg-[#5858E2]/10 hover:text-[#5858E2]">
-            Статьи (библиотека)
-          </Link>
-        </li>
+
 
         <li>
           <Link href="/admin/profile" onClick={() => setSidebarOpen(false)} className="block rounded-lg px-3.5 py-2.5 text-[15px] font-medium text-foreground hover:bg-[#5858E2]/10 hover:text-[#5858E2]">
@@ -89,7 +107,10 @@ export function AdminLayoutInner({ children }: { children: React.ReactNode }) {
               На сайт
             </Link>
             <form action="/admin/logout" method="POST">
-              <button type="submit" className="rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs text-neutral-dark hover:bg-neutral-100 sm:px-3 sm:text-sm">
+              <button
+                onClick={handleLogout}
+                className="rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs text-neutral-dark hover:bg-neutral-100 sm:px-3 sm:text-sm"
+              >
                 Выйти
               </button>
             </form>

@@ -1,12 +1,9 @@
-import { prisma } from "@/lib/prisma";
 import NextAuth from "next-auth";
 import EmailProvider from "next-auth/providers/email";
-import { PrismaAdapter } from "@auth/prisma-adapter"; // Убедись, что импорт именно отсюда
-
-console.log('Prisma in route:', prisma ? 'defined' : 'undefined');
+import { CustomPrismaAdapter } from "@/lib/auth-adapter";
 
 const handler = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: CustomPrismaAdapter(),
   providers: [
     EmailProvider({
       server: {
@@ -22,21 +19,49 @@ const handler = NextAuth({
   ],
   session: { strategy: "jwt" },
   pages: {
-    signIn: "/login",
-    verifyRequest: "/login?verify=1",
+    signIn: "/auth/login",
+    signOut: "/auth/login", // Добавить эту строку
+    error: "/auth/login",   // Добавить эту строку
+    verifyRequest: "/auth/login?sent=1",
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.role = user.role;
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
+        session.user.role = token.role as 'USER' | 'ADMIN' | 'MANAGER';
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      console.log('=== redirect callback ===');
+      console.log('url:', url);
+      console.log('baseUrl:', baseUrl);
+      
+      // Если есть callbackUrl в URL - используем его
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      
+      try {
+        const urlObj = new URL(url);
+        if (urlObj.origin === baseUrl) {
+          // Это наш сайт - используем как есть
+          return url;
+        }
+      } catch {
+        // Невалидный URL - игнорируем
+      }
+      
+      // Если нет конкретного callbackUrl, определяем по роли
+      // Но здесь мы не знаем роль, так что оставляем на усмотрение страницы после входа
+      return baseUrl;
     },
   },
 });

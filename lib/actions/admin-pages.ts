@@ -37,12 +37,25 @@ type SystemPageRecord = {
 export async function getPagesList() {
   if (!prisma) return [];
   try {
+    // Исключаем только те системные страницы, которые НЕ должны быть в списке
+    const excludedSlugs = [
+      SYSTEM_PAGE_CONFIG.footer.slug,  // футер оставляем в отдельном блоке
+      // SYSTEM_PAGE_CONFIG.connect.slug, // connect теперь показываем в списке
+      SYSTEM_PAGE_CONFIG.catalog.slug,  // каталог пока оставляем в отдельном блоке
+    ];
+
     const list = await prisma.page.findMany({
       where: {
-        slug: { notIn: [...SYSTEM_PAGE_SLUGS] },
+        slug: { notIn: excludedSlugs },
       },
       orderBy: { updatedAt: "desc" },
-      select: { id: true, slug: true, adminTitle: true, template: true, isPublished: true },
+      select: { 
+        id: true, 
+        slug: true, 
+        adminTitle: true, 
+        template: true, 
+        isPublished: true 
+      },
     });
     return list;
   } catch (err) {
@@ -141,14 +154,7 @@ export async function getOrCreateFooterPage() {
 }
 
                                                       
-/*export async function getOrCreateHomePage() {
-  return getOrCreateSystemPage(SYSTEM_PAGE_CONFIG.home.slug);
-}*/
 
-                                                      
-export async function getOrCreateConnectPage() {
-  return getOrCreateSystemPage(SYSTEM_PAGE_CONFIG.connect.slug);
-}
 
                                                        
 export async function getOrCreateCatalogPage() {

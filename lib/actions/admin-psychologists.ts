@@ -19,6 +19,11 @@ export async function getPsychologistsList() {
   if (!prisma) return [];
   try {
     const list = await prisma.psychologist.findMany({
+      where: {
+        status: {
+          not: "CANDIDATE" // Исключаем кандидатов
+        }
+      },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,

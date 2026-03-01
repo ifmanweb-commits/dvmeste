@@ -1,80 +1,83 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
-import crypto from "crypto";
-import { emailService } from "@/lib/email.service";
+import { slugFromName } from "@/lib/actions/psychologist-form";
 
 export async function POST(req: Request) {
   try {
-    const { email, password, fullName } = await req.json();
+    const { email, fullName } = await req.json();
 
-    // Валидация
-    if (!email || !password || !fullName) {
+    if (!email || !fullName) {
       return NextResponse.json(
-        { error: "Все поля обязательны" },
+        { error: "Имя и email обязательны" },
         { status: 400 }
       );
     }
 
-    // Проверяем, существует ли уже психолог с таким email
-    const existing = await prisma.psychologist.findUnique({
+    // Проверяем, существует ли уже пользователь
+    const existingUser = await prisma.user.findUnique({
       where: { email },
     });
 
-    if (existing) {
+    if (existingUser) {
       return NextResponse.json(
         { error: "Пользователь с таким email уже существует" },
         { status: 400 }
       );
     }
 
-    // Хэшируем пароль
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Создаём психолога
-    const psychologist = await prisma.psychologist.create({
-      data: {
-        email,
-        passwordHash: hashedPassword,
-        fullName,
-        status: "PENDING",
-        // Обязательные поля заполняем заглушками
-        slug: email.split("@")[0] + "-" + Date.now(),
-        gender: "unknown",
-        birthDate: new Date("2000-01-01"),
-        city: "",
-        workFormat: "",
-        mainParadigm: [],
-        shortBio: "",
-        longBio: "",
-        price: 0,
-        contactInfo: "",
-        images: [],
-      },
-    });
-
-    // после создания psychologist, перед return:
-    const token = crypto.randomBytes(32).toString("hex");
-
-    await prisma.psychologist.update({
-      where: { id: psychologist.id },
-      data: { emailVerifyToken: token },
-    });
-    // TODO: отправить письмо с подтверждением (позже)
-    console.log("\n=== Ссылка для подтверждения ===\n");
-    console.log(`http://localhost:3000/verify?token=${token}`);
-    console.log("\n================================\n");
-
-    try {
-      await emailService.sendVerificationEmail(email, token);
-      console.log(`✅ Verification email ready for ${email}`);
-    } catch (emailError) {
-      console.error("Failed to send verification email:", emailError);
+    // Генерируем slug из имени
+    let slug = slugFromName(fullName);
+    let counter = 1;
+    let finalSlug = slug;
+    while (await prisma.psychologist.findUnique({ where: { slug: finalSlug } })) {
+      finalSlug = `${slug}-${counter}`;
+      counter++;
     }
-    return NextResponse.json(
-      { message: "Регистрация успешна", id: psychologist.id },
-      { status: 201 }
-    );
+
+    // Создаём пользователя и психолога
+    const result = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email,
+          fullName,
+          role: 'USER',
+        }
+      });
+
+      const psychologist = await tx.psychologist.create({
+        data: {
+          email,
+          fullName,
+          slug: finalSlug,
+          status: "CANDIDATE",
+          emailVerified: false,
+          gender: "Не указан",
+          birthDate: new Date("2000-01-01"),
+          city: "",
+          workFormat: "",
+          mainParadigm: [],
+          shortBio: "",
+          longBio: "",
+          price: 0,
+          contactInfo: "",
+          images: [],
+          userId: user.id,
+        },
+      });
+
+      return { user, psychologist };
+    });
+
+    // ВАЖНО: Отправляем Magic Link через NextAuth
+    // Для этого нужно использовать NextAuth, но из API route это сложно
+    // Поэтому возвращаем успех и на фронтенде вызываем signIn
+
+    return NextResponse.json({
+      success: true,
+      message: "Регистрация успешна",
+      email: email
+    });
+
   } catch (error) {
     console.error("Register error:", error);
     return NextResponse.json(

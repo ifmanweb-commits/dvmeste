@@ -17,43 +17,65 @@ class UnisenderService {
   }
 
   async subscribe(options: SubscribeOptions) {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
     // В разработке — только лог
-    if (process.env.NODE_ENV === 'development') {
-      console.log('📧 [Unisender dev] Would subscribe:', options);
+    if (isDevelopment) {
+      console.log('📧 [Unisender dev] Would subscribe:', {
+        email: options.email,
+        name: options.name,
+        tags: options.tags,
+        listId: process.env.UNISENDER_LIST_ID || '1'
+      });
       return { success: true, message: 'Dev mode' };
     }
 
     if (!this.apiKey) {
-      throw new Error('Unisender API key not configured');
+      console.error('Unisender API key not configured');
+      return { success: false, error: 'API key not configured' };
+    }
+
+    const listId = process.env.UNISENDER_LIST_ID;
+    if (!listId) {
+      console.error('UNISENDER_LIST_ID not configured');
+      return { success: false, error: 'List ID not configured' };
     }
 
     const params = new URLSearchParams({
       format: 'json',
       api_key: this.apiKey,
-      list_ids: process.env.UNISENDER_LIST_ID || '1',
+      list_ids: listId,
       fields: JSON.stringify({
         email: options.email,
         Name: options.name || '',
-        phone: '',
-        email_status: 'active'
+        // Добавляем тег для кандидатов
+        email_list_ids: listId,
+        tags: options.tags ? options.tags.join(',') : 'psychologist_candidate'
       }),
-      tags: options.tags ? options.tags.join(',') : '',
-      double_optin: '0', // 0 — сразу подписываем (после подтверждения email)
+      double_optin: '3', // 3 = без подтверждения (мы уже подтвердили email)
     });
 
     try {
-      const response = await fetch(`${this.apiUrl}/subscribe?${params}`);
+      const response = await fetch(`${this.apiUrl}/subscribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString()
+      });
+      
       const data = await response.json();
       
       if (data.error) {
-        throw new Error(data.error);
+        console.error('Unisender API error:', data.error);
+        return { success: false, error: data.error };
       }
 
       console.log('✅ Unisender subscribe success:', data);
       return { success: true, data };
     } catch (error) {
       console.error('Unisender subscribe failed:', error);
-      return { success: false, error };
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 }

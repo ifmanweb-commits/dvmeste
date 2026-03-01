@@ -84,7 +84,7 @@ export async function getSiteMenuPageOptions(): Promise<SiteMenuPageOption[]> {
       orderBy: [{ isPublished: "desc" }, { updatedAt: "desc" }],
       select: {
         slug: true,
-        title: true,
+        adminTitle: true,
       },
     });
 
@@ -97,7 +97,7 @@ export async function getSiteMenuPageOptions(): Promise<SiteMenuPageOption[]> {
       if (!row.slug) continue;
       merged.set(row.slug, {
         slug: row.slug,
-        title: row.title || row.slug,
+        title: row.adminTitle || row.slug,
         href: getPublicPathBySlug(row.slug),
       });
     }

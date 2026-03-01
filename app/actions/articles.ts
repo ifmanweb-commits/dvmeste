@@ -5,60 +5,28 @@ import { unstable_cache } from "next/cache";
 
 const ARTICLES_PAGE_SIZE = 12;
 
-export type ArticleListItem = {
-  id: string;
-  title: string;
-  slug: string;
-  tags: string[];
-  publishedAt: Date | null;
-  authorName: string | null;
-};
-
 export type ArticlesResult = {
-  items: ArticleListItem[];
+  items: {
+    id: string;
+    title: string;
+    slug: string;
+    shortText: string | null;
+    tags: string[];
+    publishedAt: Date | null;
+    authorName: string | null;
+    author: {
+      id: string;
+      fullName: string;
+      slug: string;
+      certificationLevel: number | null;
+      shortBio: string;
+      images: string[];
+    } | null;
+  }[];
   total: number;
   page: number;
   totalPages: number;
 };
-
-export async function getArticles(options: {
-  page?: number;
-  tag?: string;
-  limit?: number;
-}): Promise<ArticlesResult> {
-  if (!prisma) return { items: [], total: 0, page: 1, totalPages: 0 };
-
-  const page = Math.max(1, options.page ?? 1);
-  const limit = Math.min(ARTICLES_PAGE_SIZE, options.limit ?? ARTICLES_PAGE_SIZE);
-  const tag = options.tag?.trim();
-
-  return getArticlesCached(page, limit, tag ?? null);
-}
-
-export async function getArticleBySlug(slug: string): Promise<{
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  tags: string[];
-  publishedAt: Date | null;
-  author: {
-    id: string;
-    slug: string;
-    fullName: string;
-    shortBio: string;
-    certificationLevel: number;
-    images: string[];
-  } | null;
-} | null> {
-  if (!prisma) return null;
-  return getArticleBySlugCached(slug);
-}
-
-export async function getArticleTags(): Promise<string[]> {
-  if (!prisma) return [];
-  return getArticleTagsCached();
-}
 
 const getArticlesCached = unstable_cache(
   async (page: number, limit: number, tag: string | null): Promise<ArticlesResult> => {
@@ -81,33 +49,89 @@ const getArticlesCached = unstable_cache(
             title: true,
             slug: true,
             tags: true,
+            shortText: true,
             publishedAt: true,
-            author: { select: { fullName: true } },
+            author: {
+              select: {
+                id: true,
+                fullName: true,
+                slug: true,
+                certificationLevel: true,
+                shortBio: true,
+                images: true,
+              },
+            },
           },
         }),
         prisma.article.count({ where }),
       ]);
+
       const totalPages = Math.max(1, Math.ceil(total / limit));
+
       return {
         items: items.map((a) => ({
           id: a.id,
           title: a.title,
           slug: a.slug,
+          shortText: a.shortText,
           tags: a.tags ?? [],
           publishedAt: a.publishedAt,
           authorName: a.author?.fullName ?? null,
+          author: a.author ? {
+            id: a.author.id,
+            fullName: a.author.fullName,
+            slug: a.author.slug,
+            certificationLevel: a.author.certificationLevel,
+            shortBio: a.author.shortBio,
+            images: a.author.images,
+          } : null,
         })),
         total,
         page,
         totalPages,
       };
-    } catch {
+    } catch (err) {
+      console.error("Error fetching articles:", err);
       return { items: [], total: 0, page: 1, totalPages: 0 };
     }
   },
   ["public-articles-list"],
   { revalidate: 30, tags: ["articles"] }
 );
+
+export async function getArticles(options: {
+  page?: number;
+  tag?: string;
+  limit?: number;
+}): Promise<ArticlesResult> {
+  if (!prisma) return { items: [], total: 0, page: 1, totalPages: 0 };
+
+  const page = Math.max(1, options.page ?? 1);
+  const limit = Math.min(ARTICLES_PAGE_SIZE, options.limit ?? ARTICLES_PAGE_SIZE);
+  const tag = options.tag?.trim() ?? null;
+
+  return getArticlesCached(page, limit, tag);
+}
+
+export async function getArticleBySlug(slug: string): Promise<{
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  tags: string[];
+  publishedAt: Date | null;
+  author: {
+    id: string;
+    slug: string;
+    fullName: string;
+    shortBio: string;
+    certificationLevel: number | null;
+    images: string[];
+  } | null;
+} | null> {
+  if (!prisma) return null;
+  return getArticleBySlugCached(slug);
+}
 
 const getArticleBySlugCached = unstable_cache(
   async (slug: string) => {
@@ -143,6 +167,11 @@ const getArticleBySlugCached = unstable_cache(
   ["public-article-by-slug"],
   { revalidate: 30, tags: ["articles"] }
 );
+
+export async function getArticleTags(): Promise<string[]> {
+  if (!prisma) return [];
+  return getArticleTagsCached();
+}
 
 const getArticleTagsCached = unstable_cache(
   async (): Promise<string[]> => {
