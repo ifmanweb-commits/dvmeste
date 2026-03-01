@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: psychologist-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-psychologist}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-psychologist_password}
+      POSTGRES_DB: ${DB_NAME:-psychologist_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  maildev:
+    image: maildev/maildev
+    container_name: maildev
+    ports:
+      - "1080:1080"  # Web интерфейс
+      - "1025:1025"  # SMTP порт
+    restart: unless-stopped
+
+  app:
+    build: .
+    container_name: psychologist-app
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL_DOCKER:-postgresql://psychologist:psychologist_password@postgres:5432/psychologist_db}
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads_volume:/app/uploads
+      - public_uploads_volume:/app/public/uploads
+      - articles_files_volume:/app/public/articles/files
+      - pages_files_volume:/app/public/pages/files
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  uploads_volume:
+  public_uploads_volume:
+  articles_files_volume:
+  pages_files_volume:

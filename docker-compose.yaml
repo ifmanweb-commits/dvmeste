@@ -1,0 +1,71 @@
+services:
+    y8scwo8884cog4kwok4os0wc-153146731776:
+        image: 'y8scwo8884cog4kwok4os0wc:7faf6739758fc4f208d785a4b76078879f11473f'
+        container_name: y8scwo8884cog4kwok4os0wc-153146731776
+        restart: unless-stopped
+        expose:
+            - '3000'
+        networks:
+            coolify:
+                aliases:
+                    - y8scwo8884cog4kwok4os0wc-153146731776
+        mem_limit: '0'
+        memswap_limit: '0'
+        mem_swappiness: 60
+        mem_reservation: '0'
+        cpus: 0.0
+        cpu_shares: 1024
+        env_file:
+            - .env
+        labels:
+            - traefik.enable=true
+            - traefik.http.middlewares.gzip.compress=true
+            - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+            - traefik.http.routers.http-0-y8scwo8884cog4kwok4os0wc.entryPoints=http
+            - traefik.http.routers.http-0-y8scwo8884cog4kwok4os0wc.middlewares=redirect-to-https
+            - 'traefik.http.routers.http-0-y8scwo8884cog4kwok4os0wc.rule=Host(`dvmeste.ru`) && PathPrefix(`/`)'
+            - traefik.http.routers.http-0-y8scwo8884cog4kwok4os0wc.service=http-0-y8scwo8884cog4kwok4os0wc
+            - traefik.http.routers.https-0-y8scwo8884cog4kwok4os0wc.entryPoints=https
+            - traefik.http.routers.https-0-y8scwo8884cog4kwok4os0wc.middlewares=gzip
+            - 'traefik.http.routers.https-0-y8scwo8884cog4kwok4os0wc.rule=Host(`dvmeste.ru`) && PathPrefix(`/`)'
+            - traefik.http.routers.https-0-y8scwo8884cog4kwok4os0wc.service=https-0-y8scwo8884cog4kwok4os0wc
+            - traefik.http.routers.https-0-y8scwo8884cog4kwok4os0wc.tls.certresolver=letsencrypt
+            - traefik.http.routers.https-0-y8scwo8884cog4kwok4os0wc.tls=true
+            - traefik.http.services.http-0-y8scwo8884cog4kwok4os0wc.loadbalancer.server.port=3000
+            - traefik.http.services.https-0-y8scwo8884cog4kwok4os0wc.loadbalancer.server.port=3000
+            - 'caddy_0.encode=zstd gzip'
+            - 'caddy_0.handle_path.0_reverse_proxy={{upstreams 3000}}'
+            - 'caddy_0.handle_path=/*'
+            - caddy_0.header=-Server
+            - 'caddy_0.try_files={path} /index.html /index.php'
+            - 'caddy_0=https://dvmeste.ru'
+            - caddy_ingress_network=coolify
+            - coolify.managed=true
+            - coolify.version=4.0.0-beta.463
+            - coolify.applicationId=1
+            - coolify.type=application
+            - coolify.name=y8scwo8884cog4kwok4os0wc
+            - coolify.resourceName=akhiles777psikhologiyamain-y8scwo8884cog4kwok4os0wc
+            - coolify.projectName=my-first-project
+            - coolify.serviceName=akhiles777psikhologiyamain-y8scwo8884cog4kwok4os0wc
+            - coolify.environmentName=production
+            - coolify.pullRequestId=0
+        volumes:
+            - 'y8scwo8884cog4kwok4os0wc-psykhologi:/app/public/uploads'
+            - 'y8scwo8884cog4kwok4os0wc-articles:/app/public/articles/files'
+            - 'y8scwo8884cog4kwok4os0wc-pages:/app/public/pages'
+networks:
+    coolify:
+        external: true
+        name: coolify
+        attachable: true
+volumes:
+    y8scwo8884cog4kwok4os0wc-psykhologi:
+        name: y8scwo8884cog4kwok4os0wc-psykhologi
+        external: false
+    y8scwo8884cog4kwok4os0wc-articles:
+        name: y8scwo8884cog4kwok4os0wc-articles
+        external: false
+    y8scwo8884cog4kwok4os0wc-pages:
+        name: y8scwo8884cog4kwok4os0wc-pages
+        external: false
