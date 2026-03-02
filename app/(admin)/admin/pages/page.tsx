@@ -128,8 +128,6 @@ export default async function PagesListPage({
                       {list.map((page) => {
                         const pageUrl = page.slug === "home"
                           ? "/"
-                          : ["courses", "lib", "connect", "contacts"].includes(page.slug)
-                            ? `/${page.slug}`
                             : `/s/${page.slug}`;
                         
                         return (

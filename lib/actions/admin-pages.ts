@@ -184,9 +184,9 @@ function revalidatePublicPathBySlug(slug?: string | null) {
     revalidatePath("/connect");
   }
 
-  if (slug === "contacts") {
-    revalidatePath("/contacts");
-  }
+  //if (slug === "contacts") {
+  //  revalidatePath("/contacts");
+  //}
 
   if (slug === CATALOG_PAGE_SLUG) {
     revalidatePath("/psy-list");

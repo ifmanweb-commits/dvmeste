@@ -29,8 +29,7 @@ export default async function EditPageForm({ params, searchParams }: PageProps) 
   const isSaved = sp.saved === "1";
   const systemPage = getSystemPageBySlug(page.slug);
   const isSystemPage = Boolean(systemPage);
-  const directPathSlugs = ["courses", "lib", "connect", "contacts"];
-  const currentPublicPath = page.slug === "home" ? "/" : directPathSlugs.includes(page.slug) ? `/${page.slug}` : `/s/${page.slug}`;
+  const currentPublicPath = page.slug === "home" ? "/" : `/s/${page.slug}`;
 
   return (
     <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
