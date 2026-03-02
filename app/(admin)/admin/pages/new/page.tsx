@@ -134,32 +134,6 @@ export default async function NewPageForm({
             </label>
           </div>
 
-          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-            <p className="text-sm font-medium text-foreground">Элементы шаблона</p>
-            <p className="mt-1 text-xs text-neutral-dark">Для страниц `/s/[slug]` можно отдельно включить шапку и футер сайта.</p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <label className="flex items-center gap-2 text-sm text-foreground">
-                <input type="hidden" name="showHeader" value="off" />
-                <input
-                  type="checkbox"
-                  name="showHeader"
-                  value="on"
-                  className="h-4 w-4 rounded border-gray-300 text-[#5858E2] focus:ring-[#5858E2]"
-                />
-                Добавить хедер
-              </label>
-              <label className="flex items-center gap-2 text-sm text-foreground">
-                <input type="hidden" name="showFooter" value="off" />
-                <input
-                  type="checkbox"
-                  name="showFooter"
-                  value="on"
-                  className="h-4 w-4 rounded border-gray-300 text-[#5858E2] focus:ring-[#5858E2]"
-                />
-                Добавить футер
-              </label>
-            </div>
-          </div>
 
           <div className="flex gap-4">
             <button

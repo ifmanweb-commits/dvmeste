@@ -27,8 +27,6 @@ type SystemPageRecord = {
   adminTitle: string;
   template: string;
   content: string;
-  showHeader: boolean;
-  showFooter: boolean;
   isPublished: boolean;
   updatedAt: Date;
 };
@@ -77,8 +75,6 @@ async function getOrCreateSystemPage(systemSlug: string): Promise<SystemPageReco
         adminTitle: true,
         template: true,
         content: true,
-        showHeader: true,
-        showFooter: true,
         isPublished: true,
         updatedAt: true,
       },
@@ -109,8 +105,6 @@ async function getOrCreateSystemPage(systemSlug: string): Promise<SystemPageReco
           adminTitle: true,
           template: true,
           content: true,
-          showHeader: true,
-          showFooter: true,
           isPublished: true,
           updatedAt: true,
         },
@@ -134,8 +128,6 @@ async function getOrCreateSystemPage(systemSlug: string): Promise<SystemPageReco
         adminTitle: true,
         template: true,
         content: true,
-        showHeader: true,
-        showFooter: true,
         isPublished: true,
         updatedAt: true,
       },
@@ -236,8 +228,6 @@ export async function getPageById(id: string) {
         content: true,
         customHead: true,        // новое
         images: true,
-        showHeader: true,
-        showFooter: true,
         isPublished: true,
         createdAt: true,
         updatedAt: true,
@@ -272,8 +262,6 @@ export async function getPageById(id: string) {
         template: true,
         content: true,
         images: true,
-        showHeader: true,
-        showFooter: true,
         isPublished: true,
         createdAt: true,
         updatedAt: true,
@@ -306,10 +294,6 @@ export async function createPage(formData: FormData) {
   const content = (formData.get("content") as string)?.trim() || "";
   const publishedVal = formData.getAll("isPublished");
   const isPublished = publishedVal[publishedVal.length - 1] === "on";
-  const showHeaderVal = formData.getAll("showHeader");
-  const showHeader = showHeaderVal[showHeaderVal.length - 1] === "on";
-  const showFooterVal = formData.getAll("showFooter");
-  const showFooter = showFooterVal[showFooterVal.length - 1] === "on";
   const images = formData.getAll("images").filter((v) => typeof v === "string" && v.startsWith("/pages/")) as string[];
 
   const normalizedSlug = systemPage ? systemPage.slug : slug;
@@ -326,8 +310,6 @@ export async function createPage(formData: FormData) {
         template: normalizedTemplate,
         content: normalizedContent,
         isPublished: normalizedPublished,
-        showHeader,
-        showFooter,
         images,
       },
     });
@@ -360,10 +342,6 @@ export async function updatePage(id: string, formData: FormData) {
   const content = (formData.get("content") as string)?.trim() || "";
   const publishedVal = formData.getAll("isPublished");
   const isPublished = publishedVal[publishedVal.length - 1] === "on";
-  const showHeaderVal = formData.getAll("showHeader");
-  const showHeader = showHeaderVal[showHeaderVal.length - 1] === "on";
-  const showFooterVal = formData.getAll("showFooter");
-  const showFooter = showFooterVal[showFooterVal.length - 1] === "on";
   const images = formData.getAll("images").filter((v) => typeof v === "string" && v.startsWith("/pages/")) as string[];
   const metaTitle = (formData.get("metaTitle") as string)?.trim() || null;
   const metaDescription = (formData.get("metaDescription") as string)?.trim() || null;
@@ -431,8 +409,6 @@ export async function updatePage(id: string, formData: FormData) {
         metaRobots,
         customHead: processedCustomHead,
         isPublished: normalizedPublished,
-        showHeader,
-        showFooter,
         images,
       },
     });

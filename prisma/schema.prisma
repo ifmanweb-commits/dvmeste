@@ -126,11 +126,7 @@ model Page {
   
   // Файлы
   images      String[]
-  
-  // Флаги (пока оставляем для совместимости)
-  showHeader  Boolean  @default(false)
-  showFooter  Boolean  @default(false)
-  
+
   // Статус
   isPublished Boolean  @default(false)
   
