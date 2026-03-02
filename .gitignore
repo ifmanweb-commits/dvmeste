@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 START-DEV.bat
+dvmeste-backup.tar.gz
 *.pem
 
 # debug

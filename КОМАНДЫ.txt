@@ -1,0 +1,19 @@
+# Частые команды
+
+## Запуск
+START-DEV.bat
+
+## Git
+git status
+git add .
+git commit -m "message"
+git push
+
+## Prisma
+npx prisma studio
+npx prisma migrate dev
+npx prisma generate
+
+## Docker
+docker ps
+docker logs maildev
