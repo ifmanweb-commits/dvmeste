@@ -148,31 +148,6 @@ model MenuItem {
   @@map("menu_items")
 }
 
-model AdminAccount {
-  id           String                    @id @default(cuid())
-  login        String                    @unique
-  email        String                    @unique
-  passwordHash String
-  createdAt    DateTime                  @default(now())
-  updatedAt    DateTime                  @updatedAt
-  resetCodes   AdminPasswordResetCode[]
-
-  @@map("admin_accounts")
-}
-
-model AdminPasswordResetCode {
-  id        String       @id @default(cuid())
-  adminId   String
-  codeHash  String
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime     @default(now())
-  admin     AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
-
-  @@index([adminId, expiresAt])
-  @@index([usedAt])
-  @@map("admin_password_reset_codes")
-}
 
 enum AdminRole {
   ADMIN
