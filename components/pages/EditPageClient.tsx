@@ -33,7 +33,7 @@ export default function EditPageClient({ page, pageId, updatePage }: EditPageCli
   const [slugError, setSlugError] = useState<string | null>(null);
   const systemPage = getSystemPageBySlug(page.slug);
   const isSystemPage = Boolean(systemPage);
-  const directPathSlugs = ["courses", "lib", "connect", "contacts"];
+  const directPathSlugs = [""];
   const currentPublicPath = slug === "home" ? "/" : directPathSlugs.includes(slug) ? `/${slug}` : `/s/${slug}`;
   const savedPublicPath = page.slug === "home" ? "/" : directPathSlugs.includes(page.slug) ? `/${page.slug}` : `/s/${page.slug}`;
 

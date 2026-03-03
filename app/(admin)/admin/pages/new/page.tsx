@@ -32,11 +32,6 @@ export default async function NewPageForm({
           Добавить страницу
         </h1>
 
-        <p className="mt-2 text-sm text-neutral-dark">
-          Slug — адрес страницы (только латиница, цифры, дефис). Например: about → /s/about.
-          Для прямых адресов работают slug: courses, lib, contacts. 
-          Главная (<code>home</code>) и <code>connect</code> теперь редактируются отдельно в разделе «Страницы сайта».
-        </p>
 
         {errorMessage && (
             <div className="mt-4 rounded-xl border-2 border-amber-300 bg-amber-50 p-4 text-amber-800">
@@ -76,7 +71,7 @@ export default async function NewPageForm({
               {                                          }
               <p className="mt-2 text-xs text-gray-500 flex items-center gap-1">
                 <span className="text-gray-400">📌</span>
-                Будет доступно по адресу: <span className="font-mono text-[#5858E2] bg-[#5858E2]/5 px-1.5 py-0.5 rounded">/s/[ваш-slug]</span>
+                Будет доступно по адресу: <span className="font-mono text-[#5858E2] bg-[#5858E2]/5 px-1.5 py-0.5 rounded">/s/[url]</span>
               </p>
             </div>
 

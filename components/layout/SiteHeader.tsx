@@ -10,11 +10,6 @@ function isExternalHref(href: string) {
 function getMenuEmoji(href: string) {
   if (isExternalHref(href)) return "🔗";
   if (href === "/psy-list") return "👤";
-  if (href === "/courses") return "📚";
-  if (href === "/connect") return "💼";
-  if (href === "/contacts") return "📞";
-  if (href.startsWith("/lib")) return "📖";
-  if (href === "/complaint") return "⚠️";
   return "🔍";
 }
 

@@ -162,23 +162,11 @@ function revalidatePublicPathBySlug(slug?: string | null) {
     revalidatePath("/");
   }
 
-  if (slug === "courses") {
-    revalidatePath("/courses");
-  }
 
-  if (slug === "lib") {
-    revalidatePath("/lib");
-    revalidatePath("/lib/articles");
-    revalidatePath("/lib/articles/[slug]", "page");
-  }
+//  if (slug === "connect") {
+//    revalidatePath("/connect");
+//  }
 
-  if (slug === "connect") {
-    revalidatePath("/connect");
-  }
-
-  //if (slug === "contacts") {
-  //  revalidatePath("/contacts");
-  //}
 
   if (slug === CATALOG_PAGE_SLUG) {
     revalidatePath("/psy-list");
@@ -187,12 +175,6 @@ function revalidatePublicPathBySlug(slug?: string | null) {
   if (slug === "site-footer") {
     revalidatePath("/", "layout");
     revalidatePath("/");
-    revalidatePath("/courses");
-    revalidatePath("/connect");
-    revalidatePath("/contacts");
-    revalidatePath("/lib");
-    revalidatePath("/lib/articles");
-    revalidatePath("/lib/articles/[slug]", "page");
   }
 }
 

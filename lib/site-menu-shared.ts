@@ -13,9 +13,6 @@ export type SiteMenuPageOption = {
 export function getPublicPathBySlug(slug: string) {
   if (!slug) return "/";
   if (slug === "home") return "/";
-  if (["psy-list", "courses", "lib", "connect", "contacts", "complaint"].includes(slug)) {
-    return `/${slug}`;
-  }
   return `/s/${slug}`;
 }
 
