@@ -334,8 +334,29 @@ export async function createPsychologist(formData: FormData) {
   if (!prisma) throw new Error("База данных недоступна");
 
   try {
+    const email = formData.get('email') as string;
+    const fullName = formData.get('fullName') as string;
+
+    // 1. Создаём User
+    const user = await prisma.user.create({
+      data: {
+        email,
+        fullName,
+        isPsychologist: true,
+        isManager: false,
+        isAdmin: false,
+        emailVerified: new Date(), // админ подтвердил
+      }
+    });
+
+    // 2. Создаём Psychologist с userId
     const payload = await buildPsychologistPayload(formData);
-    await prisma.psychologist.create({ data: payload.data });
+    await prisma.psychologist.create({ 
+      data: {
+        ...payload.data,
+        userId: user.id,
+      } 
+    });
 
   } catch (err: unknown) {
     if (isDbSyncError(err)) {
@@ -356,8 +377,6 @@ export async function createPsychologist(formData: FormData) {
   revalidatePath("/admin/psychologists");
   revalidatePath("/psy-list");
   redirect("/admin/psychologists");
-
-
 }
 
                          
