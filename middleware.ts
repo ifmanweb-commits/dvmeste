@@ -7,12 +7,44 @@ export default withAuth(
     const path = req.nextUrl.pathname;
 
     // Все пути публичные, кроме защищённых
-    // Защищаем только /admin и /account
     if (path.startsWith('/admin')) {
-      if (!token?.isAdmin && !token?.isManager) {
+      if (!token) {
         const url = new URL('/auth/login', req.url);
         url.searchParams.set('callbackUrl', encodeURIComponent(path));
         return NextResponse.redirect(url);
+      }
+      
+      // Если пользователь авторизован, но не админ и не менеджер
+      if (!token.isAdmin && !token.isManager) {
+        return NextResponse.redirect(new URL('/', req.url));
+      }
+      
+      // Если админ - пускаем везде (без дополнительных проверок)
+      if (token.isAdmin) {
+        return NextResponse.next();
+      }
+      
+      // Если менеджер - ограничиваем доступ (и при этом не админ)
+      if (token.isManager && !token.isAdmin) {
+        // Разрешённые пути для менеджера
+        const allowedPaths = [
+          '/admin',
+          '/admin/psychologists',
+          '/admin/psychologists/',
+          '/admin/candidates',
+          '/admin/candidates/',
+          '/admin/articles',
+          '/admin/articles/',
+        ];
+        
+        // Проверяем, начинается ли путь с разрешённого
+        const isAllowed = allowedPaths.some(allowedPath => 
+          path === allowedPath || path.startsWith(allowedPath + '/')
+        );
+        
+        if (!isAllowed) {
+          return NextResponse.redirect(new URL('/admin', req.url));
+        }
       }
     }
 
@@ -34,5 +66,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ['/admin/:path*', '/account/:path*'] // Только эти пути
+  matcher: ['/admin/:path*', '/account/:path*']
 };

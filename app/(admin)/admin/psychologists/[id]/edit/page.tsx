@@ -755,7 +755,7 @@ function EditPsychologistForm() {
 }
 
                                
-export default function EditPsychologistPage() {
+export default async function EditPsychologistPage() {
   return (
       <Suspense fallback={
         <div className="min-h-screen bg-gray-50 p-4 md:p-6">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getSiteMenuItems, getSiteMenuPageOptions } from "@/lib/site-menu";
 import { SiteMenuManager } from "@/components/pages/SiteMenuManager";
 
+
 export default async function AdminMenuPage({
   searchParams,
 }: {

@@ -73,6 +73,10 @@ export default function AdminArticleEditPage({ params }: { params: Promise<{ id:
       if (!data.success) {
         throw new Error(data.error || "Ошибка при сохранении");
       }
+      
+      // Принудительно обновляем данные на сервере и клиенте
+      router.refresh();
+      router.push(`/admin/articles?updated=${Date.now()}`);
     } catch (error) {
       console.error("Error updating article:", error);
       throw error;

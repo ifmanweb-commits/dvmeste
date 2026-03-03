@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ManagersTable } from "@/components/admin/ManagersTable";
 import { UserSearch } from "@/components/admin/UserSearch";
 
+
 export default async function ManagersPage() {
   const session = await getServerSession();
   
@@ -14,6 +15,11 @@ export default async function ManagersPage() {
 
   // Получаем список менеджеров и админов
   const managers = await getManagersList();
+  // Приводим роль к нужному типу
+  const typedManagers = managers.map(m => ({
+    ...m,
+    role: m.role as 'ADMIN' | 'MANAGER'
+  }));
   
   // Находим ID текущего пользователя
   const currentUser = managers.find(m => m.email === session.user?.email);
@@ -34,7 +40,7 @@ export default async function ManagersPage() {
         
         <div className="md:col-span-2">
           <ManagersTable 
-            managers={managers} 
+            managers={typedManagers} 
             currentUserId={currentUser?.id}
           />
         </div>

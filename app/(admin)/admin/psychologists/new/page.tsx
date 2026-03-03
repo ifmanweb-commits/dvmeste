@@ -8,6 +8,8 @@ import { getDataListItems } from "@/lib/actions/admin-references";
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
+
+
 function NewPsychologistFormContent() {
   const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
   const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -647,7 +649,7 @@ function NewPsychologistFormContent() {
   );
 }
 
-export default function NewPsychologistPage() {
+export default async function NewPsychologistPage() {
   return (
       <Suspense fallback={
         <div className="min-h-screen bg-gray-50 p-4 md:p-6">
