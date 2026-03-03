@@ -14,10 +14,10 @@ export async function GET(request: Request) {
     // Проверяем, что текущий пользователь - админ
     const currentUser = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: { role: true }
+      select: { isAdmin: true }
     });
 
-    if (currentUser?.role !== 'ADMIN') {
+    if (!currentUser?.isAdmin) {
       return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
     }
 
@@ -39,7 +39,9 @@ export async function GET(request: Request) {
         id: true,
         email: true,
         fullName: true,
-        role: true,
+        isAdmin: true,
+        isManager: true,
+        isPsychologist: true,
         emailVerified: true,
         psychologist: {
           select: {
@@ -53,12 +55,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ user: null });
     }
 
+    // Определяем роль для отображения
+    let role: 'ADMIN' | 'MANAGER' | 'USER' = 'USER';
+    if (user.isAdmin) role = 'ADMIN';
+    else if (user.isManager) role = 'MANAGER';
+
     // Форматируем ответ
     const formattedUser = {
       id: user.id,
       name: user.fullName || 'Без имени',
       email: user.email,
-      role: user.role,
+      role,
       isActive: user.emailVerified !== null,
       inCatalog: !!user.psychologist
     };

@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { isDbSyncError } from "@/lib/db-error";
 
 export async function getManagersList() {
@@ -9,15 +9,17 @@ export async function getManagersList() {
   try {
     const users = await prisma.user.findMany({
       where: {
-        role: {
-          in: ['MANAGER', 'ADMIN']
-        }
+        OR: [
+          { isAdmin: true },
+          { isManager: true }
+        ]
       },
       select: {
         id: true,
         email: true,
         fullName: true,
-        role: true,
+        isAdmin: true,
+        isManager: true,
         emailVerified: true,
         psychologist: {
           select: {
@@ -34,9 +36,9 @@ export async function getManagersList() {
       id: u.id,
       name: u.fullName || 'Без имени',
       email: u.email,
-      role: u.role as 'ADMIN' | 'MANAGER',
+      role: u.isAdmin ? 'ADMIN' : 'MANAGER', // для совместимости с таблицей
       isActive: u.emailVerified !== null,
-      inCatalog: !!u.psychologist // true если есть запись в psychologists
+      inCatalog: !!u.psychologist
     }));
   } catch (err) {
     if (isDbSyncError(err)) return [];
@@ -54,7 +56,9 @@ export async function findUserByEmail(email: string) {
         id: true,
         email: true,
         fullName: true,
-        role: true,
+        isAdmin: true,
+        isManager: true,
+        isPsychologist: true,
         emailVerified: true,
         psychologist: {
           select: {
@@ -66,13 +70,22 @@ export async function findUserByEmail(email: string) {
 
     if (!user) return null;
 
+    // Определяем роль для отображения
+    let role: 'ADMIN' | 'MANAGER' | 'USER' = 'USER';
+    if (user.isAdmin) role = 'ADMIN';
+    else if (user.isManager) role = 'MANAGER';
+
     return {
       id: user.id,
       name: user.fullName || 'Без имени',
       email: user.email,
-      role: user.role,
+      role, // для совместимости с компонентом
       isActive: user.emailVerified !== null,
-      inCatalog: !!user.psychologist
+      inCatalog: !!user.psychologist,
+      // Добавляем флаги, если понадобятся
+      isAdmin: user.isAdmin,
+      isManager: user.isManager,
+      isPsychologist: user.isPsychologist
     };
   } catch (err) {
     console.error("Error finding user:", err);
@@ -94,9 +107,14 @@ export async function assignRole(userId: string, role: 'ADMIN' | 'MANAGER') {
       throw new Error("Email не подтверждён");
     }
 
+    // Обновляем соответствующие флаги
+    const updateData = role === 'ADMIN' 
+      ? { isAdmin: true, isManager: false }
+      : { isManager: true, isAdmin: false };
+
     await prisma.user.update({
       where: { id: userId },
-      data: { role }
+      data: updateData
     });
 
     return { success: true };
@@ -113,12 +131,12 @@ export async function removeRole(userId: string) {
     // Проверяем, не последний ли это админ
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true }
+      select: { isAdmin: true }
     });
 
-    if (user?.role === 'ADMIN') {
+    if (user?.isAdmin) {
       const adminCount = await prisma.user.count({
-        where: { role: 'ADMIN' }
+        where: { isAdmin: true }
       });
 
       if (adminCount <= 1) {
@@ -126,9 +144,14 @@ export async function removeRole(userId: string) {
       }
     }
 
+    // Снимаем все админские флаги, но оставляем isPsychologist если был
     await prisma.user.update({
       where: { id: userId },
-      data: { role: 'USER' }
+      data: {
+        isAdmin: false,
+        isManager: false,
+        // isPsychologist не трогаем
+      }
     });
 
     return { success: true };

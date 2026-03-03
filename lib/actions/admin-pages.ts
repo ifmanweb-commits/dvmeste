@@ -5,7 +5,7 @@ import { wrapCssWithClass } from "@/lib/css-modifier";
 import { redirect } from "next/navigation";
 import { promises as fs } from "fs";
 import path from "path";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { isDbSyncError } from "@/lib/db-error";
 import { getSystemPageBySlug, isSystemPageSlug, SYSTEM_PAGE_CONFIG, SYSTEM_PAGE_SLUGS } from "@/lib/system-pages";
 import { getSystemPageDefaultContentBySlug } from "@/lib/system-page-default-content";

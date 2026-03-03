@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ProfileGallery } from "@/components/catalog/ProfileGallery";
 import { Button } from "@/components/ui";
 import { Badge } from "@/components/ui";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { buildMetadata, canonicalUrl, personJsonLd } from "@/lib/seo";
 import { ComplaintModalTrigger } from "@/components/complaint/ComplaintModalTrigger";
 import { normalizeEmbeddedLocalAssetUrls } from "@/lib/html-local-assets";

@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
    
                                                                        
@@ -22,8 +22,6 @@ export async function getPageBySlug(slug: string) {
         template: true,
         content: true,
         customHead: true,
-        showHeader: true,
-        showFooter: true,
         isPublished: true,
       },
     });

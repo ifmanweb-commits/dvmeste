@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { unstable_cache } from "next/cache";
 
 const ARTICLES_PAGE_SIZE = 12;

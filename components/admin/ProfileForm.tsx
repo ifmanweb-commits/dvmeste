@@ -8,7 +8,9 @@ interface ProfileFormProps {
     id: string;
     email: string;
     fullName: string | null;
-    role: string;
+    isAdmin: boolean;
+    isManager: boolean;
+    isPsychologist: boolean;
   };
 }
 
@@ -20,6 +22,8 @@ export function ProfileForm({ admin }: ProfileFormProps) {
     fullName: admin.fullName || "",
     email: admin.email,
   });
+
+  const role = admin.isAdmin ? 'ADMIN' : 'MANAGER'; // для отображения
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({

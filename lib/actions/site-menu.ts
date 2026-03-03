@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { DB_SYNC_MESSAGE, isDbSyncError } from "@/lib/db-error";
 import { normalizeMenuHrefInput, type SiteMenuItem } from "@/lib/site-menu-shared";
 import {

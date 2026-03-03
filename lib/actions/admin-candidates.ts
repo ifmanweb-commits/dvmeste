@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { isDbSyncError } from "@/lib/db-error";
 import type { Prisma } from "@prisma/client";
 

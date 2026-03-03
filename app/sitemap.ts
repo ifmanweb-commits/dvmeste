@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SITE } from "@/config/site";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 const BASE = SITE.baseUrl.replace(/\/$/, "");
 

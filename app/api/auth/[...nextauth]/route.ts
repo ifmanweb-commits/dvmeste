@@ -26,42 +26,39 @@ const handler = NextAuth({
   },
   callbacks: {
     async jwt({ token, user }) {
+      /*console.log('=== JWT CALLBACK ===');
+      console.log('user:', user);
+      console.log('token before:', token);*/
       if (user) {
         token.id = user.id;
-        token.role = user.role;
+        token.isPsychologist = user.isPsychologist;
+        token.isManager = user.isManager;
+        token.isAdmin = user.isAdmin;
+        //console.log('token after:', token);
       }
       return token;
     },
     async session({ session, token }) {
+      /*console.log('=== SESSION CALLBACK ===');
+      console.log('token:', token);*/
+      
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as 'USER' | 'ADMIN' | 'MANAGER';
+        session.user.isPsychologist = token.isPsychologist as boolean;
+        session.user.isManager = token.isManager as boolean;
+        session.user.isAdmin = token.isAdmin as boolean;
+        console.log('session after:', session);
       }
       return session;
     },
     async redirect({ url, baseUrl }) {
-      console.log('=== redirect callback ===');
+      /*console.log('=== redirect callback ===');
       console.log('url:', url);
-      console.log('baseUrl:', baseUrl);
+      console.log('baseUrl:', baseUrl);*/
       
-      // Если есть callbackUrl в URL - используем его
-      if (url.startsWith("/")) {
-        return `${baseUrl}${url}`;
-      }
-      
-      try {
-        const urlObj = new URL(url);
-        if (urlObj.origin === baseUrl) {
-          // Это наш сайт - используем как есть
-          return url;
-        }
-      } catch {
-        // Невалидный URL - игнорируем
-      }
-      
-      // Если нет конкретного callbackUrl, определяем по роли
-      // Но здесь мы не знаем роль, так что оставляем на усмотрение страницы после входа
-      return baseUrl;
+      // Всегда редиректим на /auth/after-login после успешного входа
+      // Эта страница сама определит куда идти дальше по флагам
+      return `${baseUrl}/auth/after-login`;
     },
   },
 });

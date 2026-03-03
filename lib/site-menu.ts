@@ -1,7 +1,7 @@
 import "server-only";
 
 import { randomUUID } from "crypto";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { isDbSyncError } from "@/lib/db-error";
 import { CATALOG_PAGE_SLUG } from "@/lib/catalog-page-config";
 import {

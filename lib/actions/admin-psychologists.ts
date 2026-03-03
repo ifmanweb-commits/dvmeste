@@ -2,7 +2,7 @@
 import { PsychologistStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { isDbSyncError } from "@/lib/db-error";
 import type { Prisma } from "@prisma/client";
 import {

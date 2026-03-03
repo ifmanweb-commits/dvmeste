@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
                                                               
 import { PARADIGM_OPTIONS } from '@/lib/paradigm-options';

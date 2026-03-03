@@ -27,13 +27,17 @@ export default async function AdminProfilePage({
       id: true,
       email: true,
       fullName: true,
-      role: true,
+      isAdmin: true,
+      isManager: true,
+      isPsychologist: true,
     },
   });
 
-  if (!admin || (admin.role !== 'ADMIN' && admin.role !== 'MANAGER')) {
+  if (!admin || (!admin.isAdmin && !admin.isManager)) {
     redirect("/admin");
   }
+  // Определяем роль для отображения
+  const role = admin.isAdmin ? 'ADMIN' : 'MANAGER';
 
   const message = params.saved === "1" 
     ? { type: "success" as const, text: "Профиль обновлен." }
@@ -45,7 +49,7 @@ export default async function AdminProfilePage({
     <div className="space-y-6">
       <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
         <h1 className="font-display text-2xl font-bold text-foreground">
-          {admin.role === 'ADMIN' ? 'Профиль администратора' : 'Профиль менеджера'}
+          {role === 'ADMIN' ? 'Профиль администратора' : 'Профиль менеджера'}
         </h1>
         <p className="mt-2 text-sm text-neutral-dark">
           Управление вашими данными для входа в систему.

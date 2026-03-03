@@ -6,7 +6,7 @@ async function main() {
   console.log('Начинаем инициализацию...');
   
   // Создаем админа, если его нет
-  const adminEmail = 'admin@dvmeste.ru'; // Замени на свой email
+  const adminEmail = 'admin@dvmeste.ru';
   
   const existingAdmin = await prisma.user.findUnique({
     where: { email: adminEmail }
@@ -17,13 +17,23 @@ async function main() {
       data: {
         email: adminEmail,
         fullName: 'Администратор',
-        role: 'ADMIN',
-        emailVerified: new Date(), // Сразу подтвержден
+        isAdmin: true,        // новый флаг
+        isManager: false,
+        isPsychologist: false,
+        emailVerified: new Date(),
       }
     });
     console.log('✅ Администратор создан');
   } else {
-    console.log('⚠️ Администратор уже существует');
+    // Обновляем существующего админа, если нужно
+    await prisma.user.update({
+      where: { email: adminEmail },
+      data: {
+        isAdmin: true,
+        isManager: false,
+      }
+    });
+    console.log('✅ Администратор обновлён');
   }
 
   // Создаем тестового менеджера (опционально)
@@ -38,7 +48,9 @@ async function main() {
       data: {
         email: managerEmail,
         fullName: 'Менеджер',
-        role: 'MANAGER',
+        isAdmin: false,
+        isManager: true,
+        isPsychologist: false,
         emailVerified: new Date(),
       }
     });
@@ -55,4 +67,4 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
-  }); 
+  });

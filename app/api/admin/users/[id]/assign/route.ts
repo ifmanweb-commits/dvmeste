@@ -18,10 +18,10 @@ export async function POST(
     // Проверяем, что текущий пользователь - админ
     const currentUser = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: { role: true }
+      select: { isAdmin: true }
     });
 
-    if (currentUser?.role !== 'ADMIN') {
+    if (!currentUser?.isAdmin) {
       return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
     }
 
@@ -39,7 +39,8 @@ export async function POST(
       where: { id },
       select: { 
         emailVerified: true,
-        role: true 
+        isAdmin: true,
+        isManager: true
       }
     });
 
@@ -59,7 +60,7 @@ export async function POST(
     }
 
     // Проверяем, не назначена ли уже такая роль
-    if (user.role === role) {
+    if ((role === 'ADMIN' && user.isAdmin) || (role === 'MANAGER' && user.isManager)) {
       return NextResponse.json(
         { error: `Пользователь уже имеет роль ${role === 'ADMIN' ? 'администратора' : 'менеджера'}` },
         { status: 400 }
@@ -67,9 +68,13 @@ export async function POST(
     }
 
     // Назначаем роль
+    const updateData = role === 'ADMIN' 
+      ? { isAdmin: true, isManager: false }
+      : { isManager: true, isAdmin: false };
+
     await prisma.user.update({
       where: { id },
-      data: { role }
+      data: updateData
     });
 
     return NextResponse.json({ success: true });

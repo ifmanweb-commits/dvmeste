@@ -17,8 +17,15 @@ export function CustomPrismaAdapter(): Adapter {
         id: user.id,
         email: user.email,
         emailVerified: user.emailVerified,
-        role: user.role,
-      } as AdapterUser & { role: string };
+        // Вместо role возвращаем флаги
+        isPsychologist: user.isPsychologist,
+        isManager: user.isManager,
+        isAdmin: user.isAdmin,
+      } as AdapterUser & { 
+        isPsychologist: boolean; 
+        isManager: boolean; 
+        isAdmin: boolean; 
+      };
     },
     
     async getUserByEmail(email: string) {
@@ -31,15 +38,25 @@ export function CustomPrismaAdapter(): Adapter {
         id: user.id,
         email: user.email,
         emailVerified: user.emailVerified,
-        role: user.role,
-      } as AdapterUser & { role: string };
+        isPsychologist: user.isPsychologist,
+        isManager: user.isManager,
+        isAdmin: user.isAdmin,
+      } as AdapterUser & { 
+        isPsychologist: boolean; 
+        isManager: boolean; 
+        isAdmin: boolean; 
+      };
     },
     
-    async createUser(data: Omit<AdapterUser, "id">) { // временно any, потом уточним тип
+    async createUser(data: any) {
       const user = await prisma.user.create({
         data: {
           email: data.email,
           emailVerified: data.emailVerified,
+          // Новые флаги с значениями по умолчанию
+          isPsychologist: data.isPsychologist || false,
+          isManager: data.isManager || false,
+          isAdmin: data.isAdmin || false,
         },
       });
       
@@ -47,8 +64,14 @@ export function CustomPrismaAdapter(): Adapter {
         id: user.id,
         email: user.email,
         emailVerified: user.emailVerified,
-        role: user.role,
-      } as AdapterUser & { role: string };
+        isPsychologist: user.isPsychologist,
+        isManager: user.isManager,
+        isAdmin: user.isAdmin,
+      } as AdapterUser & { 
+        isPsychologist: boolean; 
+        isManager: boolean; 
+        isAdmin: boolean; 
+      };
     },
   };
 }

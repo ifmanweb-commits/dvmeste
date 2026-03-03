@@ -18,10 +18,10 @@ export async function POST(
     // Проверяем, что текущий пользователь - админ
     const currentUser = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: { id: true, role: true }
+      select: { id: true, isAdmin: true }
     });
 
-    if (currentUser?.role !== 'ADMIN') {
+    if (!currentUser?.isAdmin) {
       return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
     }
 
@@ -36,7 +36,7 @@ export async function POST(
     // Получаем информацию о пользователе
     const user = await prisma.user.findUnique({
       where: { id },
-      select: { role: true }
+      select: { isAdmin: true }
     });
 
     if (!user) {
@@ -47,9 +47,9 @@ export async function POST(
     }
 
     // Если снимаем права с админа, проверяем что это не последний админ
-    if (user.role === 'ADMIN') {
+    if (user.isAdmin) {
       const adminCount = await prisma.user.count({
-        where: { role: 'ADMIN' }
+        where: { isAdmin: true }
       });
 
       if (adminCount <= 1) {
@@ -60,10 +60,14 @@ export async function POST(
       }
     }
 
-    // Снимаем роль (ставим USER)
+    // Снимаем роль (ставим false для обоих флагов)
     await prisma.user.update({
       where: { id },
-      data: { role: 'USER' }
+      data: {
+        isAdmin: false,
+        isManager: false
+        // isPsychologist не трогаем
+      }
     });
 
     return NextResponse.json({ success: true });

@@ -16,22 +16,9 @@ export function MagicLinkForm() {
     setError("");
 
     try {
-      // Сначала проверим роль пользователя на сервере
-      const checkRes = await fetch(`/api/user-role?email=${encodeURIComponent(email)}`);
-      const { role } = await checkRes.json();
-      
-      // Определяем callbackUrl в зависимости от роли
-      let callbackUrl = "/";
-      if (role === 'ADMIN' || role === 'MANAGER') {
-        callbackUrl = "/admin";
-      } else if (role === 'USER') {
-        callbackUrl = "/account";
-      }
-
       const result = await signIn("email", {
         email,
         redirect: false,
-        callbackUrl,
       });
 
       if (result?.error) {

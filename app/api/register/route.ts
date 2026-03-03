@@ -40,7 +40,10 @@ export async function POST(req: Request) {
         data: {
           email,
           fullName,
-          role: 'USER',
+          // Вместо role: 'USER' ставим флаги
+          isPsychologist: true,  // регистрируется как психолог
+          isManager: false,
+          isAdmin: false,
         }
       });
 
