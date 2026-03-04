@@ -80,14 +80,13 @@ export default function ArticleForm({
   const [title, setTitle] = useState(initialTitle);
   const [slug, setSlug] = useState(() => initialSlug || generateRandomArticleSlug());
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(initialSlugLooksManual);
-  const [shortText, setShortText] = useState(initialData.shortText || "");
+  const [shortText, setShortText] = useState(initialData.excerpt  || "");
   const [content, setContent] = useState(initialData.content || "");
   const [tags, setTags] = useState<string[]>(initialData.tags || []);
   const [allTags, setAllTags] = useState<string[]>([]);
-  const [allCatalogs, setAllCatalogs] = useState<string[]>([]);
+  //const [allCatalogs, setAllCatalogs] = useState<string[]>([]);
   const [authorId, setAuthorId] = useState(initialData.authorId || "");
   const [authorName, setAuthorName] = useState(initialData.author?.fullName || "");
-  const [catalogSlug, setCatalogSlug] = useState(initialData.catalogSlug || "");
   const [isPublished, setIsPublished] = useState(!!initialData.publishedAt || !!initialData.isPublished);
   const [authorSearch, setAuthorSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -121,13 +120,13 @@ export default function ArticleForm({
         const normalizedTags = Array.isArray(tagItems) ? tagItems.filter(Boolean) : [];
         setAllTags(normalizedTags);
 
-        if (articlesData?.success && Array.isArray(articlesData.articles)) {
+        /*if (articlesData?.success && Array.isArray(articlesData.articles)) {
           const catalogsSet = new Set<string>();
           articlesData.articles.forEach((article: any) => {
             if (article.catalogSlug) catalogsSet.add(article.catalogSlug);
           });
-          setAllCatalogs(Array.from(catalogsSet));
-        }
+          //setAllCatalogs(Array.from(catalogsSet));
+        }*/
 
                                                                           
         setTags((prev) => prev.filter((tag) => normalizedTags.includes(tag)));
@@ -295,7 +294,7 @@ export default function ArticleForm({
         content: content.trim(),
         tags,
         authorId: authorId || null,
-        catalogSlug: catalogSlug?.trim() || null,
+        //catalogSlug: catalogSlug?.trim() || null,
         isPublished: Boolean(isPublished)
       };
 
@@ -405,7 +404,7 @@ export default function ArticleForm({
               {                      }
               {slug && !slugWarning && (
                   <p className="text-xs text-green-600 mt-1">
-                    ✓ URL: /lib/articles/{slug}
+                    ✓ URL: /articles/{slug}
                   </p>
               )}
             </div>
@@ -450,24 +449,6 @@ export default function ArticleForm({
               onInsertImage={handleInsertFileImage}
           />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Каталог</label>
-            <input
-                type="text"
-                value={catalogSlug}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCatalogSlug(e.target.value)}
-                list="all-catalogs"
-                placeholder="например, 26/сен"
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#5858E2] focus:ring-2 focus:ring-[#5858E2]/20"
-                disabled={isSubmitting}
-            />
-            <datalist id="all-catalogs">
-              {allCatalogs.map(catalog => <option key={catalog} value={catalog} />)}
-            </datalist>
-            <div className="text-xs text-gray-500 mt-1">
-              Существующие каталоги: {allCatalogs.length > 0 ? allCatalogs.join(", ") : "нет"}
-            </div>
-          </div>
 
           <div className="relative" ref={dropdownRef}>
             <label className="block text-sm font-medium text-gray-700 mb-2">

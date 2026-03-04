@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getArticles, getArticleTags } from "@/app/actions/articles";
+import { getArticles, getArticleTags } from "@/lib/articles";
 import { buildMetadata } from "@/lib/seo";
 import { Calendar, Tag, ArrowLeft, ArrowRight, User, Sparkles, ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";

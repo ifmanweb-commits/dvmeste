@@ -3,7 +3,17 @@ import type { Prisma } from "@prisma/client";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 
 const ARTICLE_TAGS_SLUG = "article-tags";
-
+// Единый объект для include автора
+const articleInclude = {
+  user: {
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      slug: true,
+    }
+  }
+} as const;
                                 
 function checkPrismaModel() {
   if (!prisma) {
@@ -58,12 +68,12 @@ async function getAllowedArticleTags(model: ReturnType<typeof checkPrismaModel>)
       await prisma.dataList.upsert({
         where: { slug: ARTICLE_TAGS_SLUG },
         update: {
-          name: "Тэги статей",
+          title: "Тэги статей",
           items: fromArticles,
         },
         create: {
           slug: ARTICLE_TAGS_SLUG,
-          name: "Тэги статей",
+          title: "Тэги статей",
           items: fromArticles,
         },
       });
@@ -89,16 +99,14 @@ export async function getArticleBySlug(slug: string) {
 }
 
                                      
-export async function getArticles({ tag, authorId, catalogSlug, publishedOnly }: {
+export async function getArticles({ tag, authorId, publishedOnly }: {
   tag?: string;
   authorId?: string;
-  catalogSlug?: string;
   publishedOnly?: boolean;
 } = {}) {
   return getArticlesCached(
     tag ?? null,
     authorId ?? null,
-    catalogSlug ?? null,
     Boolean(publishedOnly)
   );
 }
@@ -110,8 +118,14 @@ export async function getArticleById(id: string) {
     
     const article = await model.findUnique({
       where: { id },
-      include: { author: true },
+      include: articleInclude,
     });
+    
+    // Логируем поля
+    if (article) {
+      console.log('Article fields:', Object.keys(article));
+      console.log('excerpt value:', article.excerpt);
+    }
     
     return article ?? null;
   } catch (error) {
@@ -127,7 +141,6 @@ export interface CreateArticleInput {
   content: string;
   tags: string[];
   authorId?: string | null;
-  catalogSlug?: string | null;
   isPublished?: boolean;
 }
 
@@ -177,16 +190,15 @@ export async function createArticle(data: CreateArticleInput) {
     const createData: Prisma.ArticleCreateInput = {
       title: data.title,
       slug: data.slug,
-      shortText: data.shortText ?? null,
+      excerpt: data.shortText ?? null,
       content: data.content,
       tags: safeTags,
-      catalogSlug: data.catalogSlug,
       publishedAt: data.isPublished ? new Date() : null,
     };
     
                                             
     if (data.authorId) {
-      createData.author = {
+      createData.user = {
         connect: { id: data.authorId }
       };
     }
@@ -210,7 +222,6 @@ export async function updateArticle(id: string, data: {
   content?: string;
   tags?: string[];
   authorId?: string | null;
-  catalogSlug?: string | null;
   isPublished?: boolean;
 }) {
   try {
@@ -242,10 +253,9 @@ export async function updateArticle(id: string, data: {
     const updateData: Prisma.ArticleUpdateInput = {
       ...(data.title !== undefined ? { title: data.title } : {}),
       ...(data.slug !== undefined ? { slug: data.slug } : {}),
-      ...(data.shortText !== undefined ? { shortText: data.shortText } : {}),
+      ...(data.shortText !== undefined ? { excerpt: data.shortText } : {}),
       ...(data.content !== undefined ? { content: data.content } : {}),
       ...(normalizedTags !== undefined ? { tags: normalizedTags } : {}),
-      ...(data.catalogSlug !== undefined ? { catalogSlug: data.catalogSlug } : {}),
     };
 
                             
@@ -256,11 +266,11 @@ export async function updateArticle(id: string, data: {
                                                        
     if (data.authorId !== undefined) {
       if (data.authorId && data.authorId !== "") {
-        updateData.author = {
+        updateData.user = {
           connect: { id: data.authorId }
         };
       } else {
-        updateData.author = {
+        updateData.user = {
           disconnect: true
         };
       }
@@ -306,7 +316,7 @@ const getArticleBySlugCached = unstable_cache(
       const model = checkPrismaModel();
       const article = await model.findUnique({
         where: { slug },
-        include: { author: true },
+        include: articleInclude,
       });
       return article ?? null;
     } catch (error) {
@@ -322,21 +332,27 @@ const getArticlesCached = unstable_cache(
   async (
     tag: string | null,
     authorId: string | null,
-    catalogSlug: string | null,
     publishedOnly: boolean
   ) => {
     try {
       const model = checkPrismaModel();
-      return await model.findMany({
+      const articles = await model.findMany({
         where: {
           ...(tag ? { tags: { has: tag } } : {}),
-          ...(authorId ? { authorId } : {}),
-          ...(catalogSlug ? { catalogSlug } : {}),
+          ...(authorId ? { userId: authorId } : {}), // было authorId, стало userId
           ...(publishedOnly ? { publishedAt: { not: null } } : {}),
         },
         orderBy: { publishedAt: "desc" },
-        include: { author: true },
+        include: articleInclude,
       });
+      
+      // Логируем первую статью, чтобы увидеть все поля
+      if (articles.length > 0) {
+        console.log('First article fields:', Object.keys(articles[0]));
+        console.log('Has excerpt?', 'excerpt' in articles[0]);
+      }
+      
+      return articles;
     } catch (error) {
       console.error("[getArticles] Error:", error);
       return [];

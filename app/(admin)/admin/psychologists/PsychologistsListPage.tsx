@@ -6,12 +6,18 @@ import { DB_SYNC_MESSAGE } from "@/lib/db-error";
 
 interface PsychologistItem {
   id: string;
-  slug: string;
-  fullName: string;
+  slug?: string | null;
+  fullName: string; 
   city: string | null;
   isPublished: boolean;
   price: number | null;
-  certificationLevel?: string | null;                                         
+  certificationLevel?: string | null;    
+  // Не хватает полей, которые могут использоваться:
+  email?: string;           // возможно нужен для контактов
+  contactInfo?: string | null; // контактные данные
+  status?: string;          // статус (ACTIVE, REJECTED...)
+  mainParadigm?: string[];  // парадигмы
+  createdAt?: Date;         // дата регистрации
 }
 
 interface Props {
@@ -237,12 +243,6 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
             )}
           </div>
         </div>
-        <Link
-          href="/admin/psychologists/new"
-          className="rounded-lg bg-[#5858E2] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#4848d0] text-center sm:rounded-xl sm:px-4 sm:py-2 sm:text-base whitespace-nowrap"
-        >
-          Добавить психолога
-        </Link>
       </div>
 
       {                     }

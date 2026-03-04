@@ -137,11 +137,11 @@ export async function saveSiteMenuItems(items: SiteMenuItem[]) {
     where: { slug: SITE_MENU_STORAGE_SLUG },
     create: {
       slug: SITE_MENU_STORAGE_SLUG,
-      name: "Site Header Menu",
+      title: "Site Header Menu",
       items: normalized,
     },
     update: {
-      name: "Site Header Menu",
+      title: "Site Header Menu",
       items: normalized,
     },
   });

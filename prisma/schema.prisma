@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,172 +10,92 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model DataList {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  name      String
-  items     Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("data_lists")
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-
-model Psychologist {
-  id                    String    @id @default(cuid())
-  slug                  String    @unique
-  fullName              String
-  gender                String
-  birthDate             DateTime  @db.Date
-  city                  String
-  workFormat            String
-  firstDiplomaDate      DateTime? @db.Date
-  lastCertificationDate DateTime? @db.Date
-  mainParadigm          String[]
-  certificationLevel    Int?
-  shortBio              String    @db.VarChar(400)
-  longBio               String
-  price                 Int
-  contactInfo           String
-  isPublished           Boolean   @default(false)
-  education             Json?     @db.Json
-  images                String[]
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  articles              Article[]
-
-  // === Поля для регистрации и статусов ===
-  email                 String             @unique
-  passwordHash          String?
-  status                PsychologistStatus @default(PENDING)
-  emailVerified         Boolean            @default(false)
-  emailVerifyToken      String?            @unique
-  emailVerifiedAt       DateTime?
-  unsubscribed          Boolean            @default(false)
-
-  // === НОВОЕ: Связь с User из NextAuth ===
-  userId                String?            @unique
-  user                  User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  // === Связи ===
-  // submissions          ArticleSubmission[]
-
-  @@index([isPublished])
-  @@index([price])
-  @@index([city])
-  @@index([certificationLevel])
-  @@index([workFormat])
-  @@index([isPublished, price])
-  @@map("psychologists")
-}
+// === ENUMS ===
 
 enum PsychologistStatus {
-  PENDING      // только зарегистрировался, почта не подтверждена
-  CANDIDATE    // подтвердил почту, может подавать заявку
-  ACTIVE       // в каталоге (isPublished = true)
-  SUSPENDED    // заблокирован временно
-  REJECTED     // не прошёл модерацию
+  PENDING   // Только зарегистрировался, email не подтвержден
+  CANDIDATE // Email подтвержден, может заполнять анкету
+  ACTIVE    // Прошел модерацию, опубликован
+  REJECTED  // Отклонен
+  BLOCKED   // Заблокирован
 }
 
-model Article {
-  id          String        @id @default(cuid())
-  title       String
-  slug        String        @unique
-  content     String
-  tags        String[]
-  authorId    String?
-  shortText   String?   
-  catalogSlug String?
-  publishedAt DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  author      Psychologist? @relation(fields: [authorId], references: [id])
-
-  @@index([slug])
-  @@index([authorId])
-  @@index([publishedAt])
-  @@map("articles")
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REVISION
 }
 
-model Page {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  
-  // Внутреннее название (для админки)
-  adminTitle  String   // заменит текущее title
-  
-  // SEO
-  metaTitle       String?  // если пусто — используется adminTitle
-  metaDescription String?
-  metaKeywords    String?
-  metaRobots      String?  // по умолчанию "index, follow"
-  
-  // Тип шаблона
-  template    String   // 'blank', 'landing', 'text'
-  
-  // === ЕДИНСТВЕННОЕ ПОЛЕ ДЛЯ КОНТЕНТА ===
-  content     String   // @db.Text — всё, что выводится на странице
-  
-  // === ДЛЯ blank/landing (опционально) ===
-  customHead  String?  // код в <head> (шрифты, мета-теги)
-  
-  // Файлы
-  images      String[]
-
-  // Статус
-  isPublished Boolean  @default(false)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("pages")
+enum DocumentType {
+  DIPLOMA
+  CERTIFICATE
+  PHOTO
+  OTHER
 }
 
-model MenuItem {
-  id       String     @id @default(cuid())
-  label    String
-  href     String
-  order    Int        @default(0)
-  parentId String?
-  parent   MenuItem?  @relation("MenuTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children MenuItem[] @relation("MenuTree")
+// === MAIN MODELS ===
 
-  @@map("menu_items")
+model User {
+  // === Базовые поля ===
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  fullName      String?
+  
+  // === Роли (флаги) ===
+  isAdmin       Boolean   @default(false)
+  isManager     Boolean   @default(false)
+  
+  // === Статус и публикация ===
+  status        PsychologistStatus @default(PENDING)
+  isPublished   Boolean   @default(false)
+  slug          String?   @unique
+  
+  // === Личные данные ===
+  gender        String?
+  birthDate     DateTime?
+  city          String?
+  workFormat    String?
+  
+  // === Профессиональные данные ===
+  mainParadigm  String[]
+  certificationLevel Int @default(0) // 0 - нет сертификации, 1,2,3 - уровни
+  firstDiplomaDate DateTime?
+  lastCertificationDate DateTime?
+  
+  // === Био и описание ===
+  shortBio      String?   @db.VarChar(400)
+  longBio       String?
+  
+  // === Коммерция и контакты ===
+  price         Int?
+  contactInfo   String?
+  
+  // === Дополнительные данные ===
+  education     Json?     @db.Json
+  unsubscribed  Boolean   @default(false)
+  
+  // === Системные поля ===
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // === СВЯЗИ ===
+  sessions            Session[]
+  articles            Article[]     @relation("user_articles")
+  moderatedArticles   Article[]     @relation("moderator_articles")
+  documents           Document[]    @relation("user_documents")
+  verifiedDocuments   Document[]    @relation("verifier_documents")
+  moderationRecords   ModerationRecord[] @relation("moderated_user")
+  moderatorRecords    ModerationRecord[] @relation("moderator_records")
+  
+  // === Индексы ===
+  @@index([email])
+  @@index([status])
+  @@index([isPublished])
+  @@index([city])
 }
 
-
-enum AdminRole {
-  ADMIN
-  MANAGER
-}
-
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
-}
+// === СЕССИИ ===
 
 model Session {
   id           String   @id @default(cuid())
@@ -181,23 +104,139 @@ model Session {
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("sessions")
+  @@index([sessionToken])
 }
 
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  emailVerified DateTime?
-  fullName      String?
+// === MAGIC LINK ТОКЕНЫ ===
+
+model VerificationToken {
+  id         String   @id @default(cuid())
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@index([expires])
+}
+
+// === СТАТЬИ ===
+
+model Article {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  excerpt     String?
+  slug        String   @unique
+  image       String?
+  tags        String[]
   
-  // Вместо одного поля role — отдельные флаги
-  isPsychologist Boolean @default(false)  // есть запись в Psychologist
-  isManager      Boolean @default(false)  // доступ в админку (менеджер)
-  isAdmin        Boolean @default(false)  // доступ в админку (админ)
+  // Статусы
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
   
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  accounts      Account[]
-  sessions      Session[]
-  psychologist  Psychologist?
+  // Связи
+  userId      String?
+  user        User?   @relation("user_articles", fields: [userId], references: [id], onDelete: SetNull)
+  
+  // Модерация
+  moderatedAt DateTime?
+  moderatedBy String?
+  moderator   User?    @relation("moderator_articles", fields: [moderatedBy], references: [id])
+  
+  // Системные
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([slug])
+  @@index([isPublished])
+}
+
+// === ДОКУМЕНТЫ ===
+
+model Document {
+  id              String       @id @default(cuid())
+  type            DocumentType
+  url             String
+  filename        String
+  mimeType        String
+  size            Int
+  description     String?
+  
+  // Связи
+  userId          String
+  user            User         @relation("user_documents", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Верификация
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  verifier        User?        @relation("verifier_documents", fields: [verifiedBy], references: [id])
+  
+  // Системные
+  uploadedAt      DateTime     @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([verifiedAt])
+}
+
+// === МОДЕРАЦИЯ АНКЕТ ===
+
+model ModerationRecord {
+  id              String          @id @default(cuid())
+  status          ModerationStatus
+  comment         String?
+  
+  // Связи
+  userId          String
+  user            User            @relation("moderated_user", fields: [userId], references: [id], onDelete: Cascade)
+  
+  moderatorId     String?
+  moderator       User?           @relation("moderator_records", fields: [moderatorId], references: [id])
+  
+  // Системные
+  createdAt       DateTime        @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@index([moderatorId])
+}
+
+// === СТРАНИЦЫ САЙТА ===
+
+model Page {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  adminTitle      String
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String?
+  metaRobots      String?
+  
+  template        String   // 'blank', 'landing', 'text'
+  content         String
+  customHead      String?
+  images          String[]
+  
+  isPublished     Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([slug])
+  @@index([isPublished])
+}
+
+// === СПРАВОЧНЫЕ ДАННЫЕ (для меню и списков) ===
+
+model DataList {
+  id        String   @id @default(cuid())
+  slug      String   @unique // Например: 'site-menu', 'cities', 'therapy-methods'
+  title     String?  // Название для админки
+  items     Json     @db.Json // Сами данные (массив объектов)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
 }

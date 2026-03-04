@@ -1,5 +1,4 @@
 import { getManagersList } from "@/lib/actions/admin-managers";
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { ManagersTable } from "@/components/admin/ManagersTable";
 import { UserSearch } from "@/components/admin/UserSearch";

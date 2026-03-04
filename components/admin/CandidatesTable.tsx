@@ -1,15 +1,17 @@
-"use client";
-
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 interface Candidate {
   id: string;
-  fullName: string;
+  fullName: string | null;
   email: string;
-  price: number;
+  city: string | null;
+  price: number | null;
+  certificationLevel: number;
+  status: string;
+  createdAt: string;
+  workFormat: string | null;
+  mainParadigm: string[];
   contactInfo: string | null;
-  createdAt: Date;
 }
 
 interface CandidatesTableProps {
@@ -18,135 +20,130 @@ interface CandidatesTableProps {
   totalPages: number;
   search: string;
 }
-
-// Форматирование даты для России
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(date));
-}
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
 
 export function CandidatesTable({ 
   candidates, 
   currentPage, 
-  totalPages,
+  totalPages, 
   search 
 }: CandidatesTableProps) {
-  const router = useRouter();
-
-  const goToPage = (page: number) => {
-    const params = new URLSearchParams();
-    if (search) params.set("search", search);
-    params.set("page", page.toString());
-    router.push(`/admin/candidates?${params.toString()}`);
+  
+  const getStatusDisplay = (status: string) => {
+    switch(status) {
+      case 'PENDING':
+        return <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">Ожидает подтверждения</span>;
+      case 'CANDIDATE':
+        return <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">Кандидат</span>;
+      default:
+        return <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">{status}</span>;
+    }
   };
 
-  if (candidates.length === 0) {
-    return (
-      <div className="bg-white rounded-xl border border-neutral-200 p-8 text-center">
-        <p className="text-gray-500">Кандидаты не найдены</p>
-      </div>
-    );
-  }
+  const getDisplayName = (candidate: Candidate) => {
+    if (candidate.fullName) return candidate.fullName;
+    return <span className="text-gray-400 italic">Без имени</span>;
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-neutral-200">
-            <tr>
-              <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
-                Имя
-              </th>
-              <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
-                Email
-              </th>
-              <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
-                Цена
-              </th>
-              <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
-                Контакты
-              </th>
-              <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
-                Дата регистрации
-              </th>
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Имя
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Email
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Статус
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Город
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Цена
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Контакты
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Регистрация
+            </th>
+            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Действия
+            </th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {candidates.map((candidate) => (
+            <tr key={candidate.id} className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                {getDisplayName(candidate)}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {candidate.email}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {getStatusDisplay(candidate.status)}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {candidate.city || '—'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {candidate.price ? `${candidate.price} ₽` : '—'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate" title={candidate.contactInfo || ''}>
+                {candidate.contactInfo || '—'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {formatDate(candidate.createdAt)}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <Link
+                  href={`/admin/psychologists/${candidate.id}/edit`}
+                  className="text-[#5858E2] hover:text-[#4848d0] mr-4"
+                >
+                  Редактировать
+                </Link>
+              </td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100">
-            {candidates.map((candidate) => (
-              <tr 
-                key={candidate.id}
-                className="hover:bg-gray-50 transition-colors"
-              >
-                <td className="px-6 py-4">
-                  <Link 
-                    href={`/admin/psychologists/${candidate.id}/edit`}
-                    className="text-[#5858E2] hover:underline"
-                  >
-                    {candidate.fullName}
-                  </Link>
-                </td>
-                <td className="px-6 py-4">
-                  <a 
-                    href={`mailto:${candidate.email}`}
-                    className="text-[#5858E2] hover:underline"
-                  >
-                    {candidate.email}
-                  </a>
-                </td>
-                <td className="px-6 py-4 font-medium">
-                  {candidate.price > 0 ? `${candidate.price} ₽` : "—"}
-                </td>
-                <td className="px-6 py-4 text-gray-600 max-w-xs truncate">
-                  {candidate.contactInfo || "—"}
-                </td>
-                <td className="px-6 py-4 text-gray-600">
-                  {formatDate(candidate.createdAt)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
 
       {/* Пагинация */}
       {totalPages > 1 && (
-        <div className="flex justify-center gap-2">
-          <button
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="px-4 py-2 border border-neutral-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-100 transition-colors"
-          >
-            ←
-          </button>
-          
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <button
-              key={page}
-              onClick={() => goToPage(page)}
-              className={`
-                px-4 py-2 rounded-lg transition-colors
-                ${currentPage === page 
-                  ? "bg-[#5858E2] text-white" 
-                  : "border border-neutral-200 hover:bg-neutral-100"
-                }
-              `}
-            >
-              {page}
-            </button>
-          ))}
-          
-          <button
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="px-4 py-2 border border-neutral-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-100 transition-colors"
-          >
-            →
-          </button>
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+          <div className="text-sm text-gray-700">
+            Страница {currentPage} из {totalPages}
+          </div>
+          <div className="flex gap-2">
+            {currentPage > 1 && (
+              <Link
+                href={`/admin/candidates?page=${currentPage - 1}${search ? `&search=${search}` : ''}`}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50"
+              >
+                Назад
+              </Link>
+            )}
+            {currentPage < totalPages && (
+              <Link
+                href={`/admin/candidates?page=${currentPage + 1}${search ? `&search=${search}` : ''}`}
+                className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-50"
+              >
+                Вперед
+              </Link>
+            )}
+          </div>
         </div>
       )}
     </div>

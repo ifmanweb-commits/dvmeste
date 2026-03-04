@@ -12,7 +12,7 @@ interface Article {
   id: string;
   title: string;
   slug: string;
-  shortText: string | null;
+  excerpt: string | null;
   content: string;
   tags: string[];
   catalogSlug: string | null;
@@ -140,7 +140,7 @@ export default function AdminArticleEditPage({ params }: { params: Promise<{ id:
               <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => window.open(`/lib/articles/${article.slug}`, "_blank")}
+                  onClick={() => window.open(`/articles/${article.slug}`, "_blank")}
               >
                 Просмотр
               </Button>

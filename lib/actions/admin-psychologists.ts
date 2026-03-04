@@ -1,451 +1,423 @@
-"use server";
-import { PsychologistStatus } from "@prisma/client";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { isDbSyncError } from "@/lib/db-error";
-import type { Prisma } from "@prisma/client";
-import {
-  buildPsychologistPayload,
-  cleanupRemovedLocalImages,
-  normalizeImageArray,
-  removeLocalImages,
-} from "@/lib/actions/psychologist-form";
+'use server'
 
-const CURRENT_YEAR = new Date().getFullYear();
+import { prisma } from '@/lib/prisma'
+import { requireAdmin } from '@/lib/auth/require'
+import { Prisma, PsychologistStatus } from '@prisma/client' // добавь PsychologistStatus
 
-                                         
+// ======================================
+// ПОЛУЧЕНИЕ СПИСКОВ
+// ======================================
+
 export async function getPsychologistsList() {
-  if (!prisma) return [];
+  await requireAdmin()
+  
+  if (!prisma) return []
+  
   try {
-    const list = await prisma.psychologist.findMany({
+    const list = await prisma.user.findMany({
       where: {
         status: {
-          not: "CANDIDATE" // Исключаем кандидатов
+          in: [PsychologistStatus.ACTIVE, PsychologistStatus.REJECTED, PsychologistStatus.BLOCKED]
         }
       },
-      orderBy: { createdAt: "desc" },
       select: {
         id: true,
-        slug: true,
         fullName: true,
-        city: true,
-        isPublished: true,
-        price: true,
-      },
-    });
-    return list;
-  } catch (err) {
-    if (isDbSyncError(err)) return [];
-    throw err;
-  }
-}
-
-                                                   
-export async function getPsychologistById(id: string) {
-  if (!prisma) return null;
-  try {
-    const p = await prisma.psychologist.findUnique({
-      where: { id },
-    });
-    return p;
-  } catch (err) {
-    if (isDbSyncError(err)) return null;
-    throw err;
-  }
-}
-
-                                                   
-export async function getFilteredPsychologists(filters: {
-  priceMin?: string;
-  priceMax?: string;
-  city?: string;
-  gender?: string;
-  paradigms?: string[];
-  levels?: string[];
-  ageMin?: string;
-  ageMax?: string;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-  cursor?: string;
-  limit?: number;
-  isPublished?: boolean;
-}) {
-  if (!prisma) return { items: [], nextCursor: null };
-
-  const {
-    priceMin,
-    priceMax,
-    city,
-    gender,
-    paradigms = [],
-    levels = [],
-    ageMin,
-    ageMax,
-    sortBy = "createdAt",
-    sortOrder = "desc",
-    cursor,
-    limit = 20,
-    isPublished = true,
-  } = filters;
-
-  try {
-    const where: Prisma.PsychologistWhereInput = {
-      isPublished: isPublished ? true : undefined,
-    };
-
-    if (priceMin || priceMax) {
-      where.price = {};
-      if (priceMin) where.price.gte = parseInt(priceMin, 10);
-      if (priceMax) where.price.lte = parseInt(priceMax, 10);
-    }
-
-    if (city) {
-      where.city = {
-        contains: city,
-        mode: "insensitive" as const,
-      };
-    }
-
-    if (gender) {
-      where.gender = gender;
-    }
-
-    if (paradigms.length > 0) {
-      where.mainParadigm = {
-        hasSome: paradigms,
-      };
-    }
-
-    if (levels.length > 0) {
-      where.certificationLevel = {
-        in: levels.map((l) => parseInt(l, 10)),
-      };
-    }
-
-    if (ageMin || ageMax) {
-      where.birthDate = {};
-      if (ageMin) {
-        const minBirthYear = CURRENT_YEAR - parseInt(ageMin, 10);
-        where.birthDate.lte = new Date(`${minBirthYear}-12-31`);
-      }
-      if (ageMax) {
-        const maxBirthYear = CURRENT_YEAR - parseInt(ageMax, 10);
-        where.birthDate.gte = new Date(`${maxBirthYear}-01-01`);
-      }
-    }
-
-    let orderBy: Prisma.PsychologistOrderByWithRelationInput = {};
-    if (sortBy === "age") {
-      orderBy = { birthDate: sortOrder === "asc" ? "desc" : "asc" };
-    } else if (sortBy === "price" || sortBy === "certificationLevel") {
-      orderBy = { [sortBy]: sortOrder };
-    } else {
-      orderBy = { createdAt: "desc" };
-    }
-
-    const cursorCondition = cursor ? { id: cursor } : undefined;
-
-    const items = await prisma.psychologist.findMany({
-      where,
-      orderBy,
-      cursor: cursorCondition,
-      skip: cursor ? 1 : 0,
-      take: limit + 1,
-      select: {
-        id: true,
-        slug: true,
-        fullName: true,
-        gender: true,
-        birthDate: true,
+        email: true,
         city: true,
         price: true,
-        shortBio: true,
-        images: true,
-        mainParadigm: true,
         certificationLevel: true,
-        workFormat: true,
+        status: true,
+        isPublished: true,
+        createdAt: true,
+        slug: true,
+        mainParadigm: true,
+        contactInfo: true,
       },
-    });
-
-    const hasNextPage = items.length > limit;
-    const actualItems = hasNextPage ? items.slice(0, -1) : items;
-    const nextCursor = hasNextPage ? items[items.length - 2]?.id : null;
-
-    const itemsWithAge = actualItems.map((item) => {
-      const age = item.birthDate 
-        ? CURRENT_YEAR - item.birthDate.getFullYear()
-        : null;
-      
-      return {
-        ...item,
-        age,
-      };
-    });
-
-    return {
-      items: itemsWithAge,
-      nextCursor,
-      totalCount: await prisma.psychologist.count({ where }),
-    };
-  } catch (err) {
-    if (isDbSyncError(err)) return { items: [], nextCursor: null, totalCount: 0 };
-    throw err;
-  }
-}
-
-                                                    
-export async function getUniqueCities() {
-  if (!prisma) return [];
-  try {
-    const psychologists = await prisma.psychologist.findMany({
-      where: { isPublished: true },
-      select: { city: true },
-      distinct: ["city"],
-    });
+      orderBy: {
+        createdAt: 'desc',
+      },
+    })
     
-    return psychologists
-      .map(p => p.city)
-      .filter((city): city is string => !!city && city.trim() !== "")
-      .sort();
-  } catch (err) {
-    if (isDbSyncError(err)) return [];
-    return [];
+    return list.map(user => ({
+      id: user.id,
+      slug: user.slug,
+      fullName: user.fullName || 'Без имени', // string | null -> string
+      city: user.city,
+      isPublished: user.isPublished,
+      price: user.price,
+      certificationLevel: user.certificationLevel?.toString(), // number -> string
+    }))
+  } catch (error) {
+    console.error('Error fetching psychologists list:', error)
+    return []
   }
 }
 
-                                      
-export async function getFilterStats(filters: {
-  priceMin?: string;
-  priceMax?: string;
-  city?: string;
-  gender?: string;
-  paradigms?: string[];
-  levels?: string[];
-  ageMin?: string;
-  ageMax?: string;
+export async function getCandidatesList({ 
+  page, 
+  limit, 
+  search = '' 
+}: { 
+  page: number
+  limit: number
+  search?: string
 }) {
-  if (!prisma) return null;
-
-  const {
-    priceMin,
-    priceMax,
-    city,
-    gender,
-    paradigms = [],
-    levels = [],
-    ageMin,
-    ageMax,
-  } = filters;
+  await requireAdmin()
+  
+  if (!prisma) {
+    return {
+      items: [],
+      total: 0,
+      pages: 0,
+      currentPage: page
+    }
+  }
 
   try {
-    const where: Prisma.PsychologistWhereInput = {
-      isPublished: true,
-    };
-
-    if (priceMin || priceMax) {
-      where.price = {};
-      if (priceMin) where.price.gte = parseInt(priceMin, 10);
-      if (priceMax) where.price.lte = parseInt(priceMax, 10);
+    const where: Prisma.UserWhereInput = {
+      status: 'CANDIDATE'
     }
 
-    if (city) {
-      where.city = {
-        contains: city,
-        mode: "insensitive",
-      };
+    if (search) {
+      where.OR = [
+        { 
+          fullName: { 
+            contains: search, 
+            mode: Prisma.QueryMode.insensitive 
+          } 
+        },
+        { 
+          email: { 
+            contains: search, 
+            mode: Prisma.QueryMode.insensitive 
+          } 
+        }
+      ]
     }
 
-    if (gender) {
-      where.gender = gender;
-    }
+    const total = await prisma.user.count({ where })
 
-    if (paradigms.length > 0) {
-      where.mainParadigm = {
-        hasSome: paradigms,
-      };
-    }
-
-    if (levels.length > 0) {
-      where.certificationLevel = {
-        in: levels.map((l) => parseInt(l, 10)),
-      };
-    }
-
-    if (ageMin || ageMax) {
-      where.birthDate = {};
-      if (ageMin) {
-        const minBirthYear = CURRENT_YEAR - parseInt(ageMin, 10);
-        where.birthDate.lte = new Date(`${minBirthYear}-12-31`);
-      }
-      if (ageMax) {
-        const maxBirthYear = CURRENT_YEAR - parseInt(ageMax, 10);
-        where.birthDate.gte = new Date(`${maxBirthYear}-01-01`);
-      }
-    }
-
-    const [minPrice, maxPrice, minAge, maxAge, totalCount] = await Promise.all([
-      prisma.psychologist.aggregate({
-        where,
-        _min: { price: true },
-      }),
-      prisma.psychologist.aggregate({
-        where,
-        _max: { price: true },
-      }),
-      prisma.psychologist.aggregate({
-        where,
-        _max: { birthDate: true },
-      }),
-      prisma.psychologist.aggregate({
-        where,
-        _min: { birthDate: true },
-      }),
-      prisma.psychologist.count({ where }),
-    ]);
-
-    const calculatedMinAge = minAge._max.birthDate 
-      ? CURRENT_YEAR - minAge._max.birthDate.getFullYear()
-      : null;
-    const calculatedMaxAge = maxAge._min.birthDate 
-      ? CURRENT_YEAR - maxAge._min.birthDate.getFullYear()
-      : null;
+    const items = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        city: true,
+        price: true,
+        certificationLevel: true,
+        status: true,
+        createdAt: true,
+        workFormat: true,
+        mainParadigm: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    })
 
     return {
-      priceRange: {
-        min: minPrice._min.price || 0,
-        max: maxPrice._max.price || 0,
-      },
-      ageRange: {
-        min: calculatedMinAge,
-        max: calculatedMaxAge,
-      },
-      total: totalCount,
-    };
-  } catch (err) {
-    if (isDbSyncError(err)) return null;
-    console.error("Filter stats error:", err);
-    return null;
+      items,
+      total,
+      pages: Math.ceil(total / limit),
+      currentPage: page
+    }
+  } catch (error) {
+    console.error('Error fetching candidates:', error)
+    return {
+      items: [],
+      total: 0,
+      pages: 0,
+      currentPage: page
+    }
   }
 }
 
-                        
-export async function createPsychologist(formData: FormData) {
-  if (!prisma) throw new Error("База данных недоступна");
+// ======================================
+// ПОЛУЧЕНИЕ ОДНОГО ПОЛЬЗОВАТЕЛЯ
+// ======================================
+
+export async function getPsychologistById(id: string) {
+  await requireAdmin()
+  
+  if (!prisma) return null
 
   try {
-    const email = formData.get('email') as string;
-    const fullName = formData.get('fullName') as string;
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        documents: {
+          select: {
+            id: true,
+            type: true,
+            filename: true,
+            url: true,
+            verifiedAt: true,
+          },
+        },
+        articles: {
+          where: { isPublished: true },
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            publishedAt: true,
+          },
+        },
+      },
+    })
 
-    // 1. Создаём User
-    const user = await prisma.user.create({
-      data: {
-        email,
-        fullName,
-        isPsychologist: true,
-        isManager: false,
-        isAdmin: false,
-        emailVerified: new Date(), // админ подтвердил
-      }
-    });
-
-    // 2. Создаём Psychologist с userId
-    const payload = await buildPsychologistPayload(formData);
-    await prisma.psychologist.create({ 
-      data: {
-        ...payload.data,
-        userId: user.id,
-      } 
-    });
-
-  } catch (err: unknown) {
-    if (isDbSyncError(err)) {
-      redirect("/admin/psychologists?error=db_sync");
-    }
-    
-    const code = err && typeof (err as { code?: string }).code === "string" 
-      ? (err as { code: string }).code 
-      : "";
-    
-    if (code === "P2002") {
-      redirect("/admin/psychologists/new?error=duplicate_slug");
-    }
-    
-    throw err;
+    return user
+  } catch (error) {
+    console.error('Error fetching user:', error)
+    return null
   }
-
-  revalidatePath("/admin/psychologists");
-  revalidatePath("/psy-list");
-  redirect("/admin/psychologists");
 }
 
-                         
+// ======================================
+// ОБНОВЛЕНИЕ ПОЛЬЗОВАТЕЛЯ
+// ======================================
+
 export async function updatePsychologist(id: string, formData: FormData) {
-  if (!prisma) throw new Error("База данных недоступна");
+  await requireAdmin()
+  
+  if (!prisma) return null
 
   try {
-    const existing = await prisma.psychologist.findUnique({
-      where: { id },
-      select: { images: true },
-    });
-    const payload = await buildPsychologistPayload(formData);
-
-    const certificationLevel = formData.get('certificationLevel');
-    const status = formData.get('status') as string;
-
-    // Проверяем, что статус допустимый
-    const validStatuses: PsychologistStatus[] = ['PENDING', 'CANDIDATE', 'ACTIVE', 'SUSPENDED', 'REJECTED'];
-    const typedStatus = validStatuses.includes(status as PsychologistStatus) 
-      ? (status as PsychologistStatus) 
-      : undefined;
-
-    await prisma.psychologist.update({
-      where: { id },
-      data: {
-        ...payload.data,
-        certificationLevel: certificationLevel 
-          ? parseInt(certificationLevel as string) 
-          : null,
-        ...(typedStatus && { status: typedStatus }), // ← добавляем только если статус валидный
-      },
-    });
-
-    if (existing?.images) {
-      await cleanupRemovedLocalImages(existing.images, normalizeImageArray(payload.data.images));
-    }
-  } catch (err) {
-    if (isDbSyncError(err)) {
-      redirect("/admin/psychologists?error=db_sync");
-    }
+    // Извлекаем данные из FormData
+    const fullName = formData.get('fullName') as string
+    const slug = formData.get('slug') as string
+    const gender = formData.get('gender') as string
+    const birthDate = formData.get('birthDate') as string
+    const city = formData.get('city') as string
+    const workFormat = formData.get('workFormat') as string
+    const firstDiplomaDate = formData.get('firstDiplomaDate') as string
+    const lastCertificationDate = formData.get('lastCertificationDate') as string
+    const certificationLevel = formData.get('certificationLevel') as string
+    const shortBio = formData.get('shortBio') as string
+    const longBio = formData.get('longBio') as string
+    const price = formData.get('price') as string
+    const contactInfo = formData.get('contactInfo') as string
+    const status = formData.get('status') as string
+    const isPublished = formData.get('isPublished') === 'on'
+    const education = formData.get('education') as string
     
-    throw err;
-  }
+    // Парадигмы могут приходить как массив
+    const mainParadigm = formData.getAll('mainParadigm') as string[]
 
-  revalidatePath("/admin/psychologists");
-  revalidatePath("/psy-list");
-  revalidatePath(`/psy-list/${formData.get("slug")}`);
-  redirect("/admin/psychologists");
+    // Подготавливаем данные для обновления
+    const data: any = {
+      fullName: fullName || null,
+      slug: slug || null,
+      gender: gender || null,
+      city: city || null,
+      workFormat: workFormat || null,
+      certificationLevel: certificationLevel ? parseInt(certificationLevel) : 0,
+      shortBio: shortBio || null,
+      longBio: longBio || null,
+      price: price ? parseInt(price) : null,
+      contactInfo: contactInfo || null,
+      status: status || 'CANDIDATE',
+      isPublished,
+      mainParadigm: mainParadigm.length ? mainParadigm : [],
+    }
+
+    // Добавляем даты, если они есть
+    if (birthDate) data.birthDate = new Date(birthDate)
+    if (firstDiplomaDate) data.firstDiplomaDate = new Date(firstDiplomaDate)
+    if (lastCertificationDate) data.lastCertificationDate = new Date(lastCertificationDate)
+    
+    // Добавляем образование, если есть
+    if (education) {
+      try {
+        data.education = JSON.parse(education)
+      } catch (e) {
+        console.error('Error parsing education JSON:', e)
+      }
+    }
+
+    // Обновляем пользователя
+    const updated = await prisma.user.update({
+      where: { id },
+      data,
+    })
+
+    // ======================================
+    // ОБРАБОТКА ФОТОГРАФИЙ (ДОКУМЕНТЫ)
+    // ======================================
+    
+    const photoData = formData.get('photoData')
+    if (photoData) {
+      const { existing, new: newPhotos } = JSON.parse(photoData as string)
+      
+      // Удаляем фото, которых нет в existing
+      const existingIds = existing.map((p: any) => p.id).filter(Boolean)
+      if (existingIds.length > 0) {
+        await prisma.document.deleteMany({
+          where: {
+            userId: id,
+            type: 'PHOTO',
+            NOT: { id: { in: existingIds } }
+          }
+        })
+      } else {
+        // Если нет существующих, удаляем все фото
+        await prisma.document.deleteMany({
+          where: {
+            userId: id,
+            type: 'PHOTO',
+          }
+        })
+      }
+
+      // Добавляем новые фото
+      const files = formData.getAll('photos') as File[]
+      
+      for (let i = 0; i < newPhotos.length; i++) {
+        const file = files[i]
+        if (file) {
+          // TODO: загрузить файл на сервер и получить URL
+          // Пока сохраняем временный URL (нужно будет реализовать загрузку)
+          const url = `/uploads/${Date.now()}-${file.name}`
+          
+          await prisma.document.create({
+            data: {
+              userId: id,
+              type: 'PHOTO',
+              url,
+              filename: file.name,
+              mimeType: file.type,
+              size: file.size,
+            }
+          })
+        }
+      }
+    }
+
+    return updated
+  } catch (error) {
+    console.error('Error updating psychologist:', error)
+    throw error
+  }
 }
 
-                        
-export async function deletePsychologist(id: string) {
-  if (!prisma) redirect("/admin/psychologists?error=db_unavailable");
+// ======================================
+// ОБНОВЛЕНИЕ СТАТУСА
+// ======================================
+
+export async function updatePsychologistStatus(id: string, status: 'CANDIDATE' | 'ACTIVE' | 'REJECTED' | 'BLOCKED') {
+  await requireAdmin()
+  
+  if (!prisma) return null
+
   try {
-    const psychologist = await prisma.psychologist.findUnique({
+    const updated = await prisma.user.update({
       where: { id },
-      select: { images: true },
-    });
-    if (!psychologist) {
-      redirect("/admin/psychologists?error=not_found");
+      data: { 
+        status,
+        ...(status === 'ACTIVE' && { isPublished: true }),
+        ...(status !== 'ACTIVE' && status !== 'CANDIDATE' && { isPublished: false }),
+      },
+    })
+
+    // Создаем запись в модерации
+    if (status !== 'CANDIDATE') {
+      const moderator = await requireAdmin()
+      await prisma.moderationRecord.create({
+        data: {
+          userId: id,
+          status: status === 'ACTIVE' ? 'APPROVED' : 'REVISION',
+          comment: status === 'ACTIVE' 
+            ? 'Заявка одобрена' 
+            : 'Заявка отклонена',
+          moderatorId: moderator.id,
+        },
+      })
     }
 
-    await prisma.psychologist.delete({ where: { id } });
-    await removeLocalImages(psychologist.images ?? []);
-  } catch (err: unknown) {
-    if (isDbSyncError(err)) redirect("/admin/psychologists?error=db_sync");
-    redirect("/admin/psychologists?error=delete_failed");
+    return updated
+  } catch (error) {
+    console.error('Error updating user status:', error)
+    return null
   }
-  revalidatePath("/admin/psychologists");
-  revalidatePath("/psy-list");
-  redirect("/admin/psychologists");
+}
+
+// ======================================
+// ПУБЛИКАЦИЯ/СКРЫТИЕ
+// ======================================
+
+export async function togglePsychologistPublish(id: string, publish: boolean) {
+  await requireAdmin()
+  
+  if (!prisma) return null
+
+  try {
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { 
+        isPublished: publish,
+      },
+    })
+    
+    return updated
+  } catch (error) {
+    console.error('Error toggling user publish:', error)
+    return null
+  }
+}
+
+// ======================================
+// БЛОКИРОВКА/РАЗБЛОКИРОВКА
+// ======================================
+
+export async function togglePsychologistBlock(id: string, block: boolean) {
+  await requireAdmin()
+  
+  if (!prisma) return null
+
+  try {
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { 
+        status: block ? 'BLOCKED' : 'ACTIVE',
+        isPublished: block ? false : true,
+      },
+    })
+
+    return updated
+  } catch (error) {
+    console.error('Error toggling user block:', error)
+    throw error
+  }
+}
+
+// ======================================
+// КОММЕНТАРИИ МОДЕРАЦИИ
+// ======================================
+
+export async function addModerationComment(userId: string, comment: string) {
+  await requireAdmin()
+  
+  if (!prisma) return null
+
+  try {
+    const moderator = await requireAdmin()
+    
+    const record = await prisma.moderationRecord.create({
+      data: {
+        userId,
+        status: 'REVISION',
+        comment,
+        moderatorId: moderator.id,
+      },
+    })
+
+    return record
+  } catch (error) {
+    console.error('Error adding moderation comment:', error)
+    return null
+  }
 }

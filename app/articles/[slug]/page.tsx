@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getArticleBySlug } from "@/app/actions/articles";
+import { getArticleBySlug } from "@/lib/articles";
 import { Button } from "@/components/ui";
 import { Badge } from "@/components/ui";
 import { buildMetadata } from "@/lib/seo";
@@ -28,7 +28,7 @@ export default async function ArticlePage({ params }: PageProps) {
   if (!article) notFound();
   const articleContent = normalizeEmbeddedLocalAssetUrls(article.content || "");
 
-  const author = article.author;
+  const author = article.user;
   const mainImage = author?.images?.[0];
 
   return (

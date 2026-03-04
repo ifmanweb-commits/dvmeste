@@ -1,15 +1,16 @@
                                   
 export interface CatalogFilters {
-  priceMin?: number;
-  priceMax?: number;
-  ageMin?: number;
-  ageMax?: number;
-  paradigms?: string[];
-  certificationLevels?: (1 | 2 | 3)[];
-  city?: string;
-  gender?: string;
-  sortBy?: "price" | "certificationLevel";
-  sortOrder?: "asc" | "desc";
+    priceMin?: number;
+    priceMax?: number;
+    ageMin?: number;
+    ageMax?: number;
+    paradigms?: string[];
+    certificationLevels?: (0 | 1 | 2 | 3)[];
+    city?: string;
+    gender?: string;
+    workFormat?: string;
+    sortBy?: 'price' | 'certificationLevel' | 'createdAt';
+    sortOrder?: 'asc' | 'desc';
 }
 
                                 

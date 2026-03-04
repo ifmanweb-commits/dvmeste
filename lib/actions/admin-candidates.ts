@@ -1,69 +1,96 @@
-"use server";
+'use server'
 
-import { prisma } from "@/lib/prisma";
-import { isDbSyncError } from "@/lib/db-error";
-import type { Prisma } from "@prisma/client";
+import { prisma } from '@/lib/prisma'
+import { requireAdmin } from '@/lib/auth/require'
+import { Prisma, PsychologistStatus } from '@prisma/client'
 
-export async function getCandidatesList(params: {
-  page?: number;
-  limit?: number;
-  search?: string;
+interface GetCandidatesListParams {
+  page: number
+  limit: number
+  search?: string
+}
+
+export async function getCandidatesList({ 
+  page, 
+  limit, 
+  search = '' 
+}: { 
+  page: number
+  limit: number
+  search?: string
 }) {
-  if (!prisma) return { items: [], total: 0, pages: 0, currentPage: 1 };
-
-  // Устанавливаем значения по умолчанию
-  const page = params.page ?? 1; // если undefined, то 1
-  const limit = params.limit ?? 20;
-  const search = params.search ?? "";
+  await requireAdmin()
   
-  const skip = (page - 1) * limit;
+  if (!prisma) {
+    return {
+      items: [],
+      total: 0,
+      pages: 0,
+      currentPage: page
+    }
+  }
 
   try {
-    // Формируем условие поиска
-    const where: Prisma.PsychologistWhereInput = {
-      status: "CANDIDATE",
-    };
+    const where: Prisma.UserWhereInput = {
+      status: {
+        in: [PsychologistStatus.PENDING, PsychologistStatus.CANDIDATE]
+      }
+    }
 
     if (search) {
       where.OR = [
-        { fullName: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-        { contactInfo: { contains: search, mode: "insensitive" } },
-      ];
+        { 
+          fullName: { 
+            contains: search, 
+            mode: Prisma.QueryMode.insensitive 
+          } 
+        },
+        { 
+          email: { 
+            contains: search, 
+            mode: Prisma.QueryMode.insensitive 
+          } 
+        }
+      ]
     }
 
-    // Получаем кандидатов с пагинацией
-    const [items, total] = await Promise.all([
-      prisma.psychologist.findMany({
-        where,
-        select: {
-          id: true,
-          fullName: true,
-          email: true,
-          price: true,
-          contactInfo: true,
-          createdAt: true,
-          status: true,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-        skip,
-        take: limit,
-      }),
-      prisma.psychologist.count({ where }),
-    ]);
+    const total = await prisma.user.count({ where })
+
+    const items = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        city: true,
+        price: true,
+        certificationLevel: true,
+        status: true,
+        createdAt: true,
+        workFormat: true,
+        mainParadigm: true,
+        contactInfo: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    })
 
     return {
       items,
       total,
       pages: Math.ceil(total / limit),
-      currentPage: page,
-    };
-  } catch (err) {
-    if (isDbSyncError(err)) {
-      return { items: [], total: 0, pages: 0, currentPage: 1 };
+      currentPage: page
     }
-    throw err;
+  } catch (error) {
+    console.error('Error fetching candidates:', error)
+    return {
+      items: [],
+      total: 0,
+      pages: 0,
+      currentPage: page
+    }
   }
 }

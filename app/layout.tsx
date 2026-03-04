@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { LayoutShell } from "@/components/layout/LayoutShell";
-import { Providers } from "./providers";
 
 import {
   buildMetadata,
@@ -80,7 +79,6 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${displayFont.variable} font-sans antialiased`}
       >
-        <Providers>
           <a
             href="#main"
             className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-primary focus:px-3 focus:py-2 focus:text-white"
@@ -88,7 +86,6 @@ export default function RootLayout({
             Перейти к содержимому
           </a>
           <LayoutShell>{children}</LayoutShell>
-        </Providers>
       </body>
     </html>
   );
