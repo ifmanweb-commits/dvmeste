@@ -115,7 +115,7 @@ export async function getAllDataLists() {
   try {
     if (!prisma) return [];
     return await prisma.dataList.findMany({
-      orderBy: { name: 'asc' },
+      orderBy: { title: 'asc' },
     });
   } catch (error) {
     console.error('Error fetching data lists:', error);
@@ -133,13 +133,13 @@ export async function getDataList(slug: string) {
 
     if (!dataList) {
                                         
-      const name = getListNameBySlug(slug);
+      const title = getListNameBySlug(slug);
       const defaultItems = getDefaultItemsBySlug(slug);
       
       return await prisma.dataList.create({
         data: {
           slug,
-          name,
+          title,
           items: defaultItems,
         },
       });
@@ -176,7 +176,7 @@ export async function getDataListItems(slug: string): Promise<string[]> {
       await prisma.dataList.create({
         data: {
           slug,
-          name: getListNameBySlug(slug),
+          title: getListNameBySlug(slug),
           items: defaultItems,
         },
       });
@@ -234,7 +234,7 @@ export async function updateDataList(slug: string, items: string[]) {
       update: { items: normalizedItems },
       create: {
         slug,
-        name: getListNameBySlug(slug),
+        title: getListNameBySlug(slug),
         items: normalizedItems,
       },
     });

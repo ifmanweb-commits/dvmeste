@@ -130,26 +130,37 @@ model Article {
   image       String?
   tags        String[]
   
-  // Статусы
+  // Статусы публикации
   isPublished Boolean  @default(false)
   publishedAt DateTime?
   
-  // Связи
-  userId      String?
-  user        User?   @relation("user_articles", fields: [userId], references: [id], onDelete: SetNull)
+  // Статусы модерации
+  moderationStatus   String  @default("PENDING")
+  submittedAt        DateTime?
+  moderatedAt        DateTime?
+  moderatedBy        String?
+  moderatorComment   String?
   
-  // Модерация
-  moderatedAt DateTime?
-  moderatedBy String?
+  // Для зачёта месяцев
+  creditedYear       Int?
+  creditedMonth      Int?
+  
+  // Связи (userId теперь опциональный!)
+  userId      String?  // ← сделали опциональным
+  user        User?    @relation("user_articles", fields: [userId], references: [id], onDelete: SetNull)
+  
   moderator   User?    @relation("moderator_articles", fields: [moderatedBy], references: [id])
   
   // Системные
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Индексы
   @@index([userId])
   @@index([slug])
   @@index([isPublished])
+  @@index([moderationStatus])
+  @@index([creditedYear, creditedMonth])
 }
 
 // === ДОКУМЕНТЫ ===

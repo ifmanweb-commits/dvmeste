@@ -383,3 +383,22 @@ const getAllArticleTagsCached = unstable_cache(
   ["articles-tags"],
   { revalidate: 60, tags: ["articles"] }
 );
+
+export async function getArticleTags() {
+  try {
+    const articles = await prisma.article.findMany({
+      select: { tags: true },
+      where: { isPublished: true }
+    });
+    
+    const tags = new Set<string>();
+    articles.forEach(article => {
+      article.tags?.forEach(tag => tags.add(tag));
+    });
+    
+    return Array.from(tags).sort();
+  } catch (error) {
+    console.error("[getArticleTags] Error:", error);
+    return [];
+  }
+}
