@@ -2,8 +2,18 @@
 
 import { prisma } from "@/lib/prisma";
 import { isDbSyncError } from "@/lib/db-error";
+import { getCurrentUser } from '@/lib/auth/session';
 
-export async function getManagersList() {
+export type Manager = {
+  id: string;
+  name: string;
+  email: string;
+  role: "ADMIN" | "MANAGER";
+  isActive: boolean;
+  inCatalog: boolean;  // теперь проверяем статус психолога
+};
+
+export async function getManagersList(): Promise<Manager[]> {
   if (!prisma) return [];
 
   try {
@@ -21,11 +31,7 @@ export async function getManagersList() {
         isAdmin: true,
         isManager: true,
         emailVerified: true,
-        psychologist: {
-          select: {
-            id: true
-          }
-        }
+        status: true,  // ← проверяем статус психолога вместо psychologist.id
       },
       orderBy: {
         createdAt: 'desc'
@@ -36,9 +42,9 @@ export async function getManagersList() {
       id: u.id,
       name: u.fullName || 'Без имени',
       email: u.email,
-      role: u.isAdmin ? 'ADMIN' : 'MANAGER', // для совместимости с таблицей
+      role: u.isAdmin ? 'ADMIN' : 'MANAGER',
       isActive: u.emailVerified !== null,
-      inCatalog: !!u.psychologist
+      inCatalog: u.status === 'ACTIVE',  // психолог в каталоге, если статус ACTIVE
     }));
   } catch (err) {
     if (isDbSyncError(err)) return [];
@@ -58,13 +64,9 @@ export async function findUserByEmail(email: string) {
         fullName: true,
         isAdmin: true,
         isManager: true,
-        isPsychologist: true,
+        // isPsychologist убрали, его нет в модели
         emailVerified: true,
-        psychologist: {
-          select: {
-            id: true
-          }
-        }
+        status: true,  // ← вместо psychologist
       }
     });
 
@@ -79,13 +81,12 @@ export async function findUserByEmail(email: string) {
       id: user.id,
       name: user.fullName || 'Без имени',
       email: user.email,
-      role, // для совместимости с компонентом
+      role,
       isActive: user.emailVerified !== null,
-      inCatalog: !!user.psychologist,
-      // Добавляем флаги, если понадобятся
+      inCatalog: user.status === 'ACTIVE',  // ← по статусу
       isAdmin: user.isAdmin,
       isManager: user.isManager,
-      isPsychologist: user.isPsychologist
+      // isPsychologist: user.isPsychologist убрали
     };
   } catch (err) {
     console.error("Error finding user:", err);
@@ -93,11 +94,11 @@ export async function findUserByEmail(email: string) {
   }
 }
 
+// assignRole и removeRole остаются без изменений
 export async function assignRole(userId: string, role: 'ADMIN' | 'MANAGER') {
   if (!prisma) throw new Error("Database unavailable");
 
   try {
-    // Проверяем, подтверждён ли email
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { emailVerified: true }
@@ -107,7 +108,6 @@ export async function assignRole(userId: string, role: 'ADMIN' | 'MANAGER') {
       throw new Error("Email не подтверждён");
     }
 
-    // Обновляем соответствующие флаги
     const updateData = role === 'ADMIN' 
       ? { isAdmin: true, isManager: false }
       : { isManager: true, isAdmin: false };
@@ -128,6 +128,18 @@ export async function removeRole(userId: string) {
   if (!prisma) throw new Error("Database unavailable");
 
   try {
+    // Получаем текущего пользователя
+    const currentUser = await getCurrentUser();
+    
+    if (!currentUser) {
+      throw new Error("Не авторизован");
+    }
+
+    // Запрещаем снимать права с самого себя
+    if (currentUser.id === userId) {
+      throw new Error("Нельзя снять права с самого себя");
+    }
+
     // Проверяем, не последний ли это админ
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -144,13 +156,11 @@ export async function removeRole(userId: string) {
       }
     }
 
-    // Снимаем все админские флаги, но оставляем isPsychologist если был
     await prisma.user.update({
       where: { id: userId },
       data: {
         isAdmin: false,
         isManager: false,
-        // isPsychologist не трогаем
       }
     });
 

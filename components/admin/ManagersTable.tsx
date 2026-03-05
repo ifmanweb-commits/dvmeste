@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { removeRole } from '@/lib/actions/admin-managers';
 import { useRouter } from "next/navigation";
 
 type Manager = {
@@ -29,19 +30,11 @@ export function ManagersTable({ managers, currentUserId }: ManagersTableProps) {
     setError("");
 
     try {
-      const res = await fetch(`/api/admin/users/${userId}/remove`, {
-        method: 'POST',
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Ошибка при снятии прав");
-      } else {
-        router.refresh();
-      }
-    } catch (err) {
-      setError("Ошибка при снятии прав");
+      // Используем Server Action вместо fetch
+      await removeRole(userId);
+      router.refresh(); // Обновляем данные
+    } catch (err: any) {
+      setError(err.message || "Ошибка при снятии прав");
     } finally {
       setProcessingId(null);
     }

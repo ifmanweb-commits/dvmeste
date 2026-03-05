@@ -1,49 +1,28 @@
-import { getManagersList } from "@/lib/actions/admin-managers";
-import { redirect } from "next/navigation";
-import { ManagersTable } from "@/components/admin/ManagersTable";
-import { UserSearch } from "@/components/admin/UserSearch";
-
+import { getCurrentUser } from '@/lib/auth/session';
+import { redirect } from 'next/navigation';
+import { getManagersList } from '@/lib/actions/admin-managers';
+import { ManagersTable } from '@/components/admin/ManagersTable';
+import { AddManagerForm } from '@/components/admin/AddManagerForm';
 
 export default async function ManagersPage() {
-  const session = await getServerSession();
+  const user = await getCurrentUser();
   
   // Проверяем, что текущий пользователь - админ
-  if (!session?.user?.email) {
-    redirect("/auth/login");
+  if (!user?.isAdmin) {
+    redirect('/admin');
   }
 
-  // Получаем список менеджеров и админов
   const managers = await getManagersList();
-  // Приводим роль к нужному типу
-  const typedManagers = managers.map(m => ({
-    ...m,
-    role: m.role as 'ADMIN' | 'MANAGER'
-  }));
-  
-  // Находим ID текущего пользователя
-  const currentUser = managers.find(m => m.email === session.user?.email);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Управление командой</h1>
-        <p className="text-sm text-gray-600 mt-1">
-          Добавляйте и удаляйте администраторов и менеджеров проекта
-        </p>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-semibold">Управление менеджерами</h1>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-1">
-          <UserSearch />
-        </div>
-        
-        <div className="md:col-span-2">
-          <ManagersTable 
-            managers={typedManagers} 
-            currentUserId={currentUser?.id}
-          />
-        </div>
-      </div>
+      <AddManagerForm />
+      
+      <ManagersTable managers={managers} />
     </div>
   );
 }
