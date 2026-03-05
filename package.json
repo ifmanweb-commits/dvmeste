@@ -9,7 +9,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:blocks": "npx tsx prisma/seed-blocks.ts"
   },
   "dependencies": {
     "@prisma/client": "^6",

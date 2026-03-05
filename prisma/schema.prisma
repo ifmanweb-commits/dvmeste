@@ -191,6 +191,17 @@ model Document {
   @@index([verifiedAt])
 }
 
+// === БЛОКИ (переиспользуемые части страниц) ===
+
+model Blocks {
+  id          String   @id @default(cuid())
+  slug        String   @unique // 'global-header', 'catalog-footer'
+  name        String           // "Глобальная шапка"
+  content     String?          // HTML код
+  description String?          // подсказка для админа
+  isActive    Boolean  @default(true)
+}
+
 // === МОДЕРАЦИЯ АНКЕТ ===
 
 model ModerationRecord {

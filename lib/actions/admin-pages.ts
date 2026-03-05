@@ -10,6 +10,9 @@ import { isDbSyncError } from "@/lib/db-error";
 import { getSystemPageBySlug, isSystemPageSlug, SYSTEM_PAGE_CONFIG, SYSTEM_PAGE_SLUGS } from "@/lib/system-pages";
 import { getSystemPageDefaultContentBySlug } from "@/lib/system-page-default-content";
 import { CATALOG_PAGE_SLUG, serializeCatalogPageSections } from "@/lib/catalog-page-config";
+import { requireAdmin } from '@/lib/auth/require';
+import { isReservedSlug, makeSlugSafe } from '@/lib/constants/reserved-slugs';
+
 
 function isNextRedirectError(err: unknown): err is { digest: string } {
   return (
@@ -30,6 +33,9 @@ type SystemPageRecord = {
   isPublished: boolean;
   updatedAt: Date;
 };
+export type ActionResult = 
+  | { success: true }
+  | { success: false; error: string };
 
                                                        
 export async function getPagesList() {
@@ -61,6 +67,313 @@ export async function getPagesList() {
     throw err;
   }
 }
+// Получить все страницы (для списка)
+export async function getPages() {
+  await requireAdmin();
+  
+  try {
+    const pages = await prisma.page.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        id: true,
+        slug: true,
+        adminTitle: true,
+        template: true,
+        isPublished: true,
+        metaTitle: true,
+        metaDescription: true,
+        createdAt: true,
+      },
+    });
+    
+    return pages;
+  } catch (error) {
+    console.error('Error fetching pages:', error);
+    return [];
+  }
+}
+
+// Получить страницу по slug
+export async function getPageBySlug(slug: string) {
+  await requireAdmin();
+  
+  try {
+    const page = await prisma.page.findUnique({
+      where: { slug },
+    });
+    
+    return page;
+  } catch (error) {
+    console.error('Error fetching page:', error);
+    return null;
+  }
+}
+
+export async function getPageById(id: string) {
+  await requireAdmin();
+  
+  const page = await prisma.page.findUnique({
+    where: { id },
+  });
+  
+  return page;
+}
+
+// Создать новую страницу
+export async function createPage(formData: any): Promise<ActionResult> {
+  await requireAdmin();
+
+  try {
+    // Проверяем slug на зарезервированность
+    let slug = formData.slug;
+    if (isReservedSlug(slug)) {
+      slug = makeSlugSafe(slug);
+    }
+
+    // Проверяем уникальность slug
+    const existing = await prisma.page.findUnique({
+      where: { slug },
+    });
+
+    if (existing) {
+      return {
+        success: false,
+        error: 'Страница с таким адресом уже существует'
+      };
+    }
+
+    // Создаём страницу в БД (получаем ID)
+    const page = await prisma.page.create({
+      data: {
+        slug,
+        adminTitle: formData.adminTitle,
+        template: formData.template,
+        content: formData.content,
+        metaTitle: formData.metaTitle || null,
+        metaDescription: formData.metaDescription || null,
+        metaKeywords: formData.metaKeywords || null,
+        metaRobots: formData.metaRobots || 'index, follow',
+        customHead: formData.customHead || null,
+        images: [], // пока пусто, заполним после переноса
+        isPublished: formData.isPublished || false,
+      },
+    });
+
+    // Переносим файлы из временной папки в постоянную по ID
+    if (formData.tempKey) {
+      await moveFiles(formData.tempKey, page.id);
+      
+      // Обновляем пути в images
+      const updatedImages = (formData.images || []).map((img: string) => 
+        img.replace(`pages/${formData.tempKey}`, `pages/${page.id}`)
+      );
+      
+      // Обновляем страницу с правильными путями
+      await prisma.page.update({
+        where: { id: page.id },
+        data: { images: updatedImages }
+      });
+    }
+
+    revalidatePath('/admin/pages');
+    revalidatePath('/', 'layout');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error creating page:', error);
+    
+    let errorMessage = 'Ошибка при создании страницы';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    return {
+      success: false,
+      error: errorMessage
+    };
+  }
+}
+
+
+
+// Обновить страницу
+export async function updatePage(slug: string, formData: any): Promise<ActionResult> {
+  await requireAdmin();
+
+  try {
+    // Проверяем, не меняется ли slug на зарезервированный
+    let newSlug = formData.slug;
+    if (isReservedSlug(newSlug)) {
+      newSlug = makeSlugSafe(newSlug);
+    }
+
+    // Если slug меняется, проверяем уникальность
+    if (newSlug !== slug) {
+      const existing = await prisma.page.findUnique({
+        where: { slug: newSlug },
+      });
+
+      if (existing) {
+        return {
+          success: false,
+          error: 'Страница с таким адресом уже существует'
+        };
+      }
+    }
+
+    // Обновляем страницу
+    await prisma.page.update({
+      where: { slug },
+      data: {
+        slug: newSlug,
+        adminTitle: formData.adminTitle,
+        template: formData.template,
+        content: formData.content,
+        metaTitle: formData.metaTitle || null,
+        metaDescription: formData.metaDescription || null,
+        metaKeywords: formData.metaKeywords || null,
+        metaRobots: formData.metaRobots || null,
+        customHead: formData.customHead || null,
+        images: formData.images || [],
+        isPublished: formData.isPublished || false,
+      },
+    });
+
+    // Очищаем кеш
+    revalidatePath('/admin/pages');
+    revalidatePath('/', 'layout');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating page:', error);
+    
+    let errorMessage = 'Ошибка при сохранении';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+    
+    return {
+      success: false,
+      error: errorMessage
+    };
+  }
+}
+
+// Удалить страницу
+export async function deletePage(id: string): Promise<ActionResult> {
+  await requireAdmin();
+
+  try {
+    // Получаем страницу, чтобы узнать slug и файлы
+    const page = await prisma.page.findUnique({
+      where: { id },
+      select: { 
+        slug: true,
+        images: true 
+      }
+    });
+
+    if (!page) {
+      return {
+        success: false,
+        error: 'Страница не найдена'
+      };
+    }
+
+    // Удаляем файлы с диска
+    if (page.images && page.images.length > 0) {
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'pages', page.slug);
+      
+      try {
+        await fs.rm(uploadsDir, { recursive: true, force: true });
+        console.log(`🗑️ Удалена папка с файлами: ${uploadsDir}`);
+      } catch (fileError) {
+        console.error('Ошибка при удалении файлов:', fileError);
+        // Продолжаем удаление страницы даже если файлы не удалились
+      }
+    }
+
+    // Удаляем страницу из БД
+    await prisma.page.delete({
+      where: { id }
+    });
+
+    // Очищаем кеш
+    revalidatePath('/admin/pages');
+    revalidatePath('/', 'layout');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting page:', error);
+    
+    let errorMessage = 'Ошибка при удалении страницы';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    return {
+      success: false,
+      error: errorMessage
+    };
+  }
+}
+async function moveFiles(tempKey: string, finalKey: string) {
+  const tempDir = path.join(process.cwd(), 'public', 'uploads', 'pages', tempKey);
+  const finalDir = path.join(process.cwd(), 'public', 'uploads', 'pages', finalKey);
+  
+  try {
+    // Проверяем, есть ли временная папка
+    await fs.access(tempDir);
+    
+    // Создаём финальную папку
+    await fs.mkdir(finalDir, { recursive: true });
+    
+    // Переносим файлы
+    const files = await fs.readdir(tempDir);
+    for (const file of files) {
+      await fs.rename(
+        path.join(tempDir, file),
+        path.join(finalDir, file)
+      );
+    }
+    
+    // Удаляем временную папку
+    await fs.rm(tempDir, { recursive: true });
+  } catch (error) {
+    // Временной папки нет - ничего не делаем
+    console.log('No temp files to move');
+  }
+}
+/*export async function getPages() {
+  await requireAdmin();
+  
+  try {
+    const pages = await prisma.page.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        id: true,
+        slug: true,
+        adminTitle: true,
+        template: true,
+        isPublished: true,
+        metaTitle: true,
+        metaDescription: true,
+        createdAt: true,
+      },
+    });
+    
+    return pages;
+  } catch (error) {
+    console.error('Error fetching pages:', error);
+    return [];
+  }
+}*/
 
 async function getOrCreateSystemPage(systemSlug: string): Promise<SystemPageRecord | null> {
   const systemPage = getSystemPageBySlug(systemSlug);
@@ -192,7 +505,7 @@ function revalidatePageTargets(slug?: string | null, oldSlug?: string | null) {
   }
 }
 
-                                    
+/*                                    
 export async function getPageById(id: string) {
   if (!prisma) return null;
   try {
@@ -256,9 +569,9 @@ export async function getPageById(id: string) {
     throw err;
   }
 }
-
+*/
                                                            
-export async function createPage(formData: FormData) {
+/*export async function createPage(formData: FormData) {
   if (!prisma) redirect("/admin/pages/new?error=db_unavailable");
 
   const title = (formData.get("title") as string)?.trim();
@@ -311,9 +624,9 @@ export async function createPage(formData: FormData) {
   }
 
   redirect("/admin/pages");
-}
+}*/
 
-                                                                        
+/*                                                          
 export async function updatePage(id: string, formData: FormData) {
   if (!prisma) redirect("/admin/pages?error=db_unavailable");
 
@@ -411,7 +724,7 @@ export async function updatePage(id: string, formData: FormData) {
 
   redirect(`/admin/pages/${id}/edit?saved=1`);
 }
-
+*/
                                                                           
 export async function updateCatalogPageSections(formData: FormData) {
   if (!prisma) redirect("/admin/pages/catalog?error=db_unavailable");
@@ -445,7 +758,7 @@ export async function updateCatalogPageSections(formData: FormData) {
   redirect("/admin/pages/catalog?saved=1");
 }
 
-                                                
+/*                                             
 export async function deletePage(id: string) {
   if (!prisma) redirect("/admin/pages?error=db_unavailable");
   try {
@@ -478,4 +791,4 @@ export async function deletePage(id: string) {
   }
 
   redirect("/admin/pages");
-}
+}*/

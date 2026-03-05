@@ -21,6 +21,7 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
     { href: '/admin/articles', label: 'Статьи', roles: ['admin', 'manager'] },
     { href: '/admin/pages', label: 'Страницы', roles: ['admin'] },
     { href: '/admin/managers', label: 'Менеджеры', roles: ['admin'] },
+    { href: '/admin/blocks', label: 'Блоки', roles: ['admin'] },
     { href: '/admin/menu', label: 'Меню', roles: ['admin'] },
     { href: '/admin/ListDate', label: 'Справочники', roles: ['admin'] },
   ]
