@@ -1,27 +1,29 @@
-import { buildMetadata } from "@/lib/seo";
-import { getPageBySlug } from "@/lib/page-content";
-import PageRenderer from "@/components/PageRenderer";
-import { HomeFallback } from "@/components/pages/HomeFallback";
-
-export async function generateMetadata() {
-  const page = await getPageBySlug("home");
-  
-  return {
-    title: page?.metaTitle || page?.adminTitle || "Давай вместе",
-    description: page?.metaDescription || "Реестр психологов с прозрачной сертификацией",
-  };
-}
+import { prisma } from '@/lib/prisma';
+import { notFound } from 'next/navigation';
 
 export default async function HomePage() {
-  const page = await getPageBySlug("home");
-  
-  // Проверяем, есть ли контент и опубликована ли страница
-  const hasContent = Boolean(page?.content?.trim());
-  const isPublished = page?.isPublished;
+  // Ищем страницу с нужным slug в БД
+  const page = await prisma.page.findUnique({
+    where: { 
+      slug: 'home', // или любой другой slug, который вы используете для главной
+      isPublished: true 
+    }
+  });
 
-  if (page && hasContent && isPublished) {
-    return <PageRenderer page={page} />;
+  if (!page) {
+    // Если страница не найдена - можно показать дефолтную
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold">Добро пожаловать</h1>
+        <p>Содержимое главной страницы не настроено</p>
+      </div>
+    );
   }
 
-  return <HomeFallback />;
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">{page.adminTitle}</h1>
+      <div dangerouslySetInnerHTML={{ __html: page.content || '' }} />
+    </div>
+  );
 }

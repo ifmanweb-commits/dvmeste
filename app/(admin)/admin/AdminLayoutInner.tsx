@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { User } from '@prisma/client'
+import { logout } from '@/lib/auth/logout';
+import { LogOut } from 'lucide-react';
 
 interface AdminLayoutInnerProps {
   children: ReactNode
@@ -70,6 +72,16 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
             })}
           </ul>
         </nav>
+        
+<button
+  onClick={async () => {
+    await logout();
+  }}
+  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-600 cursor-pointer transition-colors w-full text-left mt-auto border-t border-gray-200"
+>
+  <LogOut size={20} />
+  <span>Выход</span>
+</button>
       </aside>
       
       {/* Main content */}

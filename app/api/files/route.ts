@@ -16,8 +16,8 @@ type ManagedFile = {
 const MAX_FILE_SIZE = 50 * 1024 * 1024;        
 const PUBLIC_ROOT = path.join(process.cwd(), "public");
 const SCOPE_ROOTS: Record<FileScope, string> = {
-  articles: path.join(PUBLIC_ROOT, "articles", "files"),
-  pages: path.join(PUBLIC_ROOT, "pages", "files"),
+  articles: path.join(PUBLIC_ROOT, "files", "articles"),
+  pages: path.join(PUBLIC_ROOT, "files", "pages"),
 };
 const BLOCKED_EXTENSIONS = new Set([
   "exe",
@@ -156,7 +156,7 @@ function isBlockedExtension(fileName: string): boolean {
 }
 
 function buildPublicUrl(scope: FileScope, entityKey: string, fileName: string): string {
-  return `/${scope}/files/${entityKey}/${fileName}`;
+  return `/files/${scope}/${entityKey}/${fileName}`;
 }
 
 function ensureInside(parent: string, target: string): boolean {

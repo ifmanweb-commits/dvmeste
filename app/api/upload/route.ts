@@ -5,7 +5,7 @@ import { existsSync } from "fs";
 import path from "path";
 import { randomBytes } from "crypto";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
+const BASE_UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 const PUBLIC_URL_PREFIX = "/uploads";
 const MAX_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -20,9 +20,15 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get("file");
+    const scope = formData.get("scope") as string;      // 'pages' или 'articles'
+    const entityKey = formData.get("entityKey") as string; // ID страницы или temp-123
 
     if (!file || !(file instanceof File)) {
       return NextResponse.json({ error: "Нет файла" }, { status: 400 });
+    }
+
+    if (!scope || !entityKey) {
+      return NextResponse.json({ error: "Не указаны scope или entityKey" }, { status: 400 });
     }
 
     if (file.size > MAX_SIZE) {
@@ -39,7 +45,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await mkdir(UPLOAD_DIR, { recursive: true });
+    // Создаём папку для конкретной сущности
+    const uploadDir = path.join(BASE_UPLOAD_DIR, scope, entityKey);
+    await mkdir(uploadDir, { recursive: true });
 
     const originalExt = path.extname(file.name).toLowerCase();
     const extension = ALLOWED_EXTENSIONS.includes(originalExt) ? originalExt : ".jpg";
@@ -49,12 +57,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Недопустимое имя файла" }, { status: 400 });
     }
 
-    const filePath = path.join(UPLOAD_DIR, uniqueName);
+    const filePath = path.join(uploadDir, uniqueName);
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     await writeFile(filePath, buffer);
 
-    const url = `${PUBLIC_URL_PREFIX}/${uniqueName}`;
+    // Формируем правильный URL с учётом scope и entityKey
+    const url = `${PUBLIC_URL_PREFIX}/${scope}/${entityKey}/${uniqueName}`;
 
     console.log(`📁 Файл сохранен: ${filePath}`);
     console.log(`🔗 Доступен по URL: ${url}`);
@@ -83,16 +92,18 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const filename = searchParams.get("filename");
+    const scope = searchParams.get("scope");
+    const entityKey = searchParams.get("entityKey");
 
-    if (!filename) {
-      return NextResponse.json({ error: "Имя файла не указано" }, { status: 400 });
+    if (!filename || !scope || !entityKey) {
+      return NextResponse.json({ error: "Не все параметры указаны" }, { status: 400 });
     }
 
     if (!isSafeFilename(filename)) {
       return NextResponse.json({ error: "Недопустимое имя файла" }, { status: 400 });
     }
 
-    const filePath = path.join(UPLOAD_DIR, filename);
+    const filePath = path.join(BASE_UPLOAD_DIR, scope, entityKey, filename);
 
     if (!existsSync(filePath)) {
       return NextResponse.json({ error: "Файл не найден" }, { status: 404 });
@@ -117,17 +128,38 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const scope = searchParams.get("scope");
+    const entityKey = searchParams.get("entityKey");
+
+    if (!scope || !entityKey) {
+      return NextResponse.json({ error: "Не указаны scope или entityKey" }, { status: 400 });
+    }
+
     const fs = await import("fs/promises");
-    const files = await fs.readdir(UPLOAD_DIR);
+    const uploadDir = path.join(BASE_UPLOAD_DIR, scope, entityKey);
+    
+    try {
+      await fs.access(uploadDir);
+    } catch {
+      // Папки нет - возвращаем пустой список
+      return NextResponse.json({
+        success: true,
+        files: [],
+        count: 0,
+      });
+    }
+
+    const files = await fs.readdir(uploadDir);
 
     const fileStats = await Promise.all(
       files.map(async (filename) => {
         if (!isSafeFilename(filename)) return null;
 
         try {
-          const filePath = path.join(UPLOAD_DIR, filename);
+          const filePath = path.join(uploadDir, filename);
           const stat = await fs.stat(filePath);
           if (!stat.isFile()) return null;
 
@@ -136,7 +168,7 @@ export async function GET() {
 
           return {
             filename,
-            url: `${PUBLIC_URL_PREFIX}/${filename}`,
+            url: `${PUBLIC_URL_PREFIX}/${scope}/${entityKey}/${filename}`,
             size: stat.size,
             createdAt: stat.birthtime,
             modifiedAt: stat.mtime,
@@ -153,7 +185,6 @@ export async function GET() {
       success: true,
       files: validFiles,
       count: validFiles.length,
-      uploadDir: UPLOAD_DIR,
     });
   } catch (err) {
     console.error("❌ List files error:", err);

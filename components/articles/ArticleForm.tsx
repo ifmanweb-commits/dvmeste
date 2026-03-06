@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ArticleContentEditor, type ArticleContentEditorApi } from "@/components/articles/ArticleContentEditor";
-import EntityFilesField from "@/components/files/EntityFilesField";
+//import EntityFilesField from "@/components/files/EntityFilesField";
+import FileManager from "@/components/files/FileManager";
 import { getDataListItems } from "@/lib/actions/admin-references";
 import { ArticleTagsSelector } from "@/components/articles/ArticleTagsSelector";
 
@@ -94,7 +95,8 @@ export default function ArticleForm({
   const [success, setSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [slugWarning, setSlugWarning] = useState<string | null>(null);
-  const initialManagedFiles = useRef<string[]>(
+  const [articleImages, setArticleImages] = useState<string[]>([]);
+  /*const initialManagedFiles = useRef<string[]>(
     typeof initialData.content === "string"
       ? Array.from(
           new Set(
@@ -104,7 +106,7 @@ export default function ArticleForm({
           )
         )
       : []
-  );
+  );*/
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -295,7 +297,8 @@ export default function ArticleForm({
         tags,
         authorId: authorId || null,
         //catalogSlug: catalogSlug?.trim() || null,
-        isPublished: Boolean(isPublished)
+        isPublished: Boolean(isPublished),
+        images: articleImages,
       };
 
       console.log("🚀 Submitting article data:", formData);
@@ -439,14 +442,12 @@ export default function ArticleForm({
             disabled={isSubmitting}
           />
 
-          <EntityFilesField
+          <FileManager
               scope="articles"
               entityKey={articleFilesEntityKey}
               title="Файлы статьи"
-              hint="Перетащите файлы или выберите их с устройства. Файлы сохраняются в /articles/files/[ключ-статьи]/."
-              initialUrls={initialManagedFiles.current}
-              onInsertLink={handleInsertFileLink}
-              onInsertImage={handleInsertFileImage}
+              hint="Перетащите файлы или выберите их с устройства. Файлы сохраняются в папке статьи."
+              onFilesChange={setArticleImages}
           />
 
 

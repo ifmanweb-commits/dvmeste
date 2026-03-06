@@ -21,6 +21,7 @@ type Props = {
   initialUrls?: string[];
   onInsertLink?: (file: ManagedFile) => void;
   onInsertImage?: (file: ManagedFile) => void;
+  onFilesChange?: (urls: string[]) => void;
 };
 
 const CLIENT_MAX_FILE_SIZE = 50 * 1024 * 1024;        
@@ -85,8 +86,9 @@ export default function EntityFilesField({
   initialUrls = [],
   onInsertLink,
   onInsertImage,
+  onFilesChange,
 }: Props) {
-  const [files, setFiles] = useState<ManagedFile[]>(() => mergeUniqueFiles([], initialUrls.filter(Boolean)));
+  const [files, setFiles] = useState<ManagedFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{
@@ -103,8 +105,15 @@ export default function EntityFilesField({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const dragDepthRef = useRef(0);
   const isMountedRef = useRef(true);
+  const initialLoadDoneRef = useRef(false);
+  
+  // Сохраняем initialUrls в ref при монтировании, чтобы они не менялись
+  const initialUrlsRef = useRef(initialUrls);
 
-  const legacyUrls = useMemo(() => initialUrls.filter(Boolean), [initialUrls]);
+  const listEndpoint = useMemo(
+    () => `/api/files?scope=${encodeURIComponent(scope)}&entityKey=${encodeURIComponent(entityKey)}`,
+    [scope, entityKey]
+  );
 
   useEffect(() => {
     return () => {
@@ -112,41 +121,85 @@ export default function EntityFilesField({
     };
   }, []);
 
-  const listEndpoint = useMemo(
-    () => `/api/files?scope=${encodeURIComponent(scope)}&entityKey=${encodeURIComponent(entityKey)}`,
-    [scope, entityKey]
-  );
-
   const loadFiles = useCallback(async () => {
+    console.log('🔄 loadFiles called');
+    console.log('📌 listEndpoint:', listEndpoint);
+    console.log('📌 initialUrlsRef.current:', initialUrlsRef.current);
+    
     setLoading(true);
     setError(null);
 
+    // Создаём AbortController для отмены запроса
+    const abortController = new AbortController();
+    
     try {
-      const response = await fetch(listEndpoint, { cache: "no-store" });
+      console.log('📡 Fetching files from:', listEndpoint);
+      const response = await fetch(listEndpoint, { 
+        cache: "no-store",
+        signal: abortController.signal 
+      });
+      
+      console.log('📡 Response status:', response.status);
+      
       const data = (await response.json()) as { success?: boolean; files?: ManagedFile[]; error?: string };
+      console.log('📡 Response data:', data);
 
       if (!response.ok || !data.success) {
+        console.log('❌ Response not ok or success false');
         throw new Error(data.error || "Не удалось загрузить файлы");
       }
 
-      const merged = mergeUniqueFiles(data.files || [], legacyUrls);
-      if (isMountedRef.current) {
+      console.log('📦 Files from server:', data.files);
+      console.log('🔄 Merging with initialUrlsRef.current:', initialUrlsRef.current);
+      
+      const merged = mergeUniqueFiles(data.files || [], initialUrlsRef.current);
+      console.log('✅ Merged files:', merged);
+
+      // Проверяем, не был ли компонент размонтирован через AbortSignal
+      if (!abortController.signal.aborted) {
+        console.log('✅ Component still mounted, updating state');
         setFiles(merged);
+        initialLoadDoneRef.current = true;
+        console.log('✅ initialLoadDoneRef set to:', initialLoadDoneRef.current);
+        setLoading(false);
+      } else {
+        console.log('⚠️ Request was aborted, skipping state update');
       }
     } catch (e) {
-      if (isMountedRef.current) {
-        setError(e instanceof Error ? e.message : "Не удалось загрузить файлы");
+      // Игнорируем ошибки от AbortController
+      if (e instanceof Error && e.name === 'AbortError') {
+        console.log('🛑 Request aborted due to unmount');
+        return;
       }
-    } finally {
-      if (isMountedRef.current) {
+      
+      console.log('❌ Error in loadFiles:', e);
+      if (!abortController.signal.aborted) {
+        setError(e instanceof Error ? e.message : "Не удалось загрузить файлы");
         setLoading(false);
       }
     }
-  }, [legacyUrls, listEndpoint]);
+    
+    // Возвращаем функцию отмены для cleanup
+    return () => abortController.abort();
+  }, [listEndpoint]); // Убрали legacyUrls из зависимостей!
 
   useEffect(() => {
-    void loadFiles();
+    const abortPromise = loadFiles();
+    
+    // cleanup функция
+    return () => {
+      abortPromise.then(abort => abort?.());
+    };
   }, [loadFiles]);
+
+  // Вызываем onFilesChange только при реальных изменениях (не при первой загрузке)
+  useEffect(() => {
+    if (onFilesChange && initialLoadDoneRef.current) {
+      const urls = files.map(f => f.url);
+      console.log('📢 EntityFilesField calling onFilesChange with:', urls);
+      onFilesChange(urls);
+    }
+  }, [files, onFilesChange]);
 
   const uploadFiles = useCallback(
     async (selected: File[]) => {
@@ -203,6 +256,8 @@ export default function EntityFilesField({
             if (prev.some((item) => item.url === uploadedFile.url)) return prev;
             return [uploadedFile, ...prev];
           });
+          console.log('✅ Файл загружен, вызываю setFiles');
+          console.log('📊 initialLoadDoneRef.current =', initialLoadDoneRef.current);
         };
 
         const worker = async () => {
@@ -238,7 +293,8 @@ export default function EntityFilesField({
           setNotice(`Загружено файлов: ${queue.length}.`);
         }
 
-        void loadFiles();
+        // НЕ вызываем loadFiles() здесь! Это создавало цикл.
+        // Файлы уже добавлены через setFiles, onFilesChange сработает автоматически
       } catch (e) {
         setError(e instanceof Error ? e.message : "Ошибка загрузки файла");
       } finally {
@@ -248,7 +304,7 @@ export default function EntityFilesField({
         }
       }
     },
-    [scope, entityKey, loadFiles]
+    [scope, entityKey] // Убрали loadFiles из зависимостей!
   );
 
   const onInputFiles = (event: React.ChangeEvent<HTMLInputElement>) => {

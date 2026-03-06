@@ -1,4 +1,4 @@
-import PageForm from '@/components/admin/pages/PageForm';
+import PageFormContainer from '@/components/admin/pages/PageFormContainer';
 import { requireAdmin } from '@/lib/auth/require';
 
 export default async function NewPage() {
@@ -22,7 +22,7 @@ export default async function NewPage() {
   return (
     <div className="max-w-4xl mx-auto py-8">
       <h1 className="text-2xl font-bold mb-6">Новая страница</h1>
-      <PageForm initialData={initialData} />
+      <PageFormContainer />
     </div>
   );
 }

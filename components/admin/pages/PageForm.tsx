@@ -1,51 +1,90 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageSEOForm } from './PageSEOForm';
 import { PageSettingsForm } from './PageSettingsForm';
-import EntityFilesField from '@/components/files/EntityFilesField';
+import FileManager from '@/components/files/FileManager';
 import { RESERVED_SLUGS, makeSlugSafe } from '@/lib/constants/reserved-slugs';
-import { createPage, updatePage } from '@/lib/actions/admin-pages';
 
 interface PageFormProps {
+  // Данные
   initialData?: any;
+  adminTitle: string;
+  slug: string;
+  content: string;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
+  metaRobots: string;
+  template: string;
+  isPublished: boolean;
+  customHead: string;
+  images: string[];
+  pageId: string;
+  tempKey: string | null;
+  
+  // Состояния UI
+  saving: boolean;
+  error: string;
+  success: string;
+  
+  // Обработчики
+  onAdminTitleChange: (value: string) => void;
+  onSlugChange: (value: string) => void;
+  onContentChange: (value: string) => void;
+  onMetaTitleChange: (value: string) => void;
+  onMetaDescriptionChange: (value: string) => void;
+  onMetaKeywordsChange: (value: string) => void;
+  onMetaRobotsChange: (value: string) => void;
+  onTemplateChange: (value: string) => void;
+  onPublishedChange: (value: boolean) => void;
+  onCustomHeadChange: (value: string) => void;
+  onFilesChange: (urls: string[]) => void;
+  onSubmit: (e: React.FormEvent) => Promise<void>;
 }
 
-export default function PageForm({ initialData = {} }: PageFormProps) {
+export default function PageForm({
+  // Данные
+  initialData = {},
+  adminTitle,
+  slug,
+  content,
+  metaTitle,
+  metaDescription,
+  metaKeywords,
+  metaRobots,
+  template,
+  isPublished,
+  customHead,
+  images,
+  pageId,
+  tempKey,
+  
+  // Состояния UI
+  saving,
+  error,
+  success,
+  
+  // Обработчики
+  onAdminTitleChange,
+  onSlugChange,
+  onContentChange,
+  onMetaTitleChange,
+  onMetaDescriptionChange,
+  onMetaKeywordsChange,
+  onMetaRobotsChange,
+  onTemplateChange,
+  onPublishedChange,
+  onCustomHeadChange,
+  onFilesChange,
+  onSubmit
+}: PageFormProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('main');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
-  // Основные поля
-  const [adminTitle, setAdminTitle] = useState(initialData.adminTitle || '');
-  const [slug, setSlug] = useState(initialData.slug || '');
-  const [content, setContent] = useState(initialData.content || '');
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
-  
-  // SEO поля
-  const [metaTitle, setMetaTitle] = useState(initialData.metaTitle || '');
-  const [metaDescription, setMetaDescription] = useState(initialData.metaDescription || '');
-  const [metaKeywords, setMetaKeywords] = useState(initialData.metaKeywords || '');
-  const [metaRobots, setMetaRobots] = useState(initialData.metaRobots || 'index, follow');
-  
-  // Настройки
-  const [template, setTemplate] = useState(initialData.template || 'text');
-  const [isPublished, setIsPublished] = useState(initialData.isPublished || false);
-  const [customHead, setCustomHead] = useState(initialData.customHead || '');
-  
-  // Файлы
-  const [images, setImages] = useState(initialData.images || []);
-  const pageId = initialData.id || `temp-${Date.now()}`;
 
-  // Генерируем ключ для файлов
-  const tempKey = !initialData.id ? `temp-${Date.now()}` : null;
-  const entityKey = initialData.id || tempKey;
-
-  // Генерация slug из названия
-  // Функция транслитерации кириллицы в латиницу
+  // Функция транслитерации (оставляем внутри, так как это чистая логика)
   const transliterate = (text: string): string => {
     const map: Record<string, string> = {
       'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e',
@@ -67,119 +106,53 @@ export default function PageForm({ initialData = {} }: PageFormProps) {
       .split('')
       .map(char => map[char] || char)
       .join('')
-      .replace(/-+/g, '-') // заменяем несколько дефисов подряд на один
-      .replace(/^-|-$/g, '') // убираем дефисы в начале и конце
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
       .toLowerCase();
   };
 
   const generateSlug = (title: string): string => {
     if (!title) return '';
-    
-    // Транслитерируем и приводим к безопасному виду
     return transliterate(title)
-      .replace(/[^a-z0-9-]/g, '') // оставляем только латиницу, цифры и дефисы
-      .replace(/-+/g, '-') // убираем повторяющиеся дефисы
-      .replace(/^-|-$/g, ''); // убираем дефисы в начале и конце
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
   };
 
-
+  // Определяем, был ли slug отредактирован вручную
   useEffect(() => {
-    // Если это существующая страница
     if (initialData.slug && initialData.adminTitle) {
       const generatedFromTitle = generateSlug(initialData.adminTitle);
-      // Если slug отличается от сгенерированного - значит его редактировали вручную
       if (initialData.slug !== generatedFromTitle) {
         setIsSlugManuallyEdited(true);
       }
     }
   }, [initialData]);
 
-
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
-    setAdminTitle(newTitle);
+    onAdminTitleChange(newTitle);
     
-    // Генерируем slug только если:
-    // 1. Не было ручного редактирования
-    // 2. И slug сейчас пустой (для новой страницы)
     if (!isSlugManuallyEdited || !slug) {
       const newSlug = generateSlug(newTitle);
-      setSlug(newSlug);
+      onSlugChange(newSlug);
     }
   };
 
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newSlug = e.target.value
       .toLowerCase()
-      .replace(/[^a-z0-9-]/g, '') // только латиница, цифры, дефис
-      .replace(/-+/g, '-')        // убираем повторяющиеся дефисы
-      .replace(/^-|-$/g, '');     // убираем дефисы в начале и конце
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
     
-    setSlug(newSlug);
+    onSlugChange(newSlug);
     
-    // Если поле не пустое - включаем флаг ручного редактирования
     if (newSlug) {
       setIsSlugManuallyEdited(true);
     } else {
-      // Если стёрли всё - сбрасываем флаг и генерируем заново
       setIsSlugManuallyEdited(false);
-      setSlug(generateSlug(adminTitle));
-    }
-  };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setError('');
-    setSuccess('');
-
-    // Проверяем и корректируем slug ДО отправки
-    let finalSlug = slug;
-    if (RESERVED_SLUGS.includes(slug)) {
-      finalSlug = makeSlugSafe(slug);
-      setSlug(finalSlug); // обновляем UI
-    }
-
-    const formData = {
-      adminTitle,
-      slug: finalSlug,
-      content,
-      metaTitle,
-      metaDescription,
-      metaKeywords,
-      metaRobots,
-      template,
-      isPublished,
-      customHead,
-      images,
-      tempKey,
-    };
-
-    try {
-      let result;
-      
-      if (initialData.id) {
-        // Редактирование
-        result = await updatePage(initialData.slug, formData);
-      } else {
-        // Создание
-        result = await createPage(formData);
-      }
-
-      if (result.success) {
-        setSuccess('Страница сохранена');
-        setTimeout(() => {
-          router.push('/admin/pages');
-        }, 500); // 500ms достаточно
-      } else {
-        // Ошибка от сервера
-        setError(result.error || 'Ошибка при сохранении');
-        setSaving(false);
-      }
-    } catch (err: any) {
-      // Неожиданная ошибка (сеть, и т.д.)
-      setError(err.message || 'Неизвестная ошибка');
-      setSaving(false);
+      onSlugChange(generateSlug(adminTitle));
     }
   };
 
@@ -191,7 +164,7 @@ export default function PageForm({ initialData = {} }: PageFormProps) {
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-6">
       {/* Вкладки */}
       <div className="border-b border-gray-200">
         <nav className="flex gap-4">
@@ -273,10 +246,10 @@ export default function PageForm({ initialData = {} }: PageFormProps) {
           metaRobots={metaRobots}
           onChange={(field, value) => {
             switch (field) {
-              case 'metaTitle': setMetaTitle(value); break;
-              case 'metaDescription': setMetaDescription(value); break;
-              case 'metaKeywords': setMetaKeywords(value); break;
-              case 'metaRobots': setMetaRobots(value); break;
+              case 'metaTitle': onMetaTitleChange(value); break;
+              case 'metaDescription': onMetaDescriptionChange(value); break;
+              case 'metaKeywords': onMetaKeywordsChange(value); break;
+              case 'metaRobots': onMetaRobotsChange(value); break;
             }
           }}
         />
@@ -291,29 +264,19 @@ export default function PageForm({ initialData = {} }: PageFormProps) {
             </label>
             <textarea
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => onContentChange(e.target.value)}
               rows={20}
               className="w-full rounded-lg border border-gray-300 px-4 py-3 font-mono text-sm focus:border-[#5858E2] focus:ring-2 focus:ring-[#5858E2]/20"
               placeholder="HTML-код страницы..."
             />
           </div>
 
-          <EntityFilesField
+          <FileManager
             scope="pages"
             entityKey={`page-${pageId}`}
             title="Файлы страницы"
             hint="Загрузите изображения или другие файлы для этой страницы"
-            initialUrls={images}
-            onInsertLink={(file) => {
-              // Вставка ссылки в текст
-              const link = `<a href="${file.url}">${file.name}</a>`;
-              setContent((prev: string) => prev + '\n' + link);
-            }}
-            onInsertImage={(file) => {
-              // Вставка изображения
-              const img = `<img src="${file.url}" alt="${file.name}" style="max-width:100%;">`;
-              setContent((prev: string) => prev + '\n' + img);
-            }}
+            onFilesChange={onFilesChange}
           />
         </div>
       )}
@@ -324,9 +287,9 @@ export default function PageForm({ initialData = {} }: PageFormProps) {
           template={template}
           isPublished={isPublished}
           customHead={customHead}
-          onTemplateChange={setTemplate}
-          onPublishedChange={setIsPublished}
-          onCustomHeadChange={setCustomHead}
+          onTemplateChange={onTemplateChange}
+          onPublishedChange={onPublishedChange}
+          onCustomHeadChange={onCustomHeadChange}
         />
       )}
 

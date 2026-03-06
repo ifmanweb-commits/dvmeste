@@ -147,6 +147,7 @@ export function PagesTable({ pages }: PagesTableProps) {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex justify-end gap-2">
+                    {page.isPublished && (
                     <Link
                       href={`/${page.slug}`}
                       target="_blank"
@@ -155,6 +156,7 @@ export function PagesTable({ pages }: PagesTableProps) {
                     >
                       <Eye className="w-5 h-5" />
                     </Link>
+                    )}
                     <Link
                       href={`/admin/pages/${page.id}/edit`}
                       className="text-[#5858E2] hover:text-[#4848d0] p-1 rounded hover:bg-[#5858E2]/10"

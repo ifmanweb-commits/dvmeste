@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import PageForm from '@/components/admin/pages/PageForm';
+import PageFormContainer from '@/components/admin/pages/PageFormContainer';
 import { requireAdmin } from '@/lib/auth/require';
 import { getPageById } from '@/lib/actions/admin-pages';
 
@@ -20,7 +20,7 @@ export default async function EditPage({
   return (
     <div className="max-w-4xl mx-auto py-8">
       <h1 className="text-2xl font-bold mb-6">Редактирование: {page.adminTitle}</h1>
-      <PageForm initialData={page} />
+      <PageFormContainer initialData={page} />
     </div>
   );
 }
