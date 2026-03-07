@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import { UPLOAD_POLICIES, UploadScope } from '@/lib/upload-config';
+
 
 export const runtime = "nodejs";
 
-type FileScope = "articles" | "pages";
+type FileScope = "articles" | "pages" | "users-photos" | "users-docs";
 
 type ManagedFile = {
   name: string;
@@ -18,7 +20,10 @@ const PUBLIC_ROOT = path.join(process.cwd(), "public");
 const SCOPE_ROOTS: Record<FileScope, string> = {
   articles: path.join(PUBLIC_ROOT, "files", "articles"),
   pages: path.join(PUBLIC_ROOT, "files", "pages"),
+  "users-photos": path.join(PUBLIC_ROOT, "files", "users"), // Внутри добавим /[id]/photo
+  "users-docs": path.join(PUBLIC_ROOT, "files", "users"),   // Внутри добавим /[id]/doc
 };
+
 const BLOCKED_EXTENSIONS = new Set([
   "exe",
   "bat",
@@ -80,6 +85,13 @@ const CYRILLIC_MAP: Record<string, string> = {
   я: "ya",
 };
 
+const ALLOWED_TYPES = [
+  'image/jpeg', 
+  'image/png', 
+  'image/webp', 
+  'application/pdf' // Добавляем поддержку PDF
+];
+
 function toLatin(input: string): string {
   return input
     .split("")
@@ -107,8 +119,12 @@ function normalizeToken(input: string, fallback = "file"): string {
   return cleaned || fallback;
 }
 
-function parseScope(value: string | null): FileScope | null {
-  if (value === "articles" || value === "pages") return value;
+function parseScope(scope: string | null): FileScope | null {
+  if (!scope) return null;
+  const validScopes: FileScope[] = ["articles", "pages", "users-photos", "users-docs"];
+  if (validScopes.includes(scope as FileScope)) {
+    return scope as FileScope;
+  }
   return null;
 }
 
@@ -156,6 +172,17 @@ function isBlockedExtension(fileName: string): boolean {
 }
 
 function buildPublicUrl(scope: FileScope, entityKey: string, fileName: string): string {
+  // Для фотографий пользователей путь: /files/users/[id]/photo/[file]
+  if (scope === "users-photos") {
+    return `/files/users/${entityKey}/photo/${fileName}`;
+  }
+  
+  // Для документов пользователей путь: /files/users/[id]/doc/[file]
+  if (scope === "users-docs") {
+    return `/files/users/${entityKey}/doc/${fileName}`;
+  }
+
+  // Для остальных (articles, pages) оставляем стандартную логику
   return `/files/${scope}/${entityKey}/${fileName}`;
 }
 
@@ -166,7 +193,14 @@ function ensureInside(parent: string, target: string): boolean {
 }
 
 function getEntityDir(scope: FileScope, entityKey: string): string {
-  return path.join(SCOPE_ROOTS[scope], entityKey);
+  const base = SCOPE_ROOTS[scope];
+  if (scope === "users-photos") {
+    return path.join(base, entityKey, "photo");
+  }
+  if (scope === "users-docs") {
+    return path.join(base, entityKey, "doc");
+  }
+  return path.join(base, entityKey);
 }
 
 async function exists(filePath: string): Promise<boolean> {
@@ -305,7 +339,7 @@ export async function GET(request: NextRequest) {
   try {
     const normalized = normalizeScopeAndKey(request.nextUrl.searchParams);
     if (!normalized) {
-      return NextResponse.json({ success: false, error: "Некорректные scope/entityKey" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "1Некорректные scope/entityKey" }, { status: 400 });
     }
 
     const files = await listEntityFiles(normalized.scope, normalized.entityKey);
@@ -319,40 +353,59 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const scope = parseScope(formData.get("scope")?.toString() ?? null);
+    
+    // 1. Извлекаем и типизируем scope
+    const rawScope = formData.get("scope")?.toString() ?? null;
+    const scope = parseScope(rawScope) as UploadScope | null;
     const entityKey = sanitizeEntityKey(formData.get("entityKey")?.toString() ?? null);
-    const file = formData.get("file");
+    const file = formData.get("file") as File;
 
+    // 2. Базовые проверки наличия данных
     if (!scope || !entityKey) {
       return NextResponse.json({ success: false, error: "Некорректные scope/entityKey" }, { status: 400 });
     }
 
-    if (!(file instanceof File)) {
-      return NextResponse.json({ success: false, error: "Файл не передан" }, { status: 400 });
+    if (!(file instanceof File) || file.size <= 0) {
+      return NextResponse.json({ success: false, error: "Файл не передан или пустой" }, { status: 400 });
     }
 
-    if (file.size <= 0) {
-      return NextResponse.json({ success: false, error: "Файл пустой" }, { status: 400 });
+    // 3. ПРОВЕРКА ПО ПОЛИТИКЕ (UPLOAD_POLICIES)
+    const policy = UPLOAD_POLICIES[scope];
+    if (!policy) {
+      return NextResponse.json({ success: false, error: "Политика для данного scope не найдена" }, { status: 400 });
     }
 
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { success: false, error: `Файл слишком большой. Максимум ${Math.floor(MAX_FILE_SIZE / 1024 / 1024)}MB` },
-        { status: 400 }
-      );
+    // Проверка MIME-типа
+    if (!policy.allowedMimeTypes.includes(file.type)) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `Формат ${file.type} не разрешен для раздела ${scope}` 
+      }, { status: 400 });
     }
 
+    // Проверка размера (конвертируем из МБ в байты)
+    const maxSizeBytes = policy.maxSizeMb * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `Файл слишком большой. Для ${scope} максимум ${policy.maxSizeMb}MB` 
+      }, { status: 400 });
+    }
+
+    // 4. Логика сохранения (твой стандартный процесс)
     const dir = getEntityDir(scope, entityKey);
     await fs.mkdir(dir, { recursive: true });
 
     const fallbackExt = extensionFromMime(file.type);
     const desiredName = sanitizeFileName(file.name, fallbackExt);
+    
     if (isBlockedExtension(desiredName)) {
       return NextResponse.json({ success: false, error: "Тип файла запрещен для загрузки" }, { status: 400 });
     }
 
     const uniqueName = await getUniqueFileName(dir, desiredName);
     const filePath = path.join(dir, uniqueName);
+    
     if (!ensureInside(dir, filePath)) {
       return NextResponse.json({ success: false, error: "Некорректный путь файла" }, { status: 400 });
     }
@@ -385,7 +438,7 @@ export async function DELETE(request: NextRequest) {
 
     const normalized = normalizeScopeAndKey(request.nextUrl.searchParams);
     if (!normalized) {
-      return NextResponse.json({ success: false, error: "Некорректные scope/entityKey" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "3Некорректные scope/entityKey" }, { status: 400 });
     }
 
     const rawName = request.nextUrl.searchParams.get("name");
@@ -442,7 +495,7 @@ export async function PATCH(request: NextRequest) {
     const requestedName = (body.newName || "").trim();
 
     if (!scope || !entityKey || !currentName || !requestedName) {
-      return NextResponse.json({ success: false, error: "Некорректные данные для переименования" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "4Некорректные данные для переименования" }, { status: 400 });
     }
 
     const dir = getEntityDir(scope, entityKey);

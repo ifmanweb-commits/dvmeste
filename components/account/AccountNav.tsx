@@ -143,12 +143,13 @@ export default function AccountNav({ user }: AccountNavProps) {
             )
           })}
         </ul>
+        {/* Кнопка выхода */}
+        <div className="p-4 border-t border-gray-200">
+          <LogoutButton className="cursor-pointer"/>
+        </div>
       </nav>
       
-      {/* Кнопка выхода */}
-      <div className="p-4 border-t border-gray-200">
-<LogoutButton />
-      </div>
+      
     </aside>
   )
 }

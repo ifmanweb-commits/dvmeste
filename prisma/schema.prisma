@@ -13,11 +13,11 @@ datasource db {
 // === ENUMS ===
 
 enum PsychologistStatus {
-  PENDING   // Только зарегистрировался, email не подтвержден
+  PENDING // Только зарегистрировался, email не подтвержден
   CANDIDATE // Email подтвержден, может заполнять анкету
-  ACTIVE    // Прошел модерацию, опубликован
-  REJECTED  // Отклонен
-  BLOCKED   // Заблокирован
+  ACTIVE // Прошел модерацию, опубликован
+  REJECTED // Отклонен
+  BLOCKED // Заблокирован
 }
 
 enum ModerationStatus {
@@ -26,69 +26,57 @@ enum ModerationStatus {
   REVISION
 }
 
-enum DocumentType {
-  DIPLOMA
-  CERTIFICATE
-  PHOTO
-  OTHER
-}
-
 // === MAIN MODELS ===
 
 model User {
-  // === Базовые поля ===
   id            String    @id @default(cuid())
   email         String    @unique
   emailVerified DateTime?
   fullName      String?
-  
-  // === Роли (флаги) ===
-  isAdmin       Boolean   @default(false)
-  isManager     Boolean   @default(false)
-  
-  // === Статус и публикация ===
-  status        PsychologistStatus @default(PENDING)
-  isPublished   Boolean   @default(false)
-  slug          String?   @unique
-  
-  // === Личные данные ===
-  gender        String?
-  birthDate     DateTime?
-  city          String?
-  workFormat    String?
-  
-  // === Профессиональные данные ===
-  mainParadigm  String[]
-  certificationLevel Int @default(0) // 0 - нет сертификации, 1,2,3 - уровни
-  firstDiplomaDate DateTime?
+  avatarUrl     String? // Прямая ссылка на главное фото для быстрого доступа
+
+  isAdmin   Boolean @default(false)
+  isManager Boolean @default(false)
+
+  status      PsychologistStatus @default(PENDING)
+  isPublished Boolean            @default(false)
+  slug        String?            @unique
+
+  gender     String?
+  birthDate  DateTime?
+  city       String?
+  workFormat String?
+
+  mainParadigm          String[]
+  certificationLevel    Int       @default(0)
+  firstDiplomaDate      DateTime?
   lastCertificationDate DateTime?
-  
-  // === Био и описание ===
-  shortBio      String?   @db.VarChar(400)
-  longBio       String?
-  
-  // === Коммерция и контакты ===
-  price         Int?
-  contactInfo   String?
-  
-  // === Дополнительные данные ===
-  education     Json?     @db.Json
-  unsubscribed  Boolean   @default(false)
-  
-  // === Системные поля ===
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  // === СВЯЗИ ===
-  sessions            Session[]
-  articles            Article[]     @relation("user_articles")
-  moderatedArticles   Article[]     @relation("moderator_articles")
-  documents           Document[]    @relation("user_documents")
-  verifiedDocuments   Document[]    @relation("verifier_documents")
-  moderationRecords   ModerationRecord[] @relation("moderated_user")
-  moderatorRecords    ModerationRecord[] @relation("moderator_records")
-  
-  // === Индексы ===
+
+  shortBio String? @db.VarChar(400)
+  longBio  String? @db.Text
+
+  price       Int?
+  contactInfo String? @db.VarChar(150)
+
+  // Сохраняем для обратной совместимости
+  education    Json?   @db.Json
+  unsubscribed Boolean @default(false)
+
+  // Система черновиков
+  draftData             Json?   @default("{}") @db.Json
+  hasUnpublishedChanges Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions          Session[]
+  articles          Article[]          @relation("user_articles")
+  moderatedArticles Article[]          @relation("moderator_articles")
+  documents         Document[]         @relation("user_documents")
+  verifiedDocuments Document[]         @relation("verifier_documents")
+  moderationRecords ModerationRecord[] @relation("moderated_user")
+  moderatorRecords  ModerationRecord[] @relation("moderator_records")
+
   @@index([email])
   @@index([status])
   @@index([isPublished])
@@ -122,38 +110,38 @@ model VerificationToken {
 // === СТАТЬИ ===
 
 model Article {
-  id          String   @id @default(cuid())
-  title       String
-  content     String
-  excerpt     String?
-  slug        String   @unique
-  image       String?
-  tags        String[]
-  
+  id      String   @id @default(cuid())
+  title   String
+  content String
+  excerpt String?
+  slug    String   @unique
+  image   String?
+  tags    String[]
+
   // Статусы публикации
-  isPublished Boolean  @default(false)
+  isPublished Boolean   @default(false)
   publishedAt DateTime?
-  
+
   // Статусы модерации
-  moderationStatus   String  @default("PENDING")
-  submittedAt        DateTime?
-  moderatedAt        DateTime?
-  moderatedBy        String?
-  moderatorComment   String?
-  
+  moderationStatus String    @default("PENDING")
+  submittedAt      DateTime?
+  moderatedAt      DateTime?
+  moderatedBy      String?
+  moderatorComment String?
+
   // Для зачёта месяцев
-  creditedYear       Int?
-  creditedMonth      Int?
-  
+  creditedYear  Int?
+  creditedMonth Int?
+
   // Связи (userId теперь опциональный!)
-  userId      String?  // ← сделали опциональным
-  user        User?    @relation("user_articles", fields: [userId], references: [id], onDelete: SetNull)
-  
-  moderator   User?    @relation("moderator_articles", fields: [moderatedBy], references: [id])
-  
+  userId String?
+  user   User?   @relation("user_articles", fields: [userId], references: [id], onDelete: SetNull)
+
+  moderator User? @relation("moderator_articles", fields: [moderatedBy], references: [id])
+
   // Системные
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Индексы
   @@index([userId])
@@ -166,58 +154,70 @@ model Article {
 // === ДОКУМЕНТЫ ===
 
 model Document {
-  id              String       @id @default(cuid())
-  type            DocumentType
-  url             String
-  filename        String
-  mimeType        String
-  size            Int
-  description     String?
-  
-  // Связи
-  userId          String
-  user            User         @relation("user_documents", fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Верификация
-  verifiedAt      DateTime?
-  verifiedBy      String?
-  verifier        User?        @relation("verifier_documents", fields: [verifiedBy], references: [id])
-  
-  // Системные
-  uploadedAt      DateTime     @default(now())
+  id          String       @id @default(cuid())
+  type        DocumentType
+  url         String
+  filename    String
+  mimeType    String
+  size        Int
+  description String?
+
+  // Мета-данные документа
+  year         Int?
+  organization String?
+  programName  String?
+
+  userId String
+  user   User   @relation("user_documents", fields: [userId], references: [id], onDelete: Cascade)
+
+  verifiedAt DateTime?
+  verifiedBy String?
+  verifier   User?     @relation("verifier_documents", fields: [verifiedBy], references: [id])
+
+  uploadedAt DateTime @default(now())
 
   @@index([userId])
   @@index([type])
   @@index([verifiedAt])
 }
 
+enum DocumentType {
+  ACADEMIC_EDUCATION // Высшее + Степени (Full Width)
+  PROFESSIONAL_TRAINING // Повышение квалификации (50% Width)
+  COURSE // Курсы, вебинары (33% Width)
+  SUPPORTING_DOC // Справки, лицензии (25% Width / List)
+  LINK // Внешние ресурсы (супервизия, видео)
+  PHOTO // Системный тип для фото профиля
+  OTHER // Резерв
+}
+
 // === БЛОКИ (переиспользуемые части страниц) ===
 
 model Blocks {
-  id          String   @id @default(cuid())
-  slug        String   @unique // 'global-header', 'catalog-footer'
-  name        String           // "Глобальная шапка"
-  content     String?          // HTML код
-  description String?          // подсказка для админа
-  isActive    Boolean  @default(true)
+  id          String  @id @default(cuid())
+  slug        String  @unique // 'global-header', 'catalog-footer'
+  name        String // "Глобальная шапка"
+  content     String? // HTML код
+  description String? // подсказка для админа
+  isActive    Boolean @default(true)
 }
 
 // === МОДЕРАЦИЯ АНКЕТ ===
 
 model ModerationRecord {
-  id              String          @id @default(cuid())
-  status          ModerationStatus
-  comment         String?
-  
+  id      String           @id @default(cuid())
+  status  ModerationStatus
+  comment String?
+
   // Связи
-  userId          String
-  user            User            @relation("moderated_user", fields: [userId], references: [id], onDelete: Cascade)
-  
-  moderatorId     String?
-  moderator       User?           @relation("moderator_records", fields: [moderatorId], references: [id])
-  
+  userId String
+  user   User   @relation("moderated_user", fields: [userId], references: [id], onDelete: Cascade)
+
+  moderatorId String?
+  moderator   User?   @relation("moderator_records", fields: [moderatorId], references: [id])
+
   // Системные
-  createdAt       DateTime        @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([status])
@@ -227,23 +227,23 @@ model ModerationRecord {
 // === СТРАНИЦЫ САЙТА ===
 
 model Page {
-  id              String   @id @default(cuid())
-  slug            String   @unique
+  id              String  @id @default(cuid())
+  slug            String  @unique
   adminTitle      String
   metaTitle       String?
   metaDescription String?
   metaKeywords    String?
   metaRobots      String?
-  
-  template        String   // 'blank', 'landing', 'text'
-  content         String
-  customHead      String?
-  images          String[]
-  
-  isPublished     Boolean  @default(false)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+
+  template   String // 'blank', 'landing', 'text'
+  content    String
+  customHead String?
+  images     String[]
+
+  isPublished Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([slug])
   @@index([isPublished])
@@ -252,11 +252,11 @@ model Page {
 // === СПРАВОЧНЫЕ ДАННЫЕ (для меню и списков) ===
 
 model DataList {
-  id        String   @id @default(cuid())
-  slug      String   @unique // Например: 'site-menu', 'cities', 'therapy-methods'
-  title     String?  // Название для админки
-  items     Json     @db.Json // Сами данные (массив объектов)
-  
+  id    String  @id @default(cuid())
+  slug  String  @unique // Например: 'site-menu', 'cities', 'therapy-methods'
+  title String? // Название для админки
+  items Json    @db.Json // Сами данные (массив объектов)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
