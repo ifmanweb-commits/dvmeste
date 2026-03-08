@@ -3,12 +3,33 @@
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth/require'
 import { Prisma, PsychologistStatus } from '@prisma/client'
+import { revalidatePath } from 'next/cache';
 
 interface GetCandidatesListParams {
   page: number
   limit: number
   search?: string
 }
+export async function activateCandidate(id: string) {
+  await requireAdmin()
+  
+  try {
+    await prisma.user.update({
+      where: { id },
+      data: { 
+        status: PsychologistStatus.ACTIVE,
+        // Опционально: можно сразу проставить дату публикации или другие поля
+      }
+    })
+    
+    revalidatePath('/admin/candidates')
+    return { success: true }
+  } catch (error) {
+    console.error('ActivateCandidateError:', error)
+    return { success: false, error: "Не удалось активировать кандидата" }
+  }
+}
+
 
 export async function getCandidatesList({ 
   page, 
@@ -63,6 +84,7 @@ export async function getCandidatesList({
         fullName: true,
         email: true,
         city: true,
+        gender: true,
         price: true,
         certificationLevel: true,
         status: true,

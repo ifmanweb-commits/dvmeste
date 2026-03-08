@@ -1,4 +1,10 @@
+"use client"
+import { useState } from "react";
+import { activateCandidate } from "@/lib/actions/admin-candidates";
+import { CheckCircle, X, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { PsychologistStatus } from "@prisma/client";
 
 interface Candidate {
   id: string;
@@ -6,9 +12,10 @@ interface Candidate {
   email: string;
   city: string | null;
   price: number | null;
+  gender: string | null;
   certificationLevel: number;
-  status: string;
-  createdAt: string;
+  status: PsychologistStatus; // Изменено со string на Enum
+  createdAt: Date;            // Изменено со string на Date
   workFormat: string | null;
   mainParadigm: string[];
   contactInfo: string | null;
@@ -20,7 +27,7 @@ interface CandidatesTableProps {
   totalPages: number;
   search: string;
 }
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: Date) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('ru-RU', {
     day: '2-digit',
@@ -29,12 +36,15 @@ const formatDate = (dateString: string) => {
   });
 };
 
-export function CandidatesTable({ 
-  candidates, 
-  currentPage, 
-  totalPages, 
-  search 
-}: CandidatesTableProps) {
+export function CandidatesTable({ candidates, currentPage, totalPages, search }: CandidatesTableProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState<{id: string, name: string} | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const openConfirm = (id: string, name: string | null) => {
+    setSelectedCandidate({ id, name: name || 'Без имени' });
+    setIsModalOpen(true);
+  };
   
   const getStatusDisplay = (status: string) => {
     switch(status) {
@@ -47,78 +57,93 @@ export function CandidatesTable({
     }
   };
 
-  const getDisplayName = (candidate: Candidate) => {
-    if (candidate.fullName) return candidate.fullName;
-    return <span className="text-gray-400 italic">Без имени</span>;
-  };
 
-  return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <table className="min-w-full divide-y divide-gray-200">
+  const handleActivate = async () => {
+    if (!selectedCandidate) return;
+    setLoading(true);
+    const res = await activateCandidate(selectedCandidate.id);
+    setLoading(false);
+    
+    if (res.success) {
+      setIsModalOpen(false);
+      setSelectedCandidate(null);
+    } else {
+      alert(res.error);
+    }
+  };
+return (
+    <div className="relative">
+      <table className="min-w-full divide-y divide-gray-200 bg-white rounded-lg overflow-hidden border">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Имя
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Email
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Статус
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Город
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Цена
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Контакты
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Регистрация
-            </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Действия
-            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Кандидат</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Город</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Статус</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Пол</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Цена</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Контакты</th>
+            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Действия</th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="divide-y divide-gray-200">
           {candidates.map((candidate) => (
-            <tr key={candidate.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                {getDisplayName(candidate)}
+            <tr key={candidate.id} className="hover:bg-gray-50 transition-colors">
+              <td className="px-6 py-4">
+                <div className="text-sm font-medium text-gray-900">{candidate.fullName || 'Имя не указано'}</div>
+                <div className="text-xs text-gray-500">{candidate.email}</div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {candidate.email}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {getStatusDisplay(candidate.status)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {candidate.city || '—'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {candidate.price ? `${candidate.price} ₽` : '—'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate" title={candidate.contactInfo || ''}>
-                {candidate.contactInfo || '—'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {formatDate(candidate.createdAt)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <Link
-                  href={`/admin/psychologists/${candidate.id}/edit`}
-                  className="text-[#5858E2] hover:text-[#4848d0] mr-4"
+              <td className="px-6 py-4 text-sm text-gray-500">{candidate.city || '—'}</td>
+              <td className="px-6 py-4">{getStatusDisplay(candidate.status)}</td>
+              <td className="px-6 py-4">{candidate.gender || '—'}</td>
+              <td className="px-6 py-4">{candidate.price || '—'}</td>
+              <td className="px-6 py-4">{candidate.contactInfo  || '—'}</td>
+              <td className="px-6 py-4 text-right">
+                <button
+                  onClick={() => openConfirm(candidate.id, candidate.fullName)}
+                  className="inline-flex items-center text-[#5858E2] hover:text-[#4747b5] font-medium text-sm transition-colors"
                 >
-                  Редактировать
-                </Link>
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  Сделать участником
+                </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {/* Модальное окно подтверждения */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-blue-50 rounded-full text-[#5858E2]">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            
+            <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">
+              Подтверждение активации
+            </h3>
+            <p className="text-sm text-center text-gray-500 mb-6">
+              Вы уверены, что хотите сделать <b>{selectedCandidate?.name}</b> участником каталога? Ему будет открыт полный доступ к профилю.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleActivate}
+                disabled={loading}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#5858E2] rounded-xl hover:bg-[#4747b5] transition-colors disabled:opacity-50"
+              >
+                {loading ? "Минутку..." : "Да, принять"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Пагинация */}
       {totalPages > 1 && (

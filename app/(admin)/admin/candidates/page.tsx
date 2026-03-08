@@ -20,7 +20,7 @@ export default async function CandidatesPage({
 
   const { items, total, pages, currentPage } = await getCandidatesList({
     page, // теперь page точно number
-    limit: 20,
+    limit: 40,
     search,
   });
 

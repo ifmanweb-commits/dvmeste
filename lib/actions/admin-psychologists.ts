@@ -3,6 +3,9 @@
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth/require'
 import { Prisma, PsychologistStatus } from '@prisma/client' // добавь PsychologistStatus
+import { revalidatePath } from 'next/cache'
+import { promises as fs } from "fs";
+import path from "path";
 
 // ======================================
 // ПОЛУЧЕНИЕ СПИСКОВ
@@ -149,6 +152,7 @@ export async function getPsychologistById(id: string) {
     const user = await prisma.user.findUnique({
       where: { id },
       include: {
+        // Документы (фото и дипломы) с нужными полями
         documents: {
           select: {
             id: true,
@@ -156,8 +160,13 @@ export async function getPsychologistById(id: string) {
             filename: true,
             url: true,
             verifiedAt: true,
+            uploadedAt: true,
           },
+          orderBy: {
+            uploadedAt: 'desc'
+          }
         },
+        // Список опубликованных статей
         articles: {
           where: { isPublished: true },
           select: {
@@ -166,13 +175,16 @@ export async function getPsychologistById(id: string) {
             slug: true,
             publishedAt: true,
           },
+          orderBy: {
+            publishedAt: 'desc'
+          }
         },
       },
     })
-
+    //console.log(user);
     return user
   } catch (error) {
-    console.error('Error fetching user:', error)
+    console.error('Error fetching psychologist for admin:', error)
     return null
   }
 }
@@ -181,126 +193,98 @@ export async function getPsychologistById(id: string) {
 // ОБНОВЛЕНИЕ ПОЛЬЗОВАТЕЛЯ
 // ======================================
 
-export async function updatePsychologist(id: string, formData: FormData) {
-  await requireAdmin()
-  
-  if (!prisma) return null
+export async function updatePsychologist(formData: FormData) {
+  await requireAdmin();
+  if (!prisma) return;
+  console.log("RECEIVED DATA:", Object.fromEntries(formData.entries()));
+
+  const id = formData.get("id") as string;
+  if (!id) throw new Error("ID не найден");
 
   try {
-    // Извлекаем данные из FormData
-    const fullName = formData.get('fullName') as string
-    const slug = formData.get('slug') as string
-    const gender = formData.get('gender') as string
-    const birthDate = formData.get('birthDate') as string
-    const city = formData.get('city') as string
-    const workFormat = formData.get('workFormat') as string
-    const firstDiplomaDate = formData.get('firstDiplomaDate') as string
-    const lastCertificationDate = formData.get('lastCertificationDate') as string
-    const certificationLevel = formData.get('certificationLevel') as string
-    const shortBio = formData.get('shortBio') as string
-    const longBio = formData.get('longBio') as string
-    const price = formData.get('price') as string
-    const contactInfo = formData.get('contactInfo') as string
-    const status = formData.get('status') as string
-    const isPublished = formData.get('isPublished') === 'on'
-    const education = formData.get('education') as string
-    
-    // Парадигмы могут приходить как массив
-    const mainParadigm = formData.getAll('mainParadigm') as string[]
-
-    // Подготавливаем данные для обновления
-    const data: any = {
-      fullName: fullName || null,
-      slug: slug || null,
-      gender: gender || null,
-      city: city || null,
-      workFormat: workFormat || null,
-      certificationLevel: certificationLevel ? parseInt(certificationLevel) : 0,
-      shortBio: shortBio || null,
-      longBio: longBio || null,
-      price: price ? parseInt(price) : null,
-      contactInfo: contactInfo || null,
-      status: status || 'CANDIDATE',
-      isPublished,
-      mainParadigm: mainParadigm.length ? mainParadigm : [],
+    // Собираем данные и приводим к нужным типам
+    const rawMainParadigm = formData.get("mainParadigm") as string;
+    let mainParadigm: string[] = [];
+    try {
+      mainParadigm = JSON.parse(rawMainParadigm);
+    } catch (e) {
+      mainParadigm = [];
     }
 
-    // Добавляем даты, если они есть
-    if (birthDate) data.birthDate = new Date(birthDate)
-    if (firstDiplomaDate) data.firstDiplomaDate = new Date(firstDiplomaDate)
-    if (lastCertificationDate) data.lastCertificationDate = new Date(lastCertificationDate)
-    
-    // Добавляем образование, если есть
-    if (education) {
-      try {
-        data.education = JSON.parse(education)
-      } catch (e) {
-        console.error('Error parsing education JSON:', e)
-      }
-    }
+    const data: Prisma.UserUpdateInput = {
+      fullName: (formData.get("fullName") as string) || null,
+      email: (formData.get("email") as string) || undefined,
+      slug: (formData.get("slug") as string) || null,
+      city: (formData.get("city") as string) || null,
+      gender: (formData.get("gender") as string) || null,
+      workFormat: (formData.get("workFormat") as string) || null,
+      shortBio: (formData.get("shortBio") as string) || null,
+      longBio: (formData.get("longBio") as string) || null,
+      contactInfo: (formData.get("contactInfo") as string) || null,
+      
+      // Числа
+      price: formData.get("price") ? Number(formData.get("price")) : null,
+      certificationLevel: formData.get("certificationLevel") ? Number(formData.get("certificationLevel")) : 0,
+      
+      // Даты
+      birthDate: formData.get("birthDate") ? new Date(formData.get("birthDate") as string) : null,
+      firstDiplomaDate: formData.get("firstDiplomaDate") ? new Date(formData.get("firstDiplomaDate") as string) : null,
+      lastCertificationDate: formData.get("lastCertificationDate") ? new Date(formData.get("lastCertificationDate") as string) : null,
+      
+      // Массивы и статусы
+      mainParadigm: mainParadigm,
+      status: (formData.get("status") as any) || "PENDING",
+      isPublished: formData.get("isPublished") === "on",
+      
+      // При прямом сохранении админом сбрасываем флаг наличия изменений
+      hasUnpublishedChanges: false 
+    };
 
-    // Обновляем пользователя
-    const updated = await prisma.user.update({
+    await prisma.user.update({
       where: { id },
-      data,
-    })
+      data
+    });
 
-    // ======================================
-    // ОБРАБОТКА ФОТОГРАФИЙ (ДОКУМЕНТЫ)
-    // ======================================
-    
-    const photoData = formData.get('photoData')
-    if (photoData) {
-      const { existing, new: newPhotos } = JSON.parse(photoData as string)
-      
-      // Удаляем фото, которых нет в existing
-      const existingIds = existing.map((p: any) => p.id).filter(Boolean)
-      if (existingIds.length > 0) {
-        await prisma.document.deleteMany({
-          where: {
-            userId: id,
-            type: 'PHOTO',
-            NOT: { id: { in: existingIds } }
-          }
-        })
-      } else {
-        // Если нет существующих, удаляем все фото
-        await prisma.document.deleteMany({
-          where: {
-            userId: id,
-            type: 'PHOTO',
-          }
-        })
-      }
+    revalidatePath(`/admin/psychologists/${id}/edit`);
+    revalidatePath(`/admin/psychologists`);
+  } catch (error) {
+    console.error("Update error:", error);
+    throw error;
+  }
+}
 
-      // Добавляем новые фото
-      const files = formData.getAll('photos') as File[]
-      
-      for (let i = 0; i < newPhotos.length; i++) {
-        const file = files[i]
-        if (file) {
-          // TODO: загрузить файл на сервер и получить URL
-          // Пока сохраняем временный URL (нужно будет реализовать загрузку)
-          const url = `/uploads/${Date.now()}-${file.name}`
-          
-          await prisma.document.create({
-            data: {
-              userId: id,
-              type: 'PHOTO',
-              url,
-              filename: file.name,
-              mimeType: file.type,
-              size: file.size,
-            }
-          })
-        }
-      }
+export async function deleteDocumentAsAdmin(docId: string, psychologistId: string) {
+  await requireAdmin();
+  if (!prisma) return { success: false, error: "Ошибка подключения к БД" };
+
+  try {
+    const doc = await prisma.document.findUnique({
+      where: { id: docId }
+    });
+
+    if (!doc) return { success: false, error: "Документ не найден" };
+
+    // 1. Удаляем запись из БД
+    await prisma.document.delete({ where: { id: docId } });
+
+    // 2. Если это было фото и оно стояло как аватар — сбрасываем аватар у психолога
+    const psych = await prisma.user.findUnique({ where: { id: psychologistId } });
+    if (doc.type === 'PHOTO' && psych?.avatarUrl === doc.url) {
+      await prisma.user.update({
+        where: { id: psychologistId },
+        data: { avatarUrl: null }
+      });
     }
 
-    return updated
+    // 3. Удаляем файл с диска
+    const filePath = path.join(process.cwd(), "public", doc.url);
+    await fs.unlink(filePath).catch(() => console.log("Файл уже удален физически или путь неверный"));
+
+    revalidatePath(`/admin/psychologists/${psychologistId}/edit`);
+    return { success: true };
   } catch (error) {
-    console.error('Error updating psychologist:', error)
-    throw error
+    console.error("Admin delete error:", error);
+    return { success: false, error: "Ошибка при удалении" };
   }
 }
 

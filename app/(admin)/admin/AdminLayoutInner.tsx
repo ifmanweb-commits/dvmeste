@@ -85,7 +85,7 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
       </aside>
       
       {/* Main content */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-2">
         {children}
       </main>
     </div>
