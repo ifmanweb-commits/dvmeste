@@ -100,7 +100,7 @@ export default function AccountNav({ user }: AccountNavProps) {
             user.status === 'BLOCKED' && "bg-red-100 text-red-800"
           )}>
             {user.status === 'ACTIVE' && <CheckCircle className="w-3 h-3 mr-1" />}
-            {user.status === 'ACTIVE' && 'Активен'}
+            {user.status === 'ACTIVE' && 'В каталоге'}
             {user.status === 'CANDIDATE' && 'Кандидат'}
             {user.status === 'PENDING' && 'Ожидает'}
             {user.status === 'REJECTED' && 'Отклонен'}

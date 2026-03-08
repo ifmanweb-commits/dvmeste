@@ -18,10 +18,16 @@ export default async function ProfilePage() {
       documents: true // Понадобится для вкладки документов
     }
   });
-
   if (!user) {
     notFound();
   }
+
+  // Список парадигм консультирования
+  const paradigmsData = await prisma.dataList.findUnique({
+    where: { slug: 'paradigms' } // или key, проверь имя поля в своей схеме
+  });
+  // Парсим массив из поля data
+  const availableParadigms = (paradigmsData?.items as string[]) || [];
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -30,7 +36,7 @@ export default async function ProfilePage() {
         <p className="text-gray-500 mt-2">Управление профилем и квалификацией</p>
       </div>
 
-      <ProfileFormContainer user={user} />
+      <ProfileFormContainer user={user} availableParadigms={availableParadigms}/>
     </div>
   );
 }
