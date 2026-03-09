@@ -59,7 +59,6 @@ model User {
   contactInfo String? @db.VarChar(150)
 
   // Сохраняем для обратной совместимости
-  education    Json?   @db.Json
   unsubscribed Boolean @default(false)
 
   // Система черновиков

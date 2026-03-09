@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
 import { DB_SYNC_MESSAGE } from "@/lib/db-error";
+import { togglePsychologistPublish } from "@/lib/actions/admin-psychologists";
+import { Eye, EyeOff, Loader2, Award } from "lucide-react"; // Для красоты и индикации
+
+
+
 
 interface PsychologistItem {
   id: string;
@@ -27,13 +32,19 @@ interface Props {
 
    
                                                         
-   
+
 export default function PsychologistsListPage({ initialList, searchParams }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showOnlyPublished, setShowOnlyPublished] = useState(false);
   const [selectedCity, setSelectedCity] = useState<string>("all");
   const [selectedCertification, setSelectedCertification] = useState<string>("all");
-  
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [list, setList] = useState(initialList);
+
+  // Синхронизируем, если данные обновились на сервере (например, при переходе по страницам)
+  useEffect(() => {
+    setList(initialList);
+  }, [initialList]);
                                            
   useEffect(() => {
     console.log("Initial list structure:", initialList.slice(0, 3).map(p => ({
@@ -67,7 +78,7 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
       type: typeof p.certificationLevel
     }));
     
-    console.log("All certification values:", allValues.slice(0, 5));
+    //console.log("All certification values:", allValues.slice(0, 5));
     
                                         
     const certifications = initialList
@@ -89,7 +100,7 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
 
                                       
   const filteredPsychologists = useMemo(() => {
-    return initialList.filter((psychologist) => {
+    return list.filter((psychologist) => {
                              
       if (showOnlyPublished && !psychologist.isPublished) {
         return false;
@@ -142,7 +153,8 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
 
       return true;
     });
-  }, [initialList, searchQuery, showOnlyPublished, selectedCity, selectedCertification]);
+  }, [list, searchQuery, showOnlyPublished, selectedCity, selectedCertification]);
+
 
                                             
   const HighlightText = ({ text, highlight }: { text: string; highlight: string }) => {
@@ -217,8 +229,28 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
     const level = getSafeCertificationLevel(p.certificationLevel);
     return level !== null;
   });
+  // Функция для быстрого переключения
+  const handleFastToggle = async (id: string, currentStatus: boolean) => {
+    setLoadingId(id);
+    const newStatus = !currentStatus;
 
-  console.log("Psychologists with certification:", psychologistsWithCertification.length, "out of", totalCount);
+    try {
+      const result = await togglePsychologistPublish(id, newStatus);
+      if (result) {
+        // Ключевой момент: обновляем весь массив, создавая новую ссылку
+        setList(prevList => 
+          prevList.map(item => 
+            item.id === id ? { ...item, isPublished: newStatus } : item
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Ошибка переключения:", error);
+    } finally {
+      setLoadingId(null);
+    }
+  };
+  //console.log("Psychologists with certification:", psychologistsWithCertification.length, "out of", totalCount);
 
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-8">
@@ -442,59 +474,103 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
           )}
         </div>
       ) : (
-        <ul className="space-y-3 sm:space-y-4">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredPsychologists.map((p) => {
             const certificationLevel = getSafeCertificationLevel(p.certificationLevel);
-            console.log(`Psychologist ${p.fullName}: certificationLevel =`, p.certificationLevel, "safe =", certificationLevel);
-            
+            const isPending = loadingId === p.id;
+
             return (
               <li
                 key={p.id}
-                className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-[#F5F5F7] p-4 hover:bg-gray-50 transition-colors sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:rounded-xl"
+                className="flex flex-col rounded-2xl border border-neutral-200 bg-white shadow-sm hover:shadow-md transition-all overflow-hidden"
               >
-                <div className="space-y-1 sm:space-y-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                    <span className="font-medium text-foreground text-sm sm:text-base">
-                      <HighlightText text={p.fullName} highlight={searchQuery} />
-                    </span>
-                    {!p.isPublished && (
-                      <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 whitespace-nowrap">
-                        Черновик
-                      </span>
-                    )}
-                    {p.city && (
-                      <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700 whitespace-nowrap">
-                        {p.city}
-                      </span>
-                    )}
-                    {                               }
-                    {certificationLevel && (
-                      <span className="rounded bg-green-100 px-2 py-0.5 text-xs text-green-800 whitespace-nowrap">
-                        {certificationLevel}
-                      </span>
+                {/* ВЕРХНЯЯ ЧАСТЬ: Данные психолога */}
+                <div className="p-5 flex-1">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex flex-col gap-1 min-w-0">
+                      <h3 className="font-bold text-gray-900 leading-tight truncate">
+                        <HighlightText text={p.fullName} highlight={searchQuery} />
+                      </h3>
+                      <p className="text-[10px] text-gray-400 font-mono uppercase tracking-tighter">
+                        ID: {p.id}
+                      </p>
+                    </div>
+                    {getSafeCertificationLevel(p.certificationLevel) && (
+                      <div className="shrink-0 flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-md text-[10px] font-bold uppercase tracking-wider">
+                        <Award className="w-3 h-3" />
+                        Уровень {getSafeCertificationLevel(p.certificationLevel)}
+                      </div>
                     )}
                   </div>
-                  <div className="text-xs text-neutral-dark sm:text-sm">
-                    {p.price && (
-                      <span className="font-medium text-[#5858E2]">
-                        {p.price} ₽
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <span className="bg-gray-100 p-1 rounded">📍</span>
+                      <span className="truncate">{p.city || "Город не указан"}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <span className="bg-gray-100 p-1 rounded">💰</span>
+                      <span className="font-bold text-[#5858E2]">
+                        {p.price ? `${p.price} ₽` : "Цена не указана"}
                       </span>
-                    )}
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
+
+                {/* СРЕДНЯЯ ЧАСТЬ: Управление видимостью */}
+                <div className={`px-5 py-3 border-t transition-colors duration-300 flex items-center justify-between ${
+                  p.isPublished 
+                    ? 'bg-emerald-100/100 border-emerald-100' // Бледно-зеленая для опубликованных
+                    : 'bg-gray-50 border-gray-100'          // Серая для черновиков
+                }`}>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase text-gray-400 font-bold tracking-widest">Статус</span>
+                    {p.isPublished ? (
+                      <span className="text-xs font-bold text-emerald-600">Опубликован</span>
+                    ) : (
+                      <span className="text-xs font-bold text-gray-400">Черновик</span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleFastToggle(p.id, p.isPublished)}
+                    disabled={loadingId === p.id}
+                    className={`p-2.5 rounded-xl transition-all shadow-sm border ${
+                      p.isPublished 
+                        ? 'bg-white text-emerald-600 border-emerald-100 hover:bg-emerald-50' 
+                        : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    {loadingId === p.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-[#5858E2]" />
+                    ) : p.isPublished ? (
+                      <Eye className="w-5 h-5" />
+                    ) : (
+                      <EyeOff className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+
+                {/* НИЖНЯЯ ЧАСТЬ: Остальное управление (Кнопки) */}
+                <div className="p-3 bg-white border-t border-gray-100 grid grid-cols-2 gap-2">
                   <Link
                     href={`/admin/psychologists/${p.id}/edit`}
-                    className="rounded-lg border border-neutral-300 px-3 py-2 text-xs font-medium text-foreground hover:bg-white hover:border-[#5858E2] hover:text-[#5858E2] transition-colors text-center sm:flex-none sm:px-3 sm:py-1.5 sm:text-sm whitespace-nowrap"
+                    className="flex items-center justify-center gap-2 py-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-[#5858E2] hover:text-[#5858E2] transition-colors"
                   >
-                    Редактировать
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Править
                   </Link>
                   <Link
                     href={`/psy-list/${p.slug}`}
                     target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-lg border border-neutral-300 px-3 py-2 text-xs font-medium text-foreground hover:bg-white hover:border-[#5858E2] hover:text-[#5858E2] transition-colors text-center sm:flex-none sm:px-3 sm:py-1.5 sm:text-sm whitespace-nowrap"
+                    className="flex items-center justify-center gap-2 py-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                   >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
                     Открыть
                   </Link>
                 </div>
