@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ArticleContentEditor, type ArticleContentEditorApi } from "@/components/articles/ArticleContentEditor";
-//import EntityFilesField from "@/components/files/EntityFilesField";
 import FileManager from "@/components/files/FileManager";
 import { getDataListItems } from "@/lib/actions/admin-references";
-import { ArticleTagsSelector } from "@/components/articles/ArticleTagsSelector";
+import { ArticleTagsSelector } from "@/components/articles/AcArticleTagsSelector";
 
 function FormInput({ label, ...props }: any) {
   return (
@@ -96,17 +95,7 @@ export default function ArticleForm({
   const [submitting, setSubmitting] = useState(false);
   const [slugWarning, setSlugWarning] = useState<string | null>(null);
   const [articleImages, setArticleImages] = useState<string[]>([]);
-  /*const initialManagedFiles = useRef<string[]>(
-    typeof initialData.content === "string"
-      ? Array.from(
-          new Set(
-            (initialData.content.match(/\/articles\/files\/[a-z0-9_-]+\/[^\s"'<>`]+/gi) || []).map((item: string) =>
-              item.replace(/[),.;]+$/, "")
-            )
-          )
-        )
-      : []
-  );*/
+
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -122,13 +111,6 @@ export default function ArticleForm({
         const normalizedTags = Array.isArray(tagItems) ? tagItems.filter(Boolean) : [];
         setAllTags(normalizedTags);
 
-        /*if (articlesData?.success && Array.isArray(articlesData.articles)) {
-          const catalogsSet = new Set<string>();
-          articlesData.articles.forEach((article: any) => {
-            if (article.catalogSlug) catalogsSet.add(article.catalogSlug);
-          });
-          //setAllCatalogs(Array.from(catalogsSet));
-        }*/
 
                                                                           
         setTags((prev) => prev.filter((tag) => normalizedTags.includes(tag)));
@@ -358,13 +340,11 @@ export default function ArticleForm({
   }
 
   const isSubmitting = submitting || externalLoading;
-  const articleFilesEntityKey = articleId ? `article-${articleId}` : draftFilesKey;
+  const articleFilesEntityKey = articleId ? `${articleId}` : draftFilesKey;
 
   return (
       <form onSubmit={handleSubmit} noValidate className="space-y-8">
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="font-display text-xl font-bold text-[#5858E2] mb-6">Данные статьи</h2>
-
+        <div className="">
           {error && (
               <div className="mb-4 rounded-xl border-2 border-amber-300 bg-amber-50 p-4 text-amber-800">
                 <p className="font-medium">{error}</p>
@@ -417,7 +397,7 @@ export default function ArticleForm({
               label="Короткий текст *"
               value={shortText}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setShortText(e.target.value)}
-              rows={2}
+              rows={4}
               maxLength={200}
               required
               disabled={isSubmitting}

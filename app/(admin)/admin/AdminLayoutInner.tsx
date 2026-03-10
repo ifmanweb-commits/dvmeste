@@ -38,7 +38,9 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200">
+      {//<aside className="w-64 bg-white border-r border-gray-200">
+      }
+      <aside className="w-64 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col sticky top-0 h-screen">
         <div className="p-4 border-b border-gray-200">
           <h2 className="font-semibold text-lg">Админ-панель</h2>
           <p className="text-sm text-gray-600 mt-1">
@@ -77,17 +79,29 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
   onClick={async () => {
     await logout();
   }}
-  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-red-50 hover:text-red-600 cursor-pointer transition-colors w-full text-left mt-auto border-t border-gray-200"
+  className="flex items-center gap-3 px-8 py-3 text-gray-700 hover:bg-red-50 hover:text-red-600 cursor-pointer transition-colors w-full text-left border-t border-gray-200"
 >
   <LogOut size={20} />
   <span>Выход</span>
 </button>
       </aside>
       
-      {/* Main content */}
-      <main className="flex-1 p-2">
-        {children}
-      </main>
+      {/* СПРАВА: Рабочая область */}
+            <main className="flex-1 flex flex-col min-w-0">
+              <div className="p-2 sm:p-2 lg:p-2 flex-1 flex flex-col">
+                
+                {/* ТА САМАЯ БЕЛАЯ ПЛАШКА */}
+                <div className="flex-1 bg-white border border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col relative">
+                  
+                  {/* Прямые углы обеспечиваются отсутствием rounded-классов */}
+                  <div className="flex-1 p-10 lg:p-10">
+                    {children}
+                  </div>
+
+                </div>
+
+              </div>
+            </main>
     </div>
   )
 }

@@ -15,6 +15,7 @@ type Props = {
   title: string;
   hint?: string;
   onFilesChange?: (urls: string[]) => void;
+  onSelect?: (url: string) => void;
 };
 
 export default function FileManager({
@@ -23,6 +24,7 @@ export default function FileManager({
   title,
   hint,
   onFilesChange,
+  onSelect,
 }: Props) {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,7 +161,13 @@ export default function FileManager({
           ) : (
             <div className="space-y-2">
               {files.map((file) => (
-                <div key={file.url} className="flex items-center justify-between py-0.5 border-b border-gray-200 last:border-0">
+                <div
+                  key={file.url}
+                  onClick={() => onSelect?.(file.url)} // <--- При клике вызываем вставку
+                  className={`flex items-center justify-between p-3 bg-white border border-gray-100 rounded-lg transition-all group ${
+                    onSelect ? 'cursor-pointer hover:bg-blue-50 hover:border-blue-400' : ''
+                  }`}
+                >
                   {/* Имя файла */}
                   <span className="text-xs text-gray-700 truncate max-w-[110px]" title={file.name}>
                     {file.name}

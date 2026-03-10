@@ -1,56 +1,61 @@
-import { getCurrentUser } from '@/lib/auth/session'
-import { redirect } from 'next/navigation'
+// app/account/articles/page.tsx
+import ArticlesStats from "@/components/articles/AcArticlesStats";
+import ArticleCard from "@/components/articles/AcArticleCard";
 
-export default async function AccountPage() {
-  const user = await getCurrentUser()
-  
-  if (!user) {
-    redirect('/auth/login')
-  }
-  
- 
+export default function MyArticlesPage() {
+  // Имитация данных из БД
+  const mockArticles = [
+    {
+      id: "1",
+      title: "Психосоматика: как эмоции влияют на тело",
+      moderationStatus: "APPROVED" as const,
+      updatedAt: "2026-03-05",
+      creditedMonth: 4,
+      creditedYear: 2026
+    },
+    {
+      id: "2",
+      title: "10 техник борьбы с тревожностью",
+      moderationStatus: "REVISION" as const,
+      updatedAt: "2026-03-09",
+      moderatorComment: "Нужно добавить ссылки на исследования и структурировать список техник."
+    },
+    {
+      id: "3",
+      title: "Почему важно соблюдать личные границы",
+      moderationStatus: "PENDING" as const,
+      updatedAt: "2026-03-10"
+    }
+  ];
 
-  
-  // Для пользователей с заполненным профилем (CANDIDATE, ACTIVE и т.д.)
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Личный кабинет</h1>
-      
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">
-          Добро пожаловать, {user.fullName || user.email}!
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-gray-50 p-4 rounded">
-            <h3 className="font-semibold mb-2">📊 Статус</h3>
-            <p className="text-gray-600">
-              {user.status === "CANDIDATE" && "Кандидат (заполните анкету)"}
-              {user.status === "ACTIVE" && "Активный психолог"}
-              {user.status === "REJECTED" && "Заявка отклонена"}
-              {user.status === "BLOCKED" && "Заблокирован"}
-            </p>
-          </div>
-          
-          <div className="bg-gray-50 p-4 rounded">
-            <h3 className="font-semibold mb-2">🎯 Следующий шаг</h3>
-            <p className="text-gray-600">
-              {user.status === "CANDIDATE" && "Заполните анкету для вступления в каталог"}
-              {user.status === "ACTIVE" && "Напишите статью"}
-              {(user.status === "REJECTED" || user.status === "BLOCKED") && "Обратитесь в поддержку"}
-            </p>
-          </div>
-          
-          <div className="bg-gray-50 p-4 rounded md:col-span-2">
-            <h3 className="font-semibold mb-2">📝 Информация</h3>
-            <p className="text-gray-600">
-              Email: {user.email}<br />
-              Уровень сертификации: {user.certificationLevel === 0 ? 'Нет' : `Уровень ${user.certificationLevel}`}<br />
-              Публикация: {user.isPublished ? "✅ Опубликован" : "⏳ Не опубликован"}
-            </p>
-          </div>
+    <div className="min-h-screen bg-slate-50/30">
+      <div className="max-w-6xl mx-auto py-12 px-4">
+        <header className="mb-10">
+          <h1 className="text-4xl font-black text-slate-900 mb-2 tracking-tight">
+            Мои статьи
+          </h1>
+          <p className="text-slate-500">Управляйте вашими публикациями и отслеживайте статус биллинга.</p>
+        </header>
+
+        <ArticlesStats 
+          lastCreditedMonth={4} 
+          lastCreditedYear={2026} 
+          draftCount={1} 
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {mockArticles.map(art => (
+            <ArticleCard key={art.id} article={art} />
+          ))}
         </div>
+        
+        {mockArticles.length === 0 && (
+          <div className="text-center py-20 bg-white border-2 border-dashed rounded-3xl">
+            <p className="text-slate-400 font-medium">У вас пока нет ни одной статьи.</p>
+          </div>
+        )}
       </div>
     </div>
-  )
+  );
 }

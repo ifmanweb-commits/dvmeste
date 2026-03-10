@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import ArticleForm from "@/components/articles/ArticleForm";
 import { getPsychologists } from "@/lib/actions/psychologists";
+import { Eye, Trash2, Check } from 'lucide-react';
 
 interface Article {
   id: string;
@@ -125,27 +126,24 @@ export default function AdminArticleEditPage({ params }: { params: Promise<{ id:
   }
 
   return (
-      <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        <Card>
-          <CardHeader className="flex items-center justify-between gap-2">
-            <span className="font-semibold text-xl text-[#5858E2]">Редактировать статью</span>
-            {article.publishedAt ? (
-                <Badge variant="primary">Опубликовано</Badge>
-            ) : (
-                <Badge variant="neutral">Черновик</Badge>
-            )}
-          </CardHeader>
+      <div className="mx-auto w-full max-w-6xl px-4 py-0 sm:px-0 lg:px-0">
           <CardContent>
-            <div className="mb-4 flex gap-2">
+            <div className="mb-4 flex gap-4 pt-2 pb-2 sticky top-22 bg-white z-100 border-b">
+              {article.publishedAt ? (
+                  <Badge variant="primary"><Check size="20" className="mr-1"/> Опубликовано</Badge>
+              ) : (
+                  <Badge variant="neutral">Черновик</Badge>
+              )}
               <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => window.open(`/articles/${article.slug}`, "_blank")}
+                  className="cursor-pointer"
               >
-                Просмотр
+                <Eye size="20" className="mr-1"/> Просмотр
               </Button>
-              <Button size="sm" variant="outline" onClick={handleDelete}>
-                Удалить
+              <Button size="sm" variant="outline" onClick={handleDelete} className="cursor-pointer" >
+                <Trash2 size="20" color="red" className="mr-1"/> Удалить
               </Button>
             </div>
             <ArticleForm
@@ -154,7 +152,6 @@ export default function AdminArticleEditPage({ params }: { params: Promise<{ id:
                 psychologists={psychologists}
             />
           </CardContent>
-        </Card>
       </div>
   );
 }

@@ -1,0 +1,83 @@
+/* app/account/articles/editor.css */
+.tiptap-editor {
+  /* Базовые стили */
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.tiptap-editor h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 1.5rem 0 1rem;
+  line-height: 1.2;
+}
+
+.tiptap-editor h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 1.25rem 0 0.75rem;
+  line-height: 1.3;
+}
+
+.tiptap-editor h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
+}
+
+.tiptap-editor p {
+  margin: 0.75rem 0;
+}
+
+.tiptap-editor ul,
+.tiptap-editor ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
+.tiptap-editor ul {
+  list-style-type: disc;
+}
+
+.tiptap-editor ol {
+  list-style-type: decimal;
+}
+
+.tiptap-editor li {
+  margin: 0.15rem 0;
+}
+.tiptap-editor li p{
+  margin:0;
+}
+
+.tiptap-editor blockquote {
+  border-left: 4px solid #e2e8f0;
+  padding: 0.5rem 0 0.5rem 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: #4a5568;
+  background: #f8fafc;
+}
+
+.tiptap-editor code {
+  background: #f1f5f9;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  font-family: monospace;
+}
+
+.tiptap-editor pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.tiptap-editor pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+}

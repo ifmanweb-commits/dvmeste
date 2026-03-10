@@ -202,9 +202,9 @@ function EditPsychologistForm() {
   `;
 
   return (
-    <div className="min-h-screen bg-[#F8F9FC] pb-20">
+    <div className="min-h-screen  pb-20">
     {/* Шапка формы */}
-    <div className="sticky top-24 z-30 bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
+    <div className="max-w-5xl mx-auto px-6 sticky top-22 z-30 bg-white py-4 border-b">
       <div className="max-w-6xl mx-auto grid grid-cols-[auto_1fr_auto] items-center gap-2">
         
         {/* ЛЕВАЯ ЧАСТЬ: Назад и Инфо */}

@@ -114,7 +114,7 @@ export function ArticleContentEditor({
   disabled = false,
   required = false,
   placeholder,
-  rows = 14,
+  rows = 30,
   storageKey = DEFAULT_STORAGE_KEY,
   editorApiRef,
 }: Props) {

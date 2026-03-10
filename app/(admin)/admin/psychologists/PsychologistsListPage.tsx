@@ -253,7 +253,7 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
   //console.log("Psychologists with certification:", psychologistsWithCertification.length, "out of", totalCount);
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-8">
+    <div className="w-full">
       {showDbSyncBanner && (
         <div className="mb-4 rounded-lg bg-amber-50 border border-amber-200 p-3 text-amber-800 sm:mb-6 sm:rounded-xl sm:p-4">
           <p className="font-medium text-sm sm:text-base">Ошибка базы данных</p>

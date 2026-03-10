@@ -73,7 +73,7 @@ export function CandidatesTable({ candidates, currentPage, totalPages, search }:
   };
 return (
     <div className="relative">
-      <table className="min-w-full divide-y divide-gray-200 bg-white rounded-lg overflow-hidden border">
+      <table className="min-w-full divide-y divide-gray-200 bg-white rounded-lg overflow-hidden border shadow">
         <thead className="bg-gray-50">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Кандидат</th>
@@ -89,8 +89,8 @@ return (
           {candidates.map((candidate) => (
             <tr key={candidate.id} className="hover:bg-gray-50 transition-colors">
               <td className="px-6 py-4">
-                <div className="text-sm font-medium text-gray-900">{candidate.fullName || 'Имя не указано'}</div>
-                <div className="text-xs text-gray-500">{candidate.email}</div>
+                <div className="text-m font-medium text-gray-900">{candidate.fullName || 'Имя не указано'}</div>
+                <div className="text-sm text-gray-500">{candidate.email}</div>
               </td>
               <td className="px-6 py-4 text-sm text-gray-500">{candidate.city || '—'}</td>
               <td className="px-6 py-4">{getStatusDisplay(candidate.status)}</td>
