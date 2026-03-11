@@ -1,6 +1,6 @@
 "use server";
 
-import { updateArticle } from "@/lib/articles"; // Проверь правильность пути к твоему articles.ts
+import { updateArticle } from "@/lib/articles";
 import { revalidatePath } from "next/cache";
 
 export async function saveArticleAction(id: string, data: {
@@ -9,19 +9,20 @@ export async function saveArticleAction(id: string, data: {
   tags: string[];
   excerpt?: string;
   isPublished?: boolean;
+  moderationStatus?: string;      // ← добавить
+  submittedAt?: Date | null;      // ← добавить
 }) {
   try {
-    // Вызываем твой существующий метод из articles.ts
-    // Он уже содержит валидацию тегов, проверку прав и очистку кэша
     await updateArticle(id, {
       title: data.title,
       content: data.content,
       tags: data.tags,
-      shortText: data.excerpt || "", // Твой метод ожидает shortText
+      shortText: data.excerpt || "",
       isPublished: data.isPublished ?? false,
+      moderationStatus: data.moderationStatus, // ← передаём
+      submittedAt: data.submittedAt,           // ← передаём
     });
 
-    // Обновляем кэш страниц, чтобы изменения сразу были видны в списке
     revalidatePath("/account/articles");
     revalidatePath(`/account/articles/${id}`);
 

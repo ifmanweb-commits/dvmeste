@@ -31,7 +31,13 @@ export default function AcArticleEditorForm({ initialData, availableTags }: AcAr
   const [editorInstance, setEditorInstance] = useState<any>(null);
 
   // Режим "Только чтение", если статья на проверке
-  const isReadOnly = initialData.status === 'PENDING';
+  const isReadOnly = initialData.moderationStatus === 'PENDING';
+  const showDraftButton = !isReadOnly && initialData.moderationStatus !== 'REVISION';
+  // Определяем текст кнопки отправки
+  const getSubmitButtonText = () => {
+    if (initialData.moderationStatus === 'REVISION') return "Отправить на повторную проверку";
+    return "Отправить на модерацию";
+  };
 
   const insertImage = (url: string) => {
     if (editorInstance) {
@@ -47,7 +53,9 @@ export default function AcArticleEditorForm({ initialData, availableTags }: AcAr
       title,
       content,
       tags,
-      isPublished: isPublishing,
+      isPublished: false,
+      moderationStatus: isPublishing ? "PENDING" : undefined,
+      submittedAt: isPublishing ? new Date() : undefined,
     });
 
     setIsSaving(false);
@@ -125,22 +133,26 @@ export default function AcArticleEditorForm({ initialData, availableTags }: AcAr
       {!isReadOnly && (
         <div className="flex flex-col md:flex-row gap-4 pt-8 border-t border-slate-100 items-center">
           <div className="flex-1 flex gap-4">
-            <button
-              onClick={() => handleSave(false)}
-              disabled={isSaving}
-              className="flex-1 flex items-center justify-center gap-2 py-4 bg-white border-2 border-slate-200 text-slate-600 rounded-xl font-bold uppercase text-[11px] tracking-widest hover:bg-slate-50 transition-all disabled:opacity-50"
-            >
-              <Save size={18} /> 
-              {isSaving ? "Сохранение..." : "Сохранить черновик"}
-            </button>
+            {showDraftButton && (
+              <button
+                onClick={() => handleSave(false)}
+                disabled={isSaving}
+                className="flex-1 flex items-center justify-center gap-2 py-4 bg-white border-2 border-slate-200 text-slate-600 rounded-xl font-bold uppercase text-[11px] tracking-widest hover:bg-slate-50 transition-all disabled:opacity-50"
+              >
+                <Save size={18} /> 
+                {isSaving ? "Сохранение..." : "Сохранить черновик"}
+              </button>
+            )}
             
             <button
               onClick={() => handleSave(true)}
               disabled={isSaving}
-              className="flex-1 flex items-center justify-center gap-2 py-4 bg-blue-600 text-white rounded-xl font-bold uppercase text-[11px] tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all disabled:opacity-50"
+              className={`flex-1 flex items-center justify-center gap-2 py-4 ${
+                showDraftButton ? 'bg-blue-600' : 'bg-blue-600 w-full'
+              } text-white rounded-xl font-bold uppercase text-[11px] tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all disabled:opacity-50`}
             >
               <Send size={18} /> 
-              Отправить на модерацию
+              {getSubmitButtonText()}
             </button>
           </div>
           

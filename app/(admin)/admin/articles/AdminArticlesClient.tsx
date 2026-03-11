@@ -13,6 +13,7 @@ interface Article {
   excerpt: string | null;
   content: string;
   tags: string[];
+  moderationStatus: string;  // ← добавить
   publishedAt: string | null;
   author: {
     id: string;

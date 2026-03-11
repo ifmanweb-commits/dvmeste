@@ -20,6 +20,7 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
     { href: '/admin', label: 'Дашборд', roles: ['admin', 'manager'] },
     { href: '/admin/psychologists', label: 'Психологи', roles: ['admin', 'manager'] },
     { href: '/admin/candidates', label: 'Кандидаты', roles: ['admin', 'manager'] },
+    { href: '/admin/moderation/articles', label: 'Модерация статей', roles: ['admin', 'manager'] },
     { href: '/admin/articles', label: 'Статьи', roles: ['admin', 'manager'] },
     { href: '/admin/pages', label: 'Страницы', roles: ['admin'] },
     { href: '/admin/managers', label: 'Менеджеры', roles: ['admin'] },
@@ -38,8 +39,6 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
-      {//<aside className="w-64 bg-white border-r border-gray-200">
-      }
       <aside className="w-64 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col sticky top-0 h-screen">
         <div className="p-4 border-b border-gray-200">
           <h2 className="font-semibold text-lg">Админ-панель</h2>

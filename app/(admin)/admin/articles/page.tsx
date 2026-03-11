@@ -8,7 +8,8 @@ interface Article {
   excerpt: string | null;
   content: string;
   tags: string[];
-  publishedAt: string | null;  // ← строка, не Date
+  moderationStatus: string;      // ← добавить
+  publishedAt: string | null;
   author: {
     id: string;
     fullName: string;
@@ -25,6 +26,7 @@ export default async function ArticlesPage() {
     excerpt: article.excerpt,
     content: article.content,
     tags: article.tags || [],
+    moderationStatus: article.moderationStatus, // ← добавить
     publishedAt: article.publishedAt as string | null,
     author: article.user ? {
       id: article.user.id,

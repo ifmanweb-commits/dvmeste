@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+import { ModerationStatus } from "@prisma/client";
 
 const ARTICLE_TAGS_SLUG = "article-tags";
 // Единый объект для include автора
@@ -223,6 +224,8 @@ export async function updateArticle(id: string, data: {
   tags?: string[];
   authorId?: string | null;
   isPublished?: boolean;
+  moderationStatus?: string;
+  submittedAt?: Date | null;
 }) {
   try {
     const model = checkPrismaModel();
@@ -256,6 +259,8 @@ export async function updateArticle(id: string, data: {
       ...(data.shortText !== undefined ? { excerpt: data.shortText } : {}),
       ...(data.content !== undefined ? { content: data.content } : {}),
       ...(normalizedTags !== undefined ? { tags: normalizedTags } : {}),
+      ...(data.moderationStatus !== undefined ? { moderationStatus: data.moderationStatus as ModerationStatus } : {}),
+      ...(data.submittedAt !== undefined ? { submittedAt: data.submittedAt } : {}),
     };
 
                             

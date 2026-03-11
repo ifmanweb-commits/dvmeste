@@ -9,6 +9,7 @@ interface Article {
   title: string;
   slug: string;
   publishedAt: string | null;
+  moderationStatus: string;        // ← добавить
   tags: string[];
   author: {
     id: string;
@@ -32,9 +33,26 @@ export function ArticlesTable({ articles }: ArticlesTableProps) {
     });
   };
 
-  const getStatusBadge = (publishedAt: string | null) => {
+  const getModerationBadge = (status: string) => {
+    const config: Record<string, { label: string; className: string }> = {
+      DRAFT: { label: 'Черновик', className: 'bg-gray-100 text-gray-800' },
+      PENDING: { label: 'На проверке', className: 'bg-yellow-100 text-yellow-800' },
+      REVISION: { label: 'Требуются правки', className: 'bg-red-100 text-red-800' },
+      APPROVED: { label: 'Одобрено', className: 'bg-green-100 text-green-800' },
+    };
+    
+    const { label, className } = config[status] || { label: status, className: 'bg-gray-100 text-gray-800' };
+    
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs ${className}`}>
+        {label}
+      </span>
+    );
+  };
+
+  const getPublishBadge = (publishedAt: string | null) => {
     if (publishedAt) {
-      return <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">Опубликовано</span>;
+      return <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">На сайте</span>;
     }
     return <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">Черновик</span>;
   };
@@ -75,7 +93,10 @@ export function ArticlesTable({ articles }: ArticlesTableProps) {
               Тэги
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Статус
+              Статус модерации
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Публикация
             </th>
             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
               Действия
@@ -105,7 +126,10 @@ export function ArticlesTable({ articles }: ArticlesTableProps) {
                 {getTagsDisplay(article.tags)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                {getStatusBadge(article.publishedAt)}
+                {getModerationBadge(article.moderationStatus)}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                {getPublishBadge(article.publishedAt)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex justify-end gap-2">
