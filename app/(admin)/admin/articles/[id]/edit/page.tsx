@@ -124,7 +124,12 @@ export default function AdminArticleEditPage({ params }: { params: Promise<{ id:
         </Card>
     );
   }
-
+/*console.log('AdminArticleEditPage - article data:', {
+  id: article.id,
+  authorId: article.authorId,
+  author: article.author,
+  authorFullName: article.author?.fullName
+});*/
   return (
       <div className="mx-auto w-full max-w-6xl px-4 py-0 sm:px-0 lg:px-0">
           <CardContent>
@@ -146,6 +151,7 @@ export default function AdminArticleEditPage({ params }: { params: Promise<{ id:
                 <Trash2 size="20" color="red" className="mr-1"/> Удалить
               </Button>
             </div>
+            
             <ArticleForm
                 initialData={article}
                 onSubmit={handleSubmit}

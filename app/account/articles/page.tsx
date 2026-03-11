@@ -28,6 +28,7 @@ export default async function MyArticlesPage() {
       slug: true,
     }
   });
+  //console.log('Any articles count:', articles.length);
   const formattedArticles = articles.map(article => ({
     ...article,
     updatedAt: article.updatedAt.toISOString(), // Date → string
@@ -35,6 +36,11 @@ export default async function MyArticlesPage() {
     creditedYear: article.creditedYear ?? undefined, // null → undefined
     moderatorComment: article.moderatorComment ?? undefined, // null → undefined
   }));
+  /*console.log('Статусы статей:', formattedArticles.map(a => ({ 
+    id: a.id, 
+    status: a.moderationStatus,
+    title: a.title 
+  })));*/
 
   // Считаем черновики
   const draftCount = formattedArticles.filter(a => a.moderationStatus === "DRAFT").length;
@@ -51,7 +57,6 @@ export default async function MyArticlesPage() {
   // Разделяем статьи для разных секций
   const approvedArticles = formattedArticles.filter(a => a.moderationStatus === "APPROVED");
   const workArticles = formattedArticles.filter(a => a.moderationStatus !== "APPROVED");
-
   return (
     <div className="min-h-screen bg-slate-50/20">
       <div className="max-w-6xl mx-auto py-12 px-6">

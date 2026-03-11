@@ -85,8 +85,8 @@ export default function ArticleForm({
   const [tags, setTags] = useState<string[]>(initialData.tags || []);
   const [allTags, setAllTags] = useState<string[]>([]);
   //const [allCatalogs, setAllCatalogs] = useState<string[]>([]);
-  const [authorId, setAuthorId] = useState(initialData.authorId || "");
-  const [authorName, setAuthorName] = useState(initialData.author?.fullName || "");
+  const [authorId, setAuthorId] = useState(initialData.authorId || initialData.user?.id || "");
+  const [authorName, setAuthorName] = useState(initialData.author?.fullName || initialData.user?.fullName || "");
   const [isPublished, setIsPublished] = useState(!!initialData.publishedAt || !!initialData.isPublished);
   const [authorSearch, setAuthorSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -117,6 +117,13 @@ export default function ArticleForm({
       })
       .catch((err) => console.error("Error loading data:", err));
   }, []);
+  useEffect(() => {
+    if (initialData.user?.fullName) {
+      setAuthorName(initialData.user.fullName);
+      setAuthorSearch(initialData.user.fullName);
+      setAuthorId(initialData.user.id);
+    }
+  }, [initialData.user]);
 
                                      
   useEffect(() => {
@@ -131,11 +138,14 @@ export default function ArticleForm({
 
                                           
   useEffect(() => {
+    //console.log('Author testing');
     if (initialData.author?.fullName) {
+      //console.log('Author: ', initialData.author);
       setAuthorName(initialData.author.fullName);
       setAuthorSearch(initialData.author.fullName);
+      setAuthorId(initialData.authorId || "");
     }
-  }, [initialData.author]);
+  }, [initialData.author, initialData.authorId]);
 
                                    
   const filteredAuthors = authorSearch
@@ -423,11 +433,12 @@ export default function ArticleForm({
           />
 
           <FileManager
-              scope="articles"
-              entityKey={articleFilesEntityKey}
-              title="Файлы статьи"
-              hint="Перетащите файлы или выберите их с устройства. Файлы сохраняются в папке статьи."
-              onFilesChange={setArticleImages}
+            scope="articles"
+            entityKey={articleFilesEntityKey}
+            mode="db"
+            title="Файлы статьи"
+            hint="Перетащите файлы или выберите их с устройства. Файлы сохраняются в папке статьи."
+            onFilesChange={setArticleImages}
           />
 
 
@@ -456,7 +467,7 @@ export default function ArticleForm({
                   }
                 }}
                 onFocus={() => setShowDropdown(true)}
-                placeholder="Иванов Иван Иванович"
+                placeholder="Выберите психолога, либо статья будет без автора"
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#5858E2] focus:ring-2 focus:ring-[#5858E2]/20"
                 disabled={isSubmitting}
                 autoComplete="off"
