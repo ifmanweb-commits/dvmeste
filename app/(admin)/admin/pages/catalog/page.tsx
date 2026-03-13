@@ -50,7 +50,7 @@ export default async function AdminCatalogPageSettings({
         <div className="rounded-xl border-2 border-[#5858E2]/20 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-6 lg:p-8">
           <h1 className="font-display text-xl font-bold text-gray-900 sm:text-2xl">Страница каталога</h1>
           <p className="mt-2 text-xs text-gray-600 sm:text-sm">
-            Настройка HTML-блоков страницы <code>/psy-list</code>. Верхний блок выводится до каталога, нижний — после.
+            Настройка HTML-блоков страницы <code>/catalog</code>. Верхний блок выводится до каталога, нижний — после.
             Если верхний блок пустой, каталог показывается сразу после меню.
           </p>
 
@@ -91,7 +91,7 @@ export default async function AdminCatalogPageSettings({
                 Сохранить
               </button>
               <Link
-                href="/psy-list"
+                href="/catalog"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"

@@ -12,6 +12,9 @@ const articleInclude = {
       fullName: true,
       email: true,
       slug: true,
+      avatarUrl: true,
+      certificationLevel: true,
+      shortBio: true,
     }
   }
 } as const;
@@ -353,8 +356,8 @@ const getArticlesCached = unstable_cache(
       
       // Логируем первую статью, чтобы увидеть все поля
       if (articles.length > 0) {
-        console.log('First article fields:', Object.keys(articles[0]));
-        console.log('Has excerpt?', 'excerpt' in articles[0]);
+        //console.log('First article fields:', Object.keys(articles[0]));
+        //console.log('Has excerpt?', 'excerpt' in articles[0]);
       }
       
       return articles;

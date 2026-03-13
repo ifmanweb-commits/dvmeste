@@ -564,7 +564,7 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
                     Править
                   </Link>
                   <Link
-                    href={`/psy-list/${p.slug}`}
+                    href={`/catalog/${p.slug}`}
                     target="_blank"
                     className="flex items-center justify-center gap-2 py-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                   >

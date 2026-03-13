@@ -9,7 +9,7 @@ export interface CatalogFilters {
     city?: string;
     gender?: string;
     workFormat?: string;
-    sortBy?: 'price' | 'certificationLevel' | 'createdAt';
+    sortBy?: 'price' | 'certificationLevel' | 'createdAt' | 'age';
     sortOrder?: 'asc' | 'desc';
 }
 
@@ -29,16 +29,16 @@ export interface CatalogResult {
                                     
 export interface PsychologistCatalogItem {
   id: string;
-  slug: string;
-  fullName: string;
-  gender: string;
-  birthDate: Date;
-  city: string;
-  workFormat: string;
+  slug: string;                // string (уже ок)
+  fullName: string;            // string
+  gender: string;              // string
+  birthDate: Date | null;      // ← разрешить null
+  city: string | null;         // ← разрешить null (или оставить string, если подставляешь '')
+  workFormat: string;          // string
   mainParadigm: string[];
   certificationLevel: number;
-  shortBio: string;
-  price: number;
+  shortBio: string;            // string
+  price: number | null;        // ← разрешить null
   images: string[];
   educationCount: number;
   coursesCount: number;

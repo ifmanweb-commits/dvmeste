@@ -35,7 +35,7 @@ export function HeroBlock() {
             </ul>
             <div className="mt-6 flex flex-wrap gap-3 sm:mt-8 sm:gap-4">
               <Link
-                href="/psy-list"
+                href="/catalog"
                 className="inline-block rounded-xl bg-[#5858E2] px-4 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-[#4848d0] sm:px-6 sm:py-3.5 sm:text-base"
               >
                 Подобрать психолога

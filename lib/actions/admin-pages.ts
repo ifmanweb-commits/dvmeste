@@ -484,7 +484,7 @@ function revalidatePublicPathBySlug(slug?: string | null) {
 
 
   if (slug === CATALOG_PAGE_SLUG) {
-    revalidatePath("/psy-list");
+    revalidatePath("/catalog");
   }
 
   if (slug === "site-footer") {

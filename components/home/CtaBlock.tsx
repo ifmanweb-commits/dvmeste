@@ -12,7 +12,7 @@ export function CtaBlock() {
           Открой каталог, задай фильтры по подходу, цене и уровню — выбери специалиста.
         </p>
         <div className="mt-6 sm:mt-8">
-          <Link href="/psy-list" className="inline-block rounded-xl bg-[#A7FF5A] px-5 py-2.5 text-sm font-semibold text-foreground shadow-lg hover:bg-[#8ee64a] sm:px-6 sm:py-3 sm:text-base">
+          <Link href="/catalog" className="inline-block rounded-xl bg-[#A7FF5A] px-5 py-2.5 text-sm font-semibold text-foreground shadow-lg hover:bg-[#8ee64a] sm:px-6 sm:py-3 sm:text-base">
             Подобрать психолога
           </Link>
         </div>

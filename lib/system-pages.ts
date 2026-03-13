@@ -32,7 +32,7 @@ export const SYSTEM_PAGE_CONFIG: Record<
     key: "catalog",
     slug: CATALOG_PAGE_SLUG,
     title: CATALOG_PAGE_TITLE,
-    description: "Верхний и нижний HTML-блоки страницы каталога психологов (/psy-list).",
+    description: "Верхний и нижний HTML-блоки страницы каталога психологов (/catalog).",
     adminPath: "/admin/pages/catalog",
     managerPath: "/managers/pages/catalog",
   },

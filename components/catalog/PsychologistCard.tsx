@@ -30,7 +30,7 @@ export function PsychologistCard({ psychologist }: PsychologistCardProps) {
 
   return (
     <Card glass padding="none" className="overflow-hidden">
-      <Link href={`/psy-list/${slug}`} className="block">
+      <Link href={`/catalog/${slug}`} className="block">
         <div className="relative aspect-[4/3] w-full bg-background-subtle">
           {imageSrc ? (
             <Image
@@ -52,7 +52,7 @@ export function PsychologistCard({ psychologist }: PsychologistCardProps) {
         </div>
       </Link>
       <CardContent className="p-4">
-        <Link href={`/psy-list/${slug}`} className="font-display font-semibold text-lg text-foreground hover:text-primary">
+        <Link href={`/catalog/${slug}`} className="font-display font-semibold text-lg text-foreground hover:text-primary">
           {fullName}
         </Link>
         <p className="mt-1 text-sm text-neutral-dark">{city}</p>
@@ -70,9 +70,9 @@ export function PsychologistCard({ psychologist }: PsychologistCardProps) {
       </CardContent>
       <CardFooter className="border-t border-neutral-light/80 p-4">
         <span className="font-display font-bold text-primary">{price} ₽</span>
-        <span className="text-sm text-neutral"> / сессия</span>
+        <span className="text-sm text-neutral"></span>
         <Link
-          href={`/psy-list/${slug}`}
+          href={`/catalog/${slug}`}
           className="ml-auto font-display text-sm font-semibold text-primary hover:underline"
         >
           Подробнее

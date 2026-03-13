@@ -29,7 +29,7 @@ export function HowBlock() {
           ))}
         </div>
         <div className="mt-6 text-center sm:mt-8">
-          <Link href="/psy-list" className="inline-block rounded-xl border border-[#5858E2] px-4 py-2.5 text-sm font-semibold text-[#5858E2] hover:bg-[#5858E2] hover:text-white sm:px-5 sm:py-2.5 sm:text-base">
+          <Link href="/catalog" className="inline-block rounded-xl border border-[#5858E2] px-4 py-2.5 text-sm font-semibold text-[#5858E2] hover:bg-[#5858E2] hover:text-white sm:px-5 sm:py-2.5 sm:text-base">
             Открыть каталог
           </Link>
         </div>

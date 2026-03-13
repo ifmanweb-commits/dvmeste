@@ -37,6 +37,7 @@ model User {
   avatarUrl             String?
   moderatedArticles     Article[]          @relation("ModeratedArticles")
   articles              Article[]          @relation("AuthorArticles")
+  articleCredits        ArticleCredit[]
   documents             Document[]         @relation("user_documents")
   verifiedDocuments     Document[]         @relation("verifier_documents")
   moderatorRecords      ModerationRecord[] @relation("moderator_records")
@@ -84,19 +85,17 @@ model Article {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   tags             String[]         @default([])
-  creditedMonth    Int?
-  creditedYear     Int?
   moderatorComment String?
   submittedAt      DateTime?
   moderationStatus ModerationStatus @default(DRAFT)
   moderator        User?            @relation("ModeratedArticles", fields: [moderatedBy], references: [id])
   user             User?            @relation("AuthorArticles", fields: [userId], references: [id])
   articleImages    ArticleImage[]
+  credits          ArticleCredit[]
 
   @@index([userId])
   @@index([moderationStatus])
   @@index([isPublished])
-  @@index([creditedYear, creditedMonth])
 }
 
 model ArticleImage {
@@ -108,6 +107,25 @@ model ArticleImage {
   article     Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
 
   @@index([articleId])
+}
+
+model ArticleCredit {
+  id           String   @id @default(cuid())
+  userId       String
+  articleId    String
+  articleTitle String
+  month        Int
+  year         Int
+  creditedAt   DateTime @default(now())
+  approvedAt   DateTime
+  moderatedBy  String?
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article      Article? @relation(fields: [articleId], references: [id])
+
+  @@unique([userId, year, month])
+  @@index([userId])
+  @@index([year, month])
 }
 
 model Document {

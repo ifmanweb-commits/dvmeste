@@ -75,7 +75,7 @@ export async function createPsychologist(formData: FormData) {
   }
 
   revalidatePath("/managers/psychologists");                     
-  revalidatePath("/psy-list");
+  revalidatePath("/catalog");
   redirect("/managers/psychologists");                     
 }
 
@@ -107,8 +107,8 @@ export async function updatePsychologist(id: string, formData: FormData) {
   }
 
   revalidatePath("/managers/psychologists");                     
-  revalidatePath("/psy-list");
-  revalidatePath(`/psy-list/${formData.get("slug")}`);
+  revalidatePath("/catalog");
+  revalidatePath(`/catalog/${formData.get("slug")}`);
   redirect("/managers/psychologists");                     
 }
 
@@ -131,7 +131,7 @@ export async function deletePsychologist(id: string) {
     redirect("/managers/psychologists?error=delete_failed");                     
   }
   revalidatePath("/managers/psychologists");                     
-  revalidatePath("/psy-list");
+  revalidatePath("/catalog");
   redirect("/managers/psychologists");                     
 }
 

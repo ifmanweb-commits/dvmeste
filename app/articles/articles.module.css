@@ -1,0 +1,16 @@
+.articleContent h1 a,
+.articleContent h2 a,
+.articleContent h3 a,
+.articleContent h4 a
+{
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+.articleContent h1 a:hover,
+.articleContent h2 a:hover,
+.articleContent h3 a:hover,
+.articleContent h4 a:hover
+{
+  color: #5858E2 !important;
+}

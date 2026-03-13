@@ -269,7 +269,7 @@ function NewPsychologistFormContent({ getDataListItems }: NewPsychologistFormPro
                       <span className="ml-2 text-xs text-amber-600">только латиница, цифры, дефис</span>
                     </label>
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500">/psy-list/</span>
+                      <span className="text-gray-500">/catalog/</span>
                     <input
                           type="text"
                           name="slug"

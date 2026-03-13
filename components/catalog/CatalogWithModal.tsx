@@ -25,7 +25,7 @@ export function CatalogWithModal({ items, nextCursor, hasMore, searchParams }: P
 
                                                
   const goToPsychologist = useCallback((psychologist: PsychologistCatalogItem) => {
-    router.push(`/psy-list/${psychologist.slug}`);
+    router.push(`/catalog/${psychologist.slug}`);
   }, [router]);
 
   const nextUrl = nextCursor != null ? buildCatalogUrl(searchParams, { cursor: nextCursor }) : null;

@@ -17,7 +17,7 @@ export type { SiteMenuItem, SiteMenuPageOption } from "@/lib/site-menu-shared";
 const RESERVED_PAGE_SLUGS = new Set(["site-footer", CATALOG_PAGE_SLUG]);
 
 const DEFAULT_SITE_MENU_ITEMS: SiteMenuItem[] = [
-  { id: "menu-psy-list", label: "Подобрать психолога", href: "/psy-list" },
+  { id: "menu-catalog", label: "Подобрать психолога", href: "/catalog" },
   { id: "menu-courses", label: "Курсы", href: "/courses" },
   { id: "menu-lib", label: "Библиотека", href: "/lib" },
   { id: "menu-lib-articles", label: "Статьи", href: "/lib/articles" },
@@ -67,7 +67,7 @@ export function createSiteMenuItemId() {
 export async function getSiteMenuPageOptions(): Promise<SiteMenuPageOption[]> {
   const fallback = [
     { slug: "home", title: "Главная", href: "/" },
-    { slug: "psy-list", title: "Подобрать психолога", href: "/psy-list" },
+    { slug: "catalog", title: "Подобрать психолога", href: "/catalog" },
     { slug: "courses", title: "Курсы", href: "/courses" },
     { slug: "lib", title: "Библиотека", href: "/lib" },
     { slug: "connect", title: "Для психологов", href: "/connect" },

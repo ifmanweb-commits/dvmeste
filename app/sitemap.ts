@@ -7,7 +7,7 @@ const BASE = SITE.baseUrl.replace(/\/$/, "");
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
-    { url: `${BASE}/psy-list`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
+    { url: `${BASE}/catalog`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
     { url: `${BASE}/courses`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/lib`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/lib/articles`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.8 },
@@ -33,7 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }),
     ]);
     psychologistPages = psychologists.map((p: { slug: string; updatedAt: Date }) => ({
-      url: `${BASE}/psy-list/${p.slug}`,
+      url: `${BASE}/catalog/${p.slug}`,
       lastModified: p.updatedAt,
       changeFrequency: "monthly" as const,
       priority: 0.7,

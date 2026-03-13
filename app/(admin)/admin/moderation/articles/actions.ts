@@ -58,7 +58,7 @@ export async function getModerationArticle(id: string) {
   }
 }
 
-export async function approveArticle(articleId: string, htmlContent: string) {  // ← принимаем HTML
+export async function approveArticle(articleId: string, htmlContent: string) {
   try {
     const moderator = await checkModerator();
 
@@ -77,16 +77,30 @@ export async function approveArticle(articleId: string, htmlContent: string) {  
     }
 
     const { month, year } = calculateArticleCreditPeriod(article.userId!);
+    const now = new Date();
 
+    // Обновляем статью (credited поля больше не заполняем)
     await prisma.article.update({
       where: { id: articleId },
       data: {
         moderationStatus: "APPROVED",
-        content: htmlContent,  // ← сохраняем готовый HTML
-        creditedMonth: month,
-        creditedYear: year,
-        moderatedAt: new Date(),
+        content: htmlContent,
+        moderatedAt: now,
         moderatedBy: moderator.id
+        // creditedMonth/year больше не трогаем
+      }
+    });
+
+    // Создаём запись в новой таблице
+    await prisma.articleCredit.create({
+      data: {
+        userId: article.userId!,
+        articleId: article.id,
+        articleTitle: article.title || 'Без названия',
+        month,
+        year,
+        approvedAt: now,
+        moderatedBy: moderator.id,
       }
     });
 

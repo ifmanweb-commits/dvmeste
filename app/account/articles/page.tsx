@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import ArticlesStats from "@/components/articles/AcArticlesStats";
 import ArticleTable from "@/components/articles/AcArticleTable";
-import ApprovedArticles from "@/components/articles/AcArticlesApproved";
+import AcApprovedArticles from "@/components/articles/AcArticlesApproved";
 import "./editor.css";
 
 export default async function MyArticlesPage() {
@@ -23,8 +23,6 @@ export default async function MyArticlesPage() {
       moderationStatus: true,
       updatedAt: true,
       moderatorComment: true,
-      creditedMonth: true,
-      creditedYear: true,
       slug: true,
     }
   });
@@ -32,8 +30,6 @@ export default async function MyArticlesPage() {
   const formattedArticles = articles.map(article => ({
     ...article,
     updatedAt: article.updatedAt.toISOString(), // Date → string
-    creditedMonth: article.creditedMonth ?? undefined, // null → undefined
-    creditedYear: article.creditedYear ?? undefined, // null → undefined
     moderatorComment: article.moderatorComment ?? undefined, // null → undefined
   }));
   /*console.log('Статусы статей:', formattedArticles.map(a => ({ 
@@ -46,13 +42,27 @@ export default async function MyArticlesPage() {
   const draftCount = formattedArticles.filter(a => a.moderationStatus === "DRAFT").length;
 
   // Находим последнюю принятую статью для биллинга
-  const lastApproved = formattedArticles
+  /*const lastApproved = formattedArticles
     .filter(a => a.moderationStatus === "APPROVED" && a.creditedMonth && a.creditedYear)
     .sort((a, b) => {
       const dateA = new Date(a.creditedYear!, a.creditedMonth! - 1);
       const dateB = new Date(b.creditedYear!, b.creditedMonth! - 1);
       return dateB.getTime() - dateA.getTime();
-    })[0];
+    })[0];*/
+  // Вместо фильтрации статей
+  const lastCredit = await prisma.articleCredit.findFirst({
+    where: { userId: user.id },
+    orderBy: [{ year: 'desc' }, { month: 'desc' }]
+  });
+  const credits = await prisma.articleCredit.findMany({
+    where: { userId: user.id },
+    orderBy: [{ year: 'desc' }, { month: 'desc' }],
+    include: {
+      article: {
+        select: { slug: true }
+      }
+    }
+  });
 
   // Разделяем статьи для разных секций
   const approvedArticles = formattedArticles.filter(a => a.moderationStatus === "APPROVED");
@@ -67,19 +77,21 @@ export default async function MyArticlesPage() {
         </header>
 
         <ArticlesStats 
-          lastCreditedMonth={lastApproved?.creditedMonth}
-          lastCreditedYear={lastApproved?.creditedYear} 
+          lastCreditedMonth={lastCredit?.month}
+          lastCreditedYear={lastCredit?.year} 
           draftCount={draftCount} 
         />
 
-        <div className="mt-16">
-          <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6 pl-1">
-            Статьи в работе
-          </h2>
-          <ArticleTable articles={workArticles} />
-        </div>
+        {workArticles.length > 0 && (
+          <div className="mt-16">
+            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6 pl-1">
+              Статьи в работе
+            </h2>
+            <ArticleTable articles={workArticles} />
+          </div>
+        )}
 
-        <ApprovedArticles articles={approvedArticles as any} />
+        <AcApprovedArticles credits={credits as any}/>
       </div>
     </div>
   );

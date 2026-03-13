@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getArticles, getArticleTags } from "@/lib/articles";
 import { buildMetadata } from "@/lib/seo";
-import { Calendar, Tag, ArrowLeft, ArrowRight, User, Sparkles, ArrowUpRight } from "lucide-react";
+import { Calendar, Tag, ArrowLeft, ArrowRight, User, Search } from "lucide-react";
 import type { Metadata } from "next";
 
 export const revalidate = 60;
@@ -37,261 +37,230 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
   const page = Number(params?.page) || 1;
   const tag = typeof params?.tag === "string" ? params.tag : undefined;
 
-  const [result, tags] = await Promise.all([getArticles({ page, tag }), getArticleTags()]);
+  // Получаем все статьи (без пагинации)
+  const allArticles = await getArticles({ 
+    ...(tag && { tag }), 
+    publishedOnly: true 
+  });
+  
+  const tags = await getArticleTags();
 
-  const featuredArticle = result.items[0] ?? null;
-  const articleGrid = result.items.slice(1);
+  // Временная пагинация на клиенте
+  const limit = 9;
+  const start = (page - 1) * limit;
+  const end = start + limit;
+  
+  const paginatedArticles = allArticles.slice(start, end);
+  const total = allArticles.length;
+  const totalPages = Math.ceil(total / limit);
+
+  const featuredArticle = paginatedArticles[0] ?? null;
+  const articleGrid = paginatedArticles.slice(1);
 
   return (
     <div className="min-h-screen bg-[#F5F5F7]">
-      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-        <section className="relative overflow-hidden rounded-[2rem] border border-[#5858E2]/20 bg-gradient-to-br from-[#5858E2] via-[#6d6dee] to-[#3b3bc1] px-6 py-8 text-white shadow-[0_24px_60px_-28px_rgba(88,88,226,0.6)] sm:px-10 sm:py-10">
-          <div className="pointer-events-none absolute -right-20 -top-16 h-56 w-56 rounded-full bg-[#A7FF5A]/25 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 left-16 h-56 w-56 rounded-full bg-white/15 blur-3xl" />
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+        
+        {/* Заголовок раздела (компактный) */}
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+            Библиотека
+          </h1>
+        </div>
 
-          <div className="relative">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] sm:text-sm">
-              <Sparkles className="h-4 w-4" />
-              Библиотека «Давай вместе»
+        {/* Поиск и фильтры */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8 shadow-sm">
+          
+          {/* Поиск (заглушка) */}
+          <div className="mb-5">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Поиск по статьям..." 
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#5858E2]/20 focus:border-[#5858E2]"
+                disabled // пока неактивно
+              />
             </div>
-
-            <h1 className="font-display text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
-              {tag ? `Статьи о «${tag}»` : "Статьи от практикующих психологов"}
-            </h1>
-
-            <p className="mt-4 max-w-3xl text-sm text-white/85 sm:text-base md:text-lg">
-              {tag
-                ? `Подборка материалов по теме «${tag}» с практическим взглядом и опытом специалистов.`
-                : "Подборки без воды: тревога, отношения, границы, самооценка, кризисы и другие темы, с которыми приходят в терапию."}
-            </p>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              <span className="rounded-2xl border border-white/30 bg-white/10 px-4 py-2 text-sm font-medium">
-                {result.total} материалов в базе
-              </span>
-              <span className="rounded-2xl border border-[#A7FF5A]/40 bg-[#A7FF5A]/20 px-4 py-2 text-sm font-medium text-[#0a2600]">
-                Страница {result.page} из {result.totalPages}
-              </span>
-            </div>
+            <p className="text-xs text-gray-400 mt-1">Поиск временно отключен</p>
           </div>
-        </section>
 
-        {tags.length > 0 && (
-          <section className="mt-8 rounded-3xl border border-[#5858E2]/15 bg-white p-5 shadow-[0_20px_40px_-30px_rgba(58,58,58,0.45)] sm:p-6">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-sm font-semibold text-[#5858E2]">
-                <Tag className="h-4 w-4" />
-                Фильтр по темам
-              </div>
-              {tag && (
-                <Link href="/articles" className="text-xs font-semibold text-[#5858E2] hover:text-[#3f3fb2] sm:text-sm">
-                  Сбросить
-                </Link>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href="/articles"
-                className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
-                  !tag
-                    ? "bg-[#5858E2] text-white shadow-[0_10px_24px_-12px_rgba(88,88,226,0.85)]"
-                    : "bg-[#EEF0FF] text-[#4a4abf] hover:bg-[#dfe3ff]"
-                }`}
-              >
-                Все темы
-              </Link>
-
-              {tags.map((t) => (
+          {/* Фильтр по темам */}
+          {tags.length > 0 && (
+            <div className="mb-5">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Темы</h3>
+              <div className="flex flex-wrap gap-2">
                 <Link
-                  key={t}
-                  href={tag === t ? "/articles" : `/articles?tag=${encodeURIComponent(t)}`}
-                  className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
-                    tag === t
-                      ? "bg-[#A7FF5A] text-[#172104] shadow-[0_10px_24px_-16px_rgba(61,102,16,0.85)]"
-                      : "bg-[#EEF0FF] text-[#4a4abf] hover:bg-[#dfe3ff]"
+                  href="/articles"
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    !tag
+                      ? "bg-[#5858E2] text-white shadow-sm"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
-                  #{t}
+                  Все темы
                 </Link>
-              ))}
-            </div>
-          </section>
-        )}
 
-        {result.items.length === 0 ? (
-          <section className="mt-8 rounded-3xl border border-[#5858E2]/15 bg-white px-6 py-16 text-center shadow-[0_20px_40px_-30px_rgba(58,58,58,0.45)]">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EEF0FF] text-[#5858E2]">
-              <Tag className="h-7 w-7" />
+                {tags.map((t) => (
+                  <Link
+                    key={t}
+                    href={tag === t ? "/articles" : `/articles?tag=${encodeURIComponent(t)}`}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      tag === t
+                        ? "bg-[#A7FF5A] text-gray-900 shadow-sm"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    #{t}
+                  </Link>
+                ))}
+              </div>
             </div>
-            <h2 className="font-display text-2xl font-bold text-[#222]">Пока нет материалов</h2>
-            <p className="mt-2 text-sm text-neutral-dark sm:text-base">
+          )}
+
+          {/* Фильтр по автору (заглушка) */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Автор</h3>
+            <select 
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#5858E2]/20 focus:border-[#5858E2]"
+              disabled // пока неактивно
+            >
+              <option>Все авторы</option>
+              <option>Анна Иванова</option>
+              <option>Михаил Петров</option>
+              <option>Елена Соколова</option>
+            </select>
+            <p className="text-xs text-gray-400 mt-1">Фильтр по авторам временно отключен</p>
+          </div>
+        </div>
+
+        {/* Результаты */}
+        <div className="flex justify-between items-center mb-6">
+          <span className="text-sm text-gray-600">
+            Найдено статей: {total}
+          </span>
+        </div>
+
+        {allArticles.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+              <Tag className="h-6 w-6 text-gray-400" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Пока нет материалов</h2>
+            <p className="text-gray-600">
               Скоро здесь появятся новые статьи и разборы от психологов проекта.
             </p>
-
             {tag && (
               <Link
                 href="/articles"
-                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#5858E2] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#4b4bcf]"
+                className="mt-6 inline-flex items-center gap-2 bg-[#5858E2] text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-[#4b4bcf] transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Показать все статьи
               </Link>
             )}
-          </section>
+          </div>
         ) : (
-          <section className="mt-8 space-y-6">
-            {featuredArticle && (
-              <article className="group relative overflow-hidden rounded-3xl border border-[#5858E2]/20 bg-white p-6 shadow-[0_24px_50px_-34px_rgba(88,88,226,0.75)] sm:p-8">
-                <div className="pointer-events-none absolute -right-16 -top-20 h-52 w-52 rounded-full bg-[#A7FF5A]/30 blur-3xl" />
+          <>
+            {/* Сетка статей */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paginatedArticles.map((article) => (
+                <article
+                  key={article.id}
+                  className="group bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-all hover:-translate-y-1 hover:border-[#5858E2]/30"
+                >
+                  <Link href={`/articles/${article.slug}`} className="block p-6">
+                    
+                    {/* Заголовок */}
+                    <h2 className="text-xl font-bold text-gray-900 group-hover:text-[#5858E2] transition-colors line-clamp-2 mb-3">
+                      {article.title}
+                    </h2>
 
-                <div className="relative">
-                  <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#EEF0FF] px-3 py-1 text-xs font-semibold text-[#5858E2]">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Выбор редакции
-                  </div>
-
-                  <h2 className="font-display text-2xl font-bold leading-tight text-[#141414] sm:text-3xl">
-                    {featuredArticle.title}
-                  </h2>
-
-                  <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-neutral-dark">
-                    {featuredArticle.authorName && (
-                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#F5F5F7] px-3 py-1.5">
-                        <User className="h-4 w-4 text-[#5858E2]" />
-                        {featuredArticle.authorName}
-                      </span>
+                    {/* Короткий текст (excerpt) */}
+                    {article.excerpt && (
+                      <p className="text-gray-600 text-sm line-clamp-3 mb-4">
+                        {article.excerpt}
+                      </p>
                     )}
-                  </div>
-                    <div>
-                      {featuredArticle.shortText && (
-                        <p className="mt-4 text-base text-neutral-dark line-clamp-3">
-                          {featuredArticle.shortText}
-                        </p>
-                      )}
-                    </div>
-                  {featuredArticle.tags.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {featuredArticle.tags.slice(0, 5).map((t: string) => (
-                        <span
-                          key={t}
-                          className="rounded-full border border-[#5858E2]/25 bg-[#5858E2]/5 px-3 py-1 text-xs font-semibold text-[#5858E2]"
-                        >
-                          #{t}
+
+                    {/* Мета-информация */}
+                    <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+                      {article.user?.fullName && (
+                        <span className="inline-flex items-center gap-1">
+                          <User className="h-3.5 w-3.5" />
+                          {article.user.fullName}
                         </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <Link
-                    href={`/articles/${featuredArticle.slug}`}
-                    className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#5858E2] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#4b4bcf]"
-                  >
-                    Читать статью
-                    <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-                  </Link>
-                </div>
-              </article>
-            )}
-
-            {articleGrid.length > 0 && (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {articleGrid.map((article, index: number) => (
-                  <article
-                    key={article.id}
-                    className="group overflow-hidden rounded-2xl border border-[#5858E2]/15 bg-white shadow-[0_18px_36px_-30px_rgba(88,88,226,0.75)] transition-all hover:-translate-y-0.5 hover:border-[#5858E2]/35"
-                  >
-                    <Link href={`/articles/${article.slug}`} className="block p-5">
-                      <div
-                        className={`mb-4 h-1.5 w-16 rounded-full ${
-                          index % 3 === 0 ? "bg-[#5858E2]" : index % 3 === 1 ? "bg-[#A7FF5A]" : "bg-[#8f8ff0]"
-                        }`}
-                      />
-
-                      <h3 className="font-display text-xl font-bold leading-snug text-[#1f1f1f] transition-colors group-hover:text-[#5858E2]">
-                        {article.title}
-                      </h3>
-
-                      <div className="mt-3 space-y-2 text-sm text-neutral-dark">
-                        {article.authorName && (
-                          <p className="inline-flex items-center gap-2">
-                            <User className="h-4 w-4 text-[#5858E2]" />
-                            {article.authorName}
-                          </p>
-                        )}
-                        {article.publishedAt && (
-                          <p className="inline-flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-[#5858E2]" />
-                            {formatDate(article.publishedAt)}
-                          </p>
-                        )}
-                      </div>
-
-                      {article.tags.length > 0 && (
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {article.tags.slice(0, 3).map((t: string) => (
-                            <span key={t} className="rounded-full bg-[#EEF0FF] px-2.5 py-1 text-xs font-semibold text-[#5353d6]">
-                              #{t}
-                            </span>
-                          ))}
-                        </div>
                       )}
+                      {article.publishedAt && (
+                        <span className="inline-flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {formatDate(article.publishedAt)}
+                        </span>
+                      )}
+                    </div>
 
-                      <div className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-[#5858E2]">
-                        Читать
-                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                    {/* Теги */}
+                    {article.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        {article.tags.slice(0, 3).map((t) => (
+                          <span
+                            key={t}
+                            className="px-3 py-1 bg-gray-100 text-[#5858E2] rounded-full text-xs font-medium"
+                          >
+                            #{t}
+                          </span>
+                        ))}
                       </div>
-                    </Link>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
-        )}
+                    )}
 
-        {result.totalPages > 1 && (
-          <nav className="mt-10 rounded-2xl border border-[#5858E2]/15 bg-white p-4 shadow-[0_20px_40px_-30px_rgba(58,58,58,0.45)] sm:p-5">
-            <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-              <p className="text-sm text-neutral-dark">
-                Страница {result.page} из {result.totalPages}
-              </p>
-
-              <div className="flex w-full gap-2 sm:w-auto">
-                {result.page > 1 && (
-                  <Link
-                    href={
-                      tag
-                        ? `/articles?page=${result.page - 1}&tag=${encodeURIComponent(tag)}`
-                        : `/articles?page=${result.page - 1}`
-                    }
-                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#5858E2]/20 px-4 py-2.5 text-sm font-semibold text-[#4a4abf] hover:bg-[#EEF0FF] sm:flex-none"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Назад
+                    {/* Ссылка-призыв */}
+                    <div className="mt-5 text-[#5858E2] font-medium text-sm inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+                      Читать статью
+                      <ArrowRight className="h-4 w-4" />
+                    </div>
                   </Link>
-                )}
-
-                {result.page < result.totalPages && (
-                  <Link
-                    href={
-                      tag
-                        ? `/articles?page=${result.page + 1}&tag=${encodeURIComponent(tag)}`
-                        : `/articles?page=${result.page + 1}`
-                    }
-                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#5858E2] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#4b4bcf] sm:flex-none"
-                  >
-                    Вперед
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                )}
-              </div>
+                </article>
+              ))}
             </div>
-          </nav>
+
+            {/* Пагинация */}
+            {totalPages > 1 && (
+              <nav className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-gray-200 rounded-2xl p-4">
+                <p className="text-sm text-gray-600">
+                  Страница {page} из {totalPages}
+                </p>
+                <div className="flex gap-3 w-full sm:w-auto">
+                  {page > 1 && (
+                    <Link
+                      href={
+                        tag
+                          ? `/articles?page=${page - 1}&tag=${encodeURIComponent(tag)}`
+                          : `/articles?page=${page - 1}`
+                      }
+                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Назад
+                    </Link>
+                  )}
+                  {page < totalPages && (
+                    <Link
+                      href={
+                        tag
+                          ? `/articles?page=${page + 1}&tag=${encodeURIComponent(tag)}`
+                          : `/articles?page=${page + 1}`
+                      }
+                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#5858E2] text-white rounded-xl text-sm font-medium hover:bg-[#4b4bcf] transition-colors"
+                    >
+                      Вперед
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  )}
+                </div>
+              </nav>
+            )}
+          </>
         )}
-
-        <div className="mt-10 text-center">
-
-        </div>
       </div>
     </div>
   );

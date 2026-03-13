@@ -74,7 +74,7 @@ export function webSiteJsonLd(): string {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${SITE.baseUrl}/psy-list?city={search_term_string}`,
+        urlTemplate: `${SITE.baseUrl}/catalog?city={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },

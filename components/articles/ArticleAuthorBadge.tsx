@@ -34,7 +34,7 @@ export function ArticleAuthorBadge({ author }: { author: Author }) {
           {author.shortBio && (
             <p className="mt-2 text-sm leading-relaxed text-neutral-dark line-clamp-3">{author.shortBio}</p>
           )}
-          <Link href={`/psy-list/${author.slug}`} className="mt-4 inline-block">
+          <Link href={`/catalog/${author.slug}`} className="mt-4 inline-block">
             <span className="rounded-xl bg-[#5858E2] px-6 py-2 font-medium text-white hover:bg-[#4848d0] shadow-md transition-all text-sm">На страницу психолога</span>
           </Link>
         </div>

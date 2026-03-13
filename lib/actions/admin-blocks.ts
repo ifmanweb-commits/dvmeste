@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth/require';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
 interface BlockUpdateData {
   id: string;
@@ -43,6 +43,7 @@ export async function updateBlocks(blocksData: BlockUpdateData[]) {
 
     // Инвалидируем кеш, чтобы изменения применились на сайте
     revalidatePath('/', 'layout');
+    revalidatePath('/catalog', 'layout');
     
     return { success: true };
   } catch (error) {

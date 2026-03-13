@@ -34,7 +34,7 @@ export function CatalogBlock() {
               </ul>
             </div>
             <div className="mt-6 flex flex-wrap gap-3 sm:mt-10 sm:gap-4">
-              <Link href="/psy-list" className="inline-block rounded-xl bg-[#5858E2] px-4 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-[#4848d0] sm:px-6 sm:py-3.5 sm:text-base">
+              <Link href="/catalog" className="inline-block rounded-xl bg-[#5858E2] px-4 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-[#4848d0] sm:px-6 sm:py-3.5 sm:text-base">
                 Перейти в каталог
               </Link>
               <Link href="/certification-levels" className="inline-block rounded-xl border-2 border-[#A7FF5A] bg-[#A7FF5A]/20 px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-[#A7FF5A]/40 sm:px-5 sm:py-3 sm:text-base">

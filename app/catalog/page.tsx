@@ -8,20 +8,25 @@ import { CatalogSidebar } from "@/components/catalog/CatalogSidebar";
 import { getPageBySlug } from "@/lib/page-content";
 import { CATALOG_PAGE_SLUG, parseCatalogPageSections } from "@/lib/catalog-page-config";
 import { Filter } from "lucide-react";
+import { prisma } from "@/lib/prisma";
 import { normalizeEmbeddedLocalAssetUrls } from "@/lib/html-local-assets";
 
 export const revalidate = 60;
+export const dynamic = 'force-dynamic'
 
 export const metadata = buildMetadata({
   title: "Каталог психологов — Давай вместе",
   description: "Найдите проверенного психолога по специализации, цене и опыту.",
-  path: "/psy-list",
+  path: "/catalog",
 });
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
-
+const catalogHeader = await prisma.blocks.findUnique({
+  where: { slug: "catalog-header", isActive: true },
+  select: { content: true }
+});
 export default async function PsyListPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const filters = searchParamsToFilters(params);
@@ -42,49 +47,11 @@ export default async function PsyListPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen bg-white">
-      {hasTopHtml ? (
-        <div
+      {catalogHeader?.content && (
+        <div 
           className="w-full [&_iframe]:max-w-full [&_img]:h-auto [&_img]:max-w-full [&_video]:max-w-full"
-          dangerouslySetInnerHTML={{ __html: normalizedTopHtml }}
+          dangerouslySetInnerHTML={{ __html: catalogHeader.content }}
         />
-      ) : (
-        <section className="border-b border-neutral-200 bg-[#f5f5f7]">
-          <div className="mx-auto w-full max-w-[1420px] px-4 pb-14 pt-16 sm:px-6 sm:pb-20 sm:pt-24">
-            <div className="mx-auto flex max-w-sm items-center justify-center gap-5 sm:max-w-md sm:gap-8">
-              <span className="h-px flex-1 bg-[#68b417]" />
-              <p className="text-sm font-medium tracking-[0.24em] text-[#5858E2] sm:text-base">КАТАЛОГ</p>
-              <span className="h-px flex-1 bg-[#5858E2]" />
-            </div>
-
-            <h1 className="mt-8 text-center text-5xl font-extrabold leading-[1.02] text-[#111a33] sm:mt-10 sm:text-6xl lg:text-8xl">
-              Найдите <span className="text-[#5858E2]">психолога</span>
-            </h1>
-
-            <div className="mx-auto mt-5 h-2 w-32 rounded-full bg-gradient-to-r from-[#5858E2] via-[#8b8df0] to-[#7bc143] sm:w-48" />
-
-            <p className="mx-auto mt-9 max-w-5xl text-center text-xl leading-relaxed text-[#3d4a5f] sm:text-3xl">
-              Только специалисты, прошедшие наши экзамены и доказавшие свою квалификацию.
-            </p>
-            <p className="mx-auto mt-9 max-w-5xl text-center text-xl leading-relaxed text-[#3d4a5f] sm:text-3xl">
-              <a href=""></a>
-            </p>
-
-            <div className="mx-auto mt-12 grid max-w-4xl grid-cols-1 gap-6 text-center sm:mt-16 sm:grid-cols-3 sm:gap-8">
-              <div>
-                <p className="text-4xl font-extrabold text-[#60a60f] sm:text-5xl">2+</p>
-                <p className="mt-2 text-lg text-[#4d596b] sm:text-2xl">специалистов</p>
-              </div>
-              <div>
-                <p className="text-4xl font-extrabold text-[#5858E2] sm:text-5xl">3</p>
-                <p className="mt-2 text-lg text-[#4d596b] sm:text-2xl">уровня</p>
-              </div>
-              <div>
-                <p className="text-4xl font-extrabold text-[#111a33] sm:text-5xl">50+</p>
-                <p className="mt-2 text-lg text-[#4d596b] sm:text-2xl">направлений</p>
-              </div>
-            </div>
-          </div>
-        </section>
       )}
 
       <div className="relative">

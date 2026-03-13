@@ -16,7 +16,7 @@ export const FOOTER_DEFAULT_CONTENT = `
 
     <nav class="flex flex-wrap justify-center gap-6">
       <a href="/" class="text-sm text-gray-600 hover:text-gray-900">Главная</a>
-      <a href="/psy-list" class="text-sm text-gray-600 hover:text-gray-900">Каталог</a>
+      <a href="/catalog" class="text-sm text-gray-600 hover:text-gray-900">Каталог</a>
       <a href="/lib" class="text-sm text-gray-600 hover:text-gray-900">Библиотека</a>
       <a href="/connect" class="text-sm text-gray-600 hover:text-gray-900">Для психологов</a>
       <a href="/contacts" class="text-sm text-gray-600 hover:text-gray-900">Контакты</a>
@@ -50,7 +50,7 @@ export const FOOTER_DEFAULT_CONTENT = `
 
 const FOOTER_FALLBACK_MENU_HTML = [
   '<a href="/" class="text-sm text-gray-600 hover:text-gray-900">Главная</a>',
-  '<a href="/psy-list" class="text-sm text-gray-600 hover:text-gray-900">Каталог</a>',
+  '<a href="/catalog" class="text-sm text-gray-600 hover:text-gray-900">Каталог</a>',
   '<a href="/lib" class="text-sm text-gray-600 hover:text-gray-900">Библиотека</a>',
   '<a href="/connect" class="text-sm text-gray-600 hover:text-gray-900">Для психологов</a>',
   '<a href="/contacts" class="text-sm text-gray-600 hover:text-gray-900">Контакты</a>',

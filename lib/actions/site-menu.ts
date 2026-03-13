@@ -49,7 +49,7 @@ function revalidateMenuTargets(scope: SiteMenuScope) {
   revalidatePath(menuPath);
   revalidatePath("/", "layout");
   revalidatePath("/");
-  revalidatePath("/psy-list");
+  revalidatePath("/catalog");
   revalidatePath("/courses");
   revalidatePath("/lib");
   revalidatePath("/lib/articles");

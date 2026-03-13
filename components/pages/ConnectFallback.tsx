@@ -126,7 +126,7 @@ export function ConnectFallback() {
                 Начать сотрудничество
               </Link>
               <Link
-                href="/psy-list"
+                href="/catalog"
                 className="inline-flex items-center justify-center rounded-lg border-2 border-white bg-transparent px-8 py-4 font-medium text-white transition-colors duration-200 hover:bg-white/10"
               >
                 Смотреть каталог
@@ -301,7 +301,7 @@ export function ConnectFallback() {
                 Записаться на консультацию
               </Link>
               <Link
-                href="/psy-list"
+                href="/catalog"
                 className="inline-flex w-full items-center justify-center rounded-xl border-2 border-white px-10 py-4 font-medium text-white transition-colors duration-200 hover:bg-white/10 sm:w-auto"
               >
                 Примеры анкет

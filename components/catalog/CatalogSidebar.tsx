@@ -50,7 +50,7 @@ export function CatalogSidebar({ initialParams, onFormSubmit }: Props) {
                                  
   const resetFilters = () => {
     startTransition(() => {
-      router.push("/psy-list#list");                                      
+      router.push("/catalog#list");                                      
       if (onFormSubmit) {
         onFormSubmit();
       }
@@ -202,8 +202,8 @@ export function CatalogSidebar({ initialParams, onFormSubmit }: Props) {
                 className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
               >
                 <option value="">Не важно</option>
-                <option value="М">Мужской</option>
-                <option value="Ж">Женский</option>
+                <option value="MALE">Мужской</option>
+                <option value="FEMALE">Женский</option>
               </select>
             </div>
 

@@ -9,7 +9,7 @@ function isExternalHref(href: string) {
 
 function getMenuEmoji(href: string) {
   if (isExternalHref(href)) return "🔗";
-  if (href === "/psy-list") return "👤";
+  if (href === "/catalog") return "👤";
   return "🔍";
 }
 

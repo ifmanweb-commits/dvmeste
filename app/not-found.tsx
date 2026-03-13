@@ -16,7 +16,7 @@ export default function NotFound() {
         На главную
       </Link>
       <p className="mt-6">
-        <Link href="/psy-list" className="text-[#5858E2] underline hover:no-underline">
+        <Link href="/catalog" className="text-[#5858E2] underline hover:no-underline">
           Каталог психологов
         </Link>
         {" · "}
