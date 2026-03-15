@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getArticles, getArticleTags } from "@/lib/articles";
 import { buildMetadata } from "@/lib/seo";
-import { Calendar, Tag, ArrowLeft, ArrowRight, User, Search } from "lucide-react";
+import { Calendar, Tag, ArrowLeft, ArrowRight, User, Search, X } from "lucide-react";
 import type { Metadata } from "next";
 
 export const revalidate = 60;
@@ -13,9 +13,16 @@ type PageProps = {
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const params = await searchParams;
   const tag = typeof params?.tag === "string" ? params.tag : undefined;
+  const search = typeof params?.search === "string" ? params.search : undefined;
+
+  const titlePart = tag 
+    ? `Статьи по теме «${tag}»` 
+    : search 
+      ? `Результаты поиска «${search}»` 
+      : "Статьи";
 
   return buildMetadata({
-    title: tag ? `Статьи по теме «${tag}» — Библиотека — Давай вместе` : "Статьи — Библиотека — Давай вместе",
+    title: `${titlePart} — Библиотека — Давай вместе`,
     description: tag
       ? `Статьи по психологии на тему «${tag}» от психологов реестра «Давай вместе».`
       : "Тематические статьи по психологии и психотерапии от психологов реестра «Давай вместе».",
@@ -36,10 +43,12 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const page = Number(params?.page) || 1;
   const tag = typeof params?.tag === "string" ? params.tag : undefined;
+  const search = typeof params?.search === "string" ? params.search : undefined;
 
   // Получаем все статьи (без пагинации)
   const allArticles = await getArticles({ 
     ...(tag && { tag }), 
+    ...(search && { search }),
     publishedOnly: true 
   });
   
@@ -57,6 +66,24 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
   const featuredArticle = paginatedArticles[0] ?? null;
   const articleGrid = paginatedArticles.slice(1);
 
+  // Функция для построения URL с сохранением параметров
+  const buildUrl = (newParams: { tag?: string | null; search?: string | null; page?: number }) => {
+    const urlParams = new URLSearchParams();
+    
+    // Явно обрабатываем каждый параметр
+    // null означает "сбросить", undefined означает "оставить как есть"
+    const finalTag = newParams.tag === null ? null : (newParams.tag ?? tag);
+    const finalSearch = newParams.search === null ? null : (newParams.search ?? search);
+    const finalPage = newParams.page ?? page;
+    
+    if (finalTag) urlParams.set("tag", finalTag);
+    if (finalSearch) urlParams.set("search", finalSearch);
+    if (finalPage > 1) urlParams.set("page", String(finalPage));
+    
+    const queryString = urlParams.toString();
+    return queryString ? `/articles?${queryString}` : "/articles";
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F5F7]">
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
@@ -71,27 +98,48 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
         {/* Поиск и фильтры */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8 shadow-sm">
           
-          {/* Поиск (заглушка) */}
+          {/* Поиск */}
           <div className="mb-5">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input 
-                type="text" 
-                placeholder="Поиск по статьям..." 
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#5858E2]/20 focus:border-[#5858E2]"
-                disabled // пока неактивно
-              />
-            </div>
-            <p className="text-xs text-gray-400 mt-1">Поиск временно отключен</p>
+            <form action="/articles" method="GET">
+              {/* Сохраняем текущий тег при поиске */}
+              {tag && <input type="hidden" name="tag" value={tag} />}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10 pointer-events-none" />
+                <input 
+                  type="text" 
+                  name="search"
+                  defaultValue={search}
+                  placeholder="Поиск по названию и описанию..." 
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#5858E2]/20 focus:border-[#5858E2]"
+                />
+              </div>
+            </form>
+            
+            {/* Результаты поиска и крестик под полем */}
+            {search && (
+              <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                <span>
+                  Результаты по запросу: <span className="font-medium">&laquo;{search}&raquo;</span>
+                </span>
+                <Link
+                  href={buildUrl({ search: null, page: 1 })}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-gray-400 hover:text-gray-600 transition-colors bg-gray-100 rounded-full hover:bg-gray-200"
+                  title="Очистить поиск"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  <span className="text-xs">Очистить</span>
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Фильтр по темам */}
           {tags.length > 0 && (
-            <div className="mb-5">
+            <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-3">Темы</h3>
               <div className="flex flex-wrap gap-2">
                 <Link
-                  href="/articles"
+                  href={buildUrl({ tag: null, page: 1 })}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                     !tag
                       ? "bg-[#5858E2] text-white shadow-sm"
@@ -104,7 +152,7 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
                 {tags.map((t) => (
                   <Link
                     key={t}
-                    href={tag === t ? "/articles" : `/articles?tag=${encodeURIComponent(t)}`}
+                    href={buildUrl({ tag: tag === t ? null : t, page: 1 })}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                       tag === t
                         ? "bg-[#A7FF5A] text-gray-900 shadow-sm"
@@ -117,21 +165,6 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
               </div>
             </div>
           )}
-
-          {/* Фильтр по автору (заглушка) */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Автор</h3>
-            <select 
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#5858E2]/20 focus:border-[#5858E2]"
-              disabled // пока неактивно
-            >
-              <option>Все авторы</option>
-              <option>Анна Иванова</option>
-              <option>Михаил Петров</option>
-              <option>Елена Соколова</option>
-            </select>
-            <p className="text-xs text-gray-400 mt-1">Фильтр по авторам временно отключен</p>
-          </div>
         </div>
 
         {/* Результаты */}
@@ -146,11 +179,16 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
               <Tag className="h-6 w-6 text-gray-400" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Пока нет материалов</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              {search ? "Ничего не найдено" : "Пока нет материалов"}
+            </h2>
             <p className="text-gray-600">
-              Скоро здесь появятся новые статьи и разборы от психологов проекта.
+              {search 
+                ? "Попробуйте изменить параметры поиска или выбрать другую тему."
+                : "Скоро здесь появятся новые статьи и разборы от психологов проекта."
+              }
             </p>
-            {tag && (
+            {(tag || search) && (
               <Link
                 href="/articles"
                 className="mt-6 inline-flex items-center gap-2 bg-[#5858E2] text-white px-6 py-3 rounded-xl text-sm font-medium hover:bg-[#4b4bcf] transition-colors"
@@ -169,12 +207,14 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
                   key={article.id}
                   className="group bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-all hover:-translate-y-1 hover:border-[#5858E2]/30"
                 >
-                  <Link href={`/articles/${article.slug}`} className="block p-6">
-                    
+                  <div className="p-6">
+
                     {/* Заголовок */}
-                    <h2 className="text-xl font-bold text-gray-900 group-hover:text-[#5858E2] transition-colors line-clamp-2 mb-3">
-                      {article.title}
-                    </h2>
+                    <Link href={`/articles/${article.slug}`} className="block">
+                      <h2 className="text-xl font-bold text-gray-900 group-hover:text-[#5858E2] transition-colors line-clamp-2 mb-3">
+                        {article.title}
+                      </h2>
+                    </Link>
 
                     {/* Короткий текст (excerpt) */}
                     {article.excerpt && (
@@ -205,7 +245,11 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
                         {article.tags.slice(0, 3).map((t) => (
                           <span
                             key={t}
-                            className="px-3 py-1 bg-gray-100 text-[#5858E2] rounded-full text-xs font-medium"
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                              tag === t
+                                ? "bg-[#A7FF5A] text-gray-900"
+                                : "bg-gray-100 text-[#5858E2]"
+                            }`}
                           >
                             #{t}
                           </span>
@@ -214,11 +258,16 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
                     )}
 
                     {/* Ссылка-призыв */}
-                    <div className="mt-5 text-[#5858E2] font-medium text-sm inline-flex items-center gap-1 group-hover:gap-2 transition-all">
-                      Читать статью
-                      <ArrowRight className="h-4 w-4" />
+                    <div className="mt-5">
+                      <Link
+                        href={`/articles/${article.slug}`}
+                        className="text-[#5858E2] font-medium text-sm inline-flex items-center gap-1 group-hover:gap-2 transition-all"
+                      >
+                        Читать статью
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
                     </div>
-                  </Link>
+                  </div>
                 </article>
               ))}
             </div>
@@ -232,11 +281,7 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
                 <div className="flex gap-3 w-full sm:w-auto">
                   {page > 1 && (
                     <Link
-                      href={
-                        tag
-                          ? `/articles?page=${page - 1}&tag=${encodeURIComponent(tag)}`
-                          : `/articles?page=${page - 1}`
-                      }
+                      href={buildUrl({ page: page - 1 })}
                       className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       <ArrowLeft className="h-4 w-4" />
@@ -245,11 +290,7 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
                   )}
                   {page < totalPages && (
                     <Link
-                      href={
-                        tag
-                          ? `/articles?page=${page + 1}&tag=${encodeURIComponent(tag)}`
-                          : `/articles?page=${page + 1}`
-                      }
+                      href={buildUrl({ page: page + 1 })}
                       className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#5858E2] text-white rounded-xl text-sm font-medium hover:bg-[#4b4bcf] transition-colors"
                     >
                       Вперед

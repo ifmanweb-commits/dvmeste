@@ -13,6 +13,11 @@ export default async function EditArticlePage({ params }: { params: { id: string
     redirect("/auth/login");
   }
 
+  // Проверка: только ACTIVE пользователи могут управлять статьями
+  if (user.status === "CANDIDATE") {
+    redirect("/account/articles");
+  }
+
   // 1. Получаем статью
   const article = await prisma.article.findFirst({
       where: { 

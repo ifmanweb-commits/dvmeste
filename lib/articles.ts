@@ -103,15 +103,17 @@ export async function getArticleBySlug(slug: string) {
 }
 
                                      
-export async function getArticles({ tag, authorId, publishedOnly }: {
+export async function getArticles({ tag, authorId, publishedOnly, search }: {
   tag?: string;
   authorId?: string;
   publishedOnly?: boolean;
+  search?: string;
 } = {}) {
   return getArticlesCached(
     tag ?? null,
     authorId ?? null,
-    Boolean(publishedOnly)
+    Boolean(publishedOnly),
+    search?.trim() || null
   );
 }
 
@@ -340,15 +342,28 @@ const getArticlesCached = unstable_cache(
   async (
     tag: string | null,
     authorId: string | null,
-    publishedOnly: boolean
+    publishedOnly: boolean,
+    search: string | null
   ) => {
     try {
       const model = checkPrismaModel();
+      
+      // Условия для поиска по названию и excerpt
+      const searchCondition = search
+        ? {
+            OR: [
+              { title: { contains: search, mode: 'insensitive' as const } },
+              { excerpt: { contains: search, mode: 'insensitive' as const } },
+            ]
+          }
+        : {};
+      
       const articles = await model.findMany({
         where: {
           ...(tag ? { tags: { has: tag } } : {}),
-          ...(authorId ? { userId: authorId } : {}), // было authorId, стало userId
+          ...(authorId ? { userId: authorId } : {}),
           ...(publishedOnly ? { publishedAt: { not: null } } : {}),
+          ...searchCondition,
         },
         orderBy: { publishedAt: "desc" },
         include: articleInclude,
@@ -394,19 +409,123 @@ const getAllArticleTagsCached = unstable_cache(
 
 export async function getArticleTags() {
   try {
+    // Используем тот же фильтр, что и в getArticles для publishedOnly
+    // publishedAt: { not: null } вместо isPublished: true
     const articles = await prisma.article.findMany({
       select: { tags: true },
-      where: { isPublished: true }
+      where: { publishedAt: { not: null } }
     });
-    
+
     const tags = new Set<string>();
     articles.forEach(article => {
       article.tags?.forEach(tag => tags.add(tag));
     });
-    
+
     return Array.from(tags).sort();
   } catch (error) {
     console.error("[getArticleTags] Error:", error);
     return [];
+  }
+}
+
+/**
+ * Получение статей для админ-панели
+ * - Исключает статьи со статусом DRAFT
+ * - Поддерживает пагинацию
+ * - Включает информацию о модераторе
+ */
+export async function getArticlesForAdmin({
+  page = 1,
+  pageSize = 30,
+  unpublishedOnly = false,
+  search,
+  tag,
+  authorId,
+}: {
+  page?: number;
+  pageSize?: number;
+  unpublishedOnly?: boolean;
+  search?: string | null;
+  tag?: string | null;
+  authorId?: string | null;
+} = {}) {
+  try {
+    const model = checkPrismaModel();
+
+    // Условия для поиска по названию и excerpt
+    const searchCondition = search
+      ? {
+          OR: [
+            { title: { contains: search, mode: "insensitive" as const } },
+            { excerpt: { contains: search, mode: "insensitive" as const } },
+          ]
+        }
+      : {};
+
+    // Фильтр по статусу модерации (исключаем DRAFT)
+    const statusFilter = {
+      moderationStatus: {
+        not: "DRAFT"
+      }
+    };
+
+    // Фильтр по опубликованности
+    const publishedFilter = unpublishedOnly
+      ? { isPublished: false }
+      : {};
+
+    const where = {
+      ...statusFilter,
+      ...publishedFilter,
+      ...(tag ? { tags: { has: tag } } : {}),
+      ...(authorId ? { userId: authorId } : {}),
+      ...searchCondition,
+    };
+
+    // Получаем общее количество статей для пагинации
+    const totalCount = await model.count({ where });
+
+    // Получаем статьи с пагинацией
+    const articles = await model.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            slug: true,
+            avatarUrl: true,
+            certificationLevel: true,
+            shortBio: true,
+          }
+        },
+        moderator: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          }
+        }
+      },
+    });
+
+    return {
+      articles,
+      totalCount,
+      totalPages: Math.ceil(totalCount / pageSize),
+      currentPage: page,
+    };
+  } catch (error) {
+    console.error("[getArticlesForAdmin] Error:", error);
+    return {
+      articles: [],
+      totalCount: 0,
+      totalPages: 0,
+      currentPage: page,
+    };
   }
 }

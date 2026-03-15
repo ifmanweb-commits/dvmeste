@@ -1,13 +1,10 @@
 "use client";
 
-import { useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Badge } from "@/components/ui";
-import { buildCatalogUrl } from "@/lib/url";
 import { normalizeImageSrc, isExternalImageSrc } from "@/lib/image-src";
 import type { PsychologistCatalogItem } from "@/types/catalog";
-import { useRouter } from "next/navigation";
 
 type Props = {
   items: PsychologistCatalogItem[];
@@ -16,19 +13,21 @@ type Props = {
   searchParams: Record<string, string | string[] | undefined>;
 };
 
-   
-                                
-                                                      
-   
 export function CatalogWithModal({ items, nextCursor, hasMore, searchParams }: Props) {
-  const router = useRouter();
-
-                                               
-  const goToPsychologist = useCallback((psychologist: PsychologistCatalogItem) => {
-    router.push(`/catalog/${psychologist.slug}`);
-  }, [router]);
-
-  const nextUrl = nextCursor != null ? buildCatalogUrl(searchParams, { cursor: nextCursor }) : null;
+  const buildNextUrl = () => {
+    const params = new URLSearchParams();
+    Object.entries(searchParams).forEach(([key, value]) => {
+      if (value !== undefined && value !== "" && key !== "cursor") {
+        if (Array.isArray(value)) {
+          value.forEach(v => params.append(key, v));
+        } else {
+          params.set(key, value);
+        }
+      }
+    });
+    if (nextCursor) params.set("cursor", nextCursor);
+    return `/catalog?${params.toString()}`;
+  };
 
   return (
     <div className="min-h-[60vh]">
@@ -41,19 +40,15 @@ export function CatalogWithModal({ items, nextCursor, hasMore, searchParams }: P
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 items-stretch gap-5 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:gap-7">
+          <div className="flex flex-col gap-5">
             {items.map((p) => (
-              <CardBlock
-                key={p.id}
-                psychologist={p}
-                onClick={() => goToPsychologist(p)}
-              />
+              <PsychologistCard key={p.id} psychologist={p} />
             ))}
           </div>
-          {hasMore && nextUrl && (
+          {hasMore && nextCursor && (
             <div className="mt-6 flex justify-center sm:mt-10">
               <Link
-                href={nextUrl}
+                href={buildNextUrl()}
                 className="inline-block rounded-xl bg-[#5858E2] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#4848d0] sm:px-8 sm:py-3 sm:text-base"
               >
                 Показать ещё
@@ -66,70 +61,128 @@ export function CatalogWithModal({ items, nextCursor, hasMore, searchParams }: P
   );
 }
 
-                                                                      
-function CardBlock({
-  psychologist,
-  onClick,
-}: {
-  psychologist: PsychologistCatalogItem;
-  onClick: () => void;
-}) {
-  const { fullName, city, mainParadigm, certificationLevel, shortBio, price, images, educationCount, coursesCount } = psychologist;
-  const visibleParadigms = mainParadigm.slice(0, 2);
-  const paradigmsOverflow = Math.max(0, mainParadigm.length - visibleParadigms.length);
+function PsychologistCard({ psychologist }: { psychologist: PsychologistCatalogItem }) {
+  const { 
+    slug, fullName, city, mainParadigm, certificationLevel, 
+    shortBio, price, images, educationCount, coursesCount, workFormat 
+  } = psychologist;
+  
   const rawImage = images[0] ?? null;
   const imageSrc = rawImage ? normalizeImageSrc(rawImage) : null;
   const unoptimized = rawImage ? isExternalImageSrc(rawImage) : false;
 
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white p-0 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#5858E2]/35 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#5858E2]"
-    >
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#F5F5F7] lg:aspect-[7/5]">
-        {imageSrc ? (
-          <Image
-            src={imageSrc}
-            alt={fullName}
-            fill
-            className="object-cover"
-            sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 33vw"
-            unoptimized={unoptimized}
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-neutral-500">Нет фото</div>
-        )}
-      </div>
-      <div className="flex flex-1 flex-col p-5 sm:p-6">
-        <h3 className="line-clamp-2 font-display text-xl font-semibold text-foreground transition-colors group-hover:text-[#5858E2]">
-          {fullName}
-        </h3>
-        <p className="mt-2 inline-flex w-fit items-center rounded-full bg-[#A7FF5A] px-2.5 py-0.5 text-xs font-bold text-[#111a33]">
-          Уровень квалификации: {certificationLevel}
-        </p>
-        <p className="mt-2 text-sm text-neutral-dark">
-          {city || "Город не указан"} · Дипломов: {educationCount} · Курсов: {coursesCount}
-        </p>
-        <div className="mt-2 flex min-h-8 flex-wrap gap-1.5">
-          {visibleParadigms.map((p) => (
-            <Badge key={p} variant="primary">
-              {p}
-            </Badge>
-          ))}
-          {paradigmsOverflow > 0 && (
-            <Badge variant="primary">+{paradigmsOverflow}</Badge>
-          )}
-        </div>
-        <p className="mt-3 line-clamp-3 text-base leading-relaxed text-foreground">{shortBio}</p>
+  // Парсим модальности (workFormat может быть строкой типа "Онлайн, Офлайн")
+  const modalities = workFormat 
+    ? workFormat.split(/[,\/]/).map(m => m.trim()).filter(Boolean)
+    : [];
 
-        <div className="mt-auto pt-4">
-          <p className="text-xl font-bold text-[#5858E2] sm:text-xl">{price} ₽ / сессия</p>
-          <span className="mt-1.5 inline-block text-base font-semibold text-[#5858E2] group-hover:underline">
-            Подробнее →
-          </span>
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-all hover:border-[#5858E2]/30">
+      <div className="flex flex-col sm:flex-row min-h-[280px]">
+        {/* Фото слева */}
+        <div className="relative w-full sm:w-[200px] md:w-[240px] shrink-0 bg-gray-100">
+          <div className="aspect-square sm:aspect-auto sm:h-full">
+            {imageSrc ? (
+              <Image
+                src={imageSrc}
+                alt={fullName}
+                width={240}
+                height={240}
+                className="w-full h-full object-contain"
+                sizes="(max-width: 640px) 100vw, 240px"
+                unoptimized={unoptimized}
+              />
+            ) : (
+              <div className="flex h-full min-h-[200px] items-center justify-center text-gray-400 text-sm">
+                Нет фото
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Контент справа */}
+        <div className="flex-1 p-4 sm:p-5 flex flex-col">
+          {/* Верхняя строка: имя + уровень + цена */}
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-semibold text-lg text-gray-900">
+                  {fullName}
+                </h3>
+              </div>
+              <p className="text-sm text-gray-500 mt-0.5">{city || "Город не указан"}</p>
+              {/* Бейдж уровня квалификации */}
+              <div className="mt-2">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#5858E2] text-white">
+                  {certificationLevel} уровень квалификации
+                </span>
+              </div>
+            </div>
+            
+            {/* Цена и бесплатная сессия - правый верхний угол */}
+            <div className="text-right flex-shrink-0">
+              <div className="font-bold text-lg text-[#5858E2]">
+                {price ? `${price} ₽` : 'Договорная'}
+              </div>
+              <div className="mt-1">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#A7FF5A] text-gray-900">
+                  Первая сессия — бесплатно
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Парадигмы */}
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {mainParadigm.slice(0, 3).map((p) => (
+              <Badge key={p} variant="primary">
+                {p}
+              </Badge>
+            ))}
+          </div>
+
+          {/* Статистика */}
+          <p className="text-xs text-gray-500 mt-2">
+            Дипломов: {educationCount} · Курсов: {coursesCount}
+          </p>
+
+          {/* Краткое описание */}
+          <p className="mt-2 text-sm text-gray-600 line-clamp-2 flex-1">
+            {shortBio}
+          </p>
+
+          {/* Нижняя строка: кнопки + модальности */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-gray-100">
+            {/* Модальности слева */}
+            <div className="flex flex-wrap gap-1.5">
+              {modalities.map((m, i) => (
+                <span 
+                  key={i}
+                  className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
+                >
+                  {m}
+                </span>
+              ))}
+            </div>
+            
+            {/* Кнопки справа */}
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/catalog/${slug}`}
+                className="text-sm font-medium text-[#5858E2] hover:underline"
+              >
+                Подробнее
+              </Link>
+              <button
+                type="button"
+                className="px-4 py-2 bg-[#5858E2] text-white text-sm font-medium rounded-xl hover:bg-[#4b4bcf] transition-colors"
+              >
+                Связаться
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </button>
+    </div>
   );
 }

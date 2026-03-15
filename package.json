@@ -10,7 +10,11 @@
     "db:migrate": "prisma migrate dev",
     "start": "next start",
     "lint": "eslint",
-    "seed:blocks": "npx tsx prisma/seed-blocks.ts"
+    "seed:blocks": "npx tsx prisma/seed-blocks.ts",
+    "seed:datalists": "npx tsx prisma/seed-datalists.ts",
+    "seed:users": "npx tsx prisma/seed-users.ts",
+    "seed:articles": "npx tsx prisma/seed-articles.ts",
+    "seed:fix-slugs": "npx tsx prisma/seed-fix-slugs.ts"
   },
   "dependencies": {
     "@prisma/client": "^6",

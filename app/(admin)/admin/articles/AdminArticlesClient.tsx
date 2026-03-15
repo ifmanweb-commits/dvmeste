@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArticlesTable } from "@/components/admin/ArticlesTable";
 import { Button } from "@/components/ui/Button";
 import { Plus } from "lucide-react";
+import { Pagination } from "@/components/ui/Pagination";
 
 interface Article {
   id: string;
@@ -13,21 +15,45 @@ interface Article {
   excerpt: string | null;
   content: string;
   tags: string[];
-  moderationStatus: string;  // ← добавить
+  moderationStatus: string;
   publishedAt: string | null;
+  isPublished: boolean;
+  moderator: {
+    id: string;
+    fullName: string;
+  } | null;
   author: {
     id: string;
     fullName: string;
   } | null;
 }
 
-export default function AdminArticlesClient({ initialArticles }: { initialArticles: Article[] }) {
+interface AdminArticlesClientProps {
+  initialArticles: Article[];
+  totalPages: number;
+  currentPage: number;
+  totalCount: number;
+}
+
+export default function AdminArticlesClient({ 
+  initialArticles, 
+  totalPages, 
+  currentPage,
+  totalCount 
+}: AdminArticlesClientProps) {
+  const searchParams = useSearchParams();
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [search, setSearch] = useState("");
   const [tagFilter, setTagFilter] = useState("");
   const [authorFilter, setAuthorFilter] = useState("");
+  const [unpublishedOnly, setUnpublishedOnly] = useState(false);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [allAuthors, setAllAuthors] = useState<any[]>([]);
+
+  // Инициализация unpublishedOnly из URL
+  useEffect(() => {
+    setUnpublishedOnly(searchParams.get('unpublishedOnly') === 'true');
+  }, [searchParams]);
 
   // Собираем уникальные теги и авторов из статей
   useEffect(() => {
@@ -110,12 +136,31 @@ export default function AdminArticlesClient({ initialArticles }: { initialArticl
           ))}
         </select>
 
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={unpublishedOnly}
+            onChange={e => {
+              setUnpublishedOnly(e.target.checked);
+              // Перезагружаем страницу с новым параметром
+              const url = new URL(window.location.href);
+              if (e.target.checked) {
+                url.searchParams.set('unpublishedOnly', 'true');
+              } else {
+                url.searchParams.delete('unpublishedOnly');
+              }
+              url.searchParams.set('page', '1'); // Сбрасываем на первую страницу
+              window.location.href = url.toString();
+            }}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          Только не опубликованные
+        </label>
+
         <Button
           variant="ghost"
           onClick={() => {
-            setSearch("");
-            setTagFilter("");
-            setAuthorFilter("");
+            window.location.href = '/admin/articles';
           }}
         >
           Сбросить фильтры
@@ -124,11 +169,20 @@ export default function AdminArticlesClient({ initialArticles }: { initialArticl
 
       {/* Счётчик */}
       <div className="text-sm text-gray-500">
-        Найдено статей: {articles.length}
+        Найдено статей: {articles.length} из {totalCount}
       </div>
 
       {/* Таблица */}
       <ArticlesTable articles={articles} />
+
+      {/* Пагинация */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={(page) => {
+          window.location.href = `?page=${page}`;
+        }}
+      />
     </div>
   );
 }

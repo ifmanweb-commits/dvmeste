@@ -68,6 +68,19 @@ function getMonthWord(months: number): string {
   return "месяцев";
 }
 
+function formatWorkFormat(workFormat: string): string {
+  switch (workFormat) {
+    case "ONLINE":
+      return "Онлайн";
+    case "OFFLINE":
+      return "Оффлайн";
+    case "BOTH":
+      return "Онлайн и оффлайн";
+    default:
+      return workFormat;
+  }
+}
+
 function looksLikeHtml(value: string): boolean {
   return /<\s*[a-z][^>]*>/i.test(value);
 }
@@ -104,7 +117,7 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
 
   if (!user || !user.isPublished || user.status !== "ACTIVE") notFound();
 
-  // 2. Получаем фото
+  // 2. Получаем фото из документов
   const photos = await prisma.document.findMany({
     where: {
       userId: user.id,
@@ -114,11 +127,16 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
     orderBy: { uploadedAt: "asc" },
   });
 
-  // 3. Временно скрываем образование (потом доделаем)
+  // 3. Формируем массив фото: сначала аватар, потом остальные
+  const allPhotos = user.avatarUrl
+    ? [user.avatarUrl, ...photos.map(p => p.url).filter(url => url !== user.avatarUrl)]
+    : photos.map(p => p.url);
+
+  // 4. Временно скрываем образование (потом доделаем)
   // const education = await prisma.document.findMany({ ... });
 
   const pageUrl = canonicalUrl(`/catalog/${slug}`);
-  const firstImage = photos[0]?.url;
+  const firstImage = allPhotos[0];
   const imageUrl = firstImage
     ? firstImage.startsWith("http")
       ? firstImage
@@ -171,7 +189,7 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
               <div className="flex flex-col gap-4 sm:flex-row sm:gap-5">
                 <div className="sm:w-2/5">
                   <ProfileGallery
-                    images={photos.map(p => p.url)}
+                    images={allPhotos}
                     fullName={user.fullName || 'Без имени'}
                   />
                 </div>
@@ -191,7 +209,7 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
                       <p className="text-sm text-gray-700">{user.city}</p>
                     )}
                     {user.workFormat && (
-                      <p className="text-sm text-gray-600">{user.workFormat}</p>
+                      <p className="text-sm text-gray-600">{formatWorkFormat(user.workFormat)}</p>
                     )}
                   </div>
 
@@ -297,11 +315,7 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
 
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <Link href="/catalog">
-                    <Button variant="outline" size="sm">
-                      ← В каталог
-                    </Button>
-                  </Link>
+                  <div />
                   <div className="flex gap-3">
                     <Link href="/s/certification-levels">
                       <span className="text-xs text-gray-600 hover:text-[#5858E2] sm:text-sm">

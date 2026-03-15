@@ -27,7 +27,7 @@ export function ProfileGallery({ images, fullName }: ProfileGalleryProps) {
 
   if (totalImages === 0) {
     return (
-      <div className="flex h-64 w-full shrink-0 items-center justify-center rounded-2xl bg-[#F5F5F7] text-neutral sm:h-72 sm:w-56">
+      <div className="flex h-80 w-full shrink-0 items-center justify-center rounded-2xl bg-[#F5F5F7] text-neutral sm:h-96 sm:w-72">
         Нет фото
       </div>
     );
@@ -39,9 +39,9 @@ export function ProfileGallery({ images, fullName }: ProfileGalleryProps) {
 
   return (
     <>
-      <div className="w-full shrink-0 sm:w-56">
+      <div className="w-full shrink-0 sm:w-72">
         <div
-          className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-[#F5F5F7] sm:aspect-[3/4] sm:h-72 sm:w-56"
+          className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-[#F5F5F7] sm:aspect-square sm:h-96 sm:w-72"
           role="img"
           aria-label={`Фото ${current + 1} из ${totalImages}`}
         >
@@ -49,8 +49,8 @@ export function ProfileGallery({ images, fullName }: ProfileGalleryProps) {
             src={currentSrc}
             alt={`${fullName} — фото ${current + 1}`}
             fill
-            className="cursor-zoom-in object-cover"
-            sizes="(max-width: 640px) 100vw, 224px"
+            className="cursor-zoom-in object-contain"
+            sizes="(max-width: 640px) 100vw, 288px"
             priority
             unoptimized={isExternal}
             onClick={() => setLightbox(true)}

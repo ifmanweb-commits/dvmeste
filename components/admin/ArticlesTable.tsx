@@ -9,8 +9,13 @@ interface Article {
   title: string;
   slug: string;
   publishedAt: string | null;
-  moderationStatus: string;        // ← добавить
+  isPublished: boolean;
+  moderationStatus: string;
   tags: string[];
+  moderator: {
+    id: string;
+    fullName: string;
+  } | null;
   author: {
     id: string;
     fullName: string;
@@ -33,28 +38,11 @@ export function ArticlesTable({ articles }: ArticlesTableProps) {
     });
   };
 
-  const getModerationBadge = (status: string) => {
-    const config: Record<string, { label: string; className: string }> = {
-      DRAFT: { label: 'Черновик', className: 'bg-gray-100 text-gray-800' },
-      PENDING: { label: 'На проверке', className: 'bg-yellow-100 text-yellow-800' },
-      REVISION: { label: 'Требуются правки', className: 'bg-red-100 text-red-800' },
-      APPROVED: { label: 'Одобрено', className: 'bg-green-100 text-green-800' },
-    };
-    
-    const { label, className } = config[status] || { label: status, className: 'bg-gray-100 text-gray-800' };
-    
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs ${className}`}>
-        {label}
-      </span>
-    );
-  };
-
-  const getPublishBadge = (publishedAt: string | null) => {
-    if (publishedAt) {
+  const getPublishBadge = (isPublished: boolean, publishedAt: string | null) => {
+    if (isPublished && publishedAt) {
       return <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">На сайте</span>;
     }
-    return <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">Черновик</span>;
+    return <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">Не опубликована</span>;
   };
 
   const getTagsDisplay = (tags: string[]) => {
@@ -62,16 +50,9 @@ export function ArticlesTable({ articles }: ArticlesTableProps) {
       return <span className="text-gray-400">Без тэгов</span>;
     }
     return (
-      <div className="flex flex-wrap gap-1">
-        {tags.slice(0, 3).map((tag, i) => (
-          <span key={i} className="px-2 py-0.5 bg-gray-100 rounded-full text-xs">
-            {tag}
-          </span>
-        ))}
-        {tags.length > 3 && (
-          <span className="text-xs text-gray-500">+{tags.length - 3}</span>
-        )}
-      </div>
+      <span className="text-sm text-gray-700">
+        {tags.join(', ')}
+      </span>
     );
   };
 
@@ -93,7 +74,7 @@ export function ArticlesTable({ articles }: ArticlesTableProps) {
               Тэги
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Статус модерации
+              Кто принял
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Публикация
@@ -107,9 +88,12 @@ export function ArticlesTable({ articles }: ArticlesTableProps) {
           {articles.map((article) => (
             <tr key={article.id} className="hover:bg-gray-50">
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">
+                <Link
+                  href={`/admin/articles/${article.id}/edit`}
+                  className="text-sm font-medium text-gray-900 hover:text-blue-600 cursor-pointer"
+                >
                   {article.title}
-                </div>
+                </Link>
                 <div className="text-xs text-gray-500">
                   /articles/{article.slug}
                 </div>
@@ -118,18 +102,18 @@ export function ArticlesTable({ articles }: ArticlesTableProps) {
                 {formatDate(article.publishedAt)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {article.author?.fullName || 
+                {article.author?.fullName ||
                   <span className="text-gray-400">Без автора</span>
                 }
               </td>
               <td className="px-6 py-4 text-sm text-gray-500">
                 {getTagsDisplay(article.tags)}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                {getModerationBadge(article.moderationStatus)}
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {article.moderator?.fullName || '—'}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                {getPublishBadge(article.publishedAt)}
+                {getPublishBadge(article.isPublished, article.publishedAt)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex justify-end gap-2">
@@ -154,7 +138,7 @@ export function ArticlesTable({ articles }: ArticlesTableProps) {
           ))}
         </tbody>
       </table>
-      
+
       {articles.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-500">Статьи не найдены</p>

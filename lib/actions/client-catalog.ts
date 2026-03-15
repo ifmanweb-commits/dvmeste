@@ -69,7 +69,7 @@ export async function getPsychologists(
   }
 
   // 2. Сортировка
-  let orderBy: any = {};
+  const orderBy: Record<string, string> = {};
   if (sortBy === "price") {
     orderBy.price = sortOrder;
   } else if (sortBy === "certificationLevel") {
@@ -96,6 +96,7 @@ export async function getPsychologists(
       certificationLevel: true,
       shortBio: true,
       price: true,
+      avatarUrl: true,
       createdAt: true,
     },
     orderBy,
@@ -185,22 +186,30 @@ export async function getPsychologists(
   }, {} as Record<string, { diplomas: number; courses: number }>);
 
   // 8. Формируем результат
-  const items: PsychologistCatalogItem[] = filteredUsers.map((user) => ({
-    id: user.id,
-    slug: user.slug || '',
-    fullName: user.fullName || 'Без имени',
-    gender: user.gender || '',
-    birthDate: user.birthDate,
-    city: user.city || '',
-    workFormat: user.workFormat || "",
-    mainParadigm: user.mainParadigm || [],
-    certificationLevel: user.certificationLevel,
-    shortBio: user.shortBio || "",
-    price: user.price,
-    images: photosByUser[user.id] || [],
-    educationCount: statsByUser[user.id]?.diplomas || 0,
-    coursesCount: statsByUser[user.id]?.courses || 0,
-  }));
+  const items: PsychologistCatalogItem[] = filteredUsers.map((user) => {
+    // Собираем изображения: сначала avatarUrl, потом фото из document
+    const userPhotos = photosByUser[user.id] || [];
+    const allImages = user.avatarUrl 
+      ? [user.avatarUrl, ...userPhotos.filter(p => p !== user.avatarUrl)]
+      : userPhotos;
+    
+    return {
+      id: user.id,
+      slug: user.slug || '',
+      fullName: user.fullName || 'Без имени',
+      gender: user.gender || '',
+      birthDate: user.birthDate,
+      city: user.city || '',
+      workFormat: user.workFormat || "",
+      mainParadigm: user.mainParadigm || [],
+      certificationLevel: user.certificationLevel,
+      shortBio: user.shortBio || "",
+      price: user.price,
+      images: allImages,
+      educationCount: statsByUser[user.id]?.diplomas || 0,
+      coursesCount: statsByUser[user.id]?.courses || 0,
+    };
+  });
 
   return {
     items,

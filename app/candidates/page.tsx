@@ -3,6 +3,30 @@ import Link from "next/link";
 
 const ITEMS_PER_PAGE = 20;
 
+function escapeHtml(str: string | null | undefined): string {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatWorkFormat(workFormat: string | null): string {
+  if (!workFormat) return "—";
+  switch (workFormat) {
+    case "ONLINE":
+      return "Онлайн";
+    case "OFFLINE":
+      return "Оффлайн";
+    case "BOTH":
+      return "Онлайн и оффлайн";
+    default:
+      return escapeHtml(workFormat);
+  }
+}
+
 export default async function CandidatesPage({
   searchParams,
 }: {
@@ -12,17 +36,19 @@ export default async function CandidatesPage({
   const currentPage = Math.max(1, Number(page) || 1);
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
-  // Получаем кандидатов со статусом CANDIDATE
+  // Получаем непроверенных психологов со статусом CANDIDATE
   const [candidates, totalCount] = await Promise.all([
-    prisma.psychologist.findMany({
+    prisma.user.findMany({
       where: {
         status: "CANDIDATE",
       },
       select: {
         id: true,
         fullName: true,
-        price: true,
+        city: true,
+        workFormat: true,
         contactInfo: true,
+        price: true,
         createdAt: true,
       },
       orderBy: {
@@ -31,7 +57,7 @@ export default async function CandidatesPage({
       skip: offset,
       take: ITEMS_PER_PAGE,
     }),
-    prisma.psychologist.count({
+    prisma.user.count({
       where: {
         status: "CANDIDATE",
       },
@@ -46,10 +72,10 @@ export default async function CandidatesPage({
       <section className="bg-white border-b border-neutral-200">
         <div className="container mx-auto px-4 py-12">
           <h1 className="text-4xl font-bold mb-4">
-            Кандидаты в каталог
+            Непроверенные психологи
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl">
-            Психологи, которые не проходили экзаменацию по нашим строгим правилам. У них не подтвержден даже первый уровень квалификации.
+            Психологи, которые ещё не прошли модерацию и не подтвердили свою квалификацию.
           </p>
         </div>
       </section>
@@ -58,7 +84,7 @@ export default async function CandidatesPage({
       <section className="container mx-auto px-4 py-8">
         {candidates.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">Сейчас нет кандидатов</p>
+            <p className="text-gray-500">Сейчас нет непроверенных психологов</p>
           </div>
         ) : (
           <>
@@ -71,29 +97,41 @@ export default async function CandidatesPage({
                       Имя
                     </th>
                     <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
-                      Цена
+                      Город
+                    </th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
+                      Формат работы
                     </th>
                     <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
                       Контакты
+                    </th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
+                      Цена
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {candidates.map((candidate) => (
-                    <tr 
+                    <tr
                       key={candidate.id}
                       className="hover:bg-gray-50 transition-colors"
                     >
                       <td className="px-6 py-4">
-                        
-                          {candidate.fullName}
-                        
+                        <span className="text-gray-900">
+                          {escapeHtml(candidate.fullName)}
+                        </span>
                       </td>
-                      <td className="px-6 py-4 font-medium">
-                        {candidate.price > 0 ? `${candidate.price} ₽` : "—"}
+                      <td className="px-6 py-4 text-gray-700">
+                        {escapeHtml(candidate.city) || "—"}
+                      </td>
+                      <td className="px-6 py-4 text-gray-700">
+                        {formatWorkFormat(candidate.workFormat)}
                       </td>
                       <td className="px-6 py-4 text-gray-600">
-                        {candidate.contactInfo || "—"}
+                        {escapeHtml(candidate.contactInfo) || "—"}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-gray-900">
+                        {candidate.price ? `${candidate.price} ₽` : "—"}
                       </td>
                     </tr>
                   ))}
@@ -124,7 +162,7 @@ export default async function CandidatesPage({
 
             {/* Информация о количестве */}
             <p className="text-center text-sm text-gray-500 mt-4">
-              Показано {offset + 1}–{Math.min(offset + ITEMS_PER_PAGE, totalCount)} из {totalCount} кандидатов
+              Показано {offset + 1}–{Math.min(offset + ITEMS_PER_PAGE, totalCount)} из {totalCount} непроверенных психологов
             </p>
           </>
         )}

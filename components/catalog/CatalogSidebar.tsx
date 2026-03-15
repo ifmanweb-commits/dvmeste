@@ -10,11 +10,12 @@ const LEVELS: (1 | 2 | 3)[] = [1, 2, 3];
 
 type Props = {
   initialParams: Record<string, string | string[] | undefined>;
-  onFormSubmit?: () => void;                           
+  onFormSubmit?: () => void;
+  totalCount?: number;
 };
 
                                                                     
-export function CatalogSidebar({ initialParams, onFormSubmit }: Props) {
+export function CatalogSidebar({ initialParams, onFormSubmit, totalCount }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -121,6 +122,11 @@ export function CatalogSidebar({ initialParams, onFormSubmit }: Props) {
           {               }
           <div className="mb-4">
             <h3 className="text-xl font-bold text-foreground">Фильтры</h3>
+            {totalCount !== undefined && (
+              <p className="text-sm text-gray-500 mt-1">
+                Найдено <span className="font-semibold text-gray-900">{totalCount}</span> психологов
+              </p>
+            )}
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-5">

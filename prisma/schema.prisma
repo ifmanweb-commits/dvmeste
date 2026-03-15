@@ -90,8 +90,8 @@ model Article {
   moderationStatus ModerationStatus @default(DRAFT)
   moderator        User?            @relation("ModeratedArticles", fields: [moderatedBy], references: [id])
   user             User?            @relation("AuthorArticles", fields: [userId], references: [id])
-  articleImages    ArticleImage[]
   credits          ArticleCredit[]
+  articleImages    ArticleImage[]
 
   @@index([userId])
   @@index([moderationStatus])
@@ -119,9 +119,8 @@ model ArticleCredit {
   creditedAt   DateTime @default(now())
   approvedAt   DateTime
   moderatedBy  String?
-
+  article      Article  @relation(fields: [articleId], references: [id])
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  article      Article? @relation(fields: [articleId], references: [id])
 
   @@unique([userId, year, month])
   @@index([userId])

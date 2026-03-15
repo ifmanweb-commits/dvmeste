@@ -2,6 +2,7 @@
 
 import { updateArticle } from "@/lib/articles";
 import { revalidatePath } from "next/cache";
+import { getCurrentUser } from "@/lib/auth/session";
 
 export async function saveArticleAction(id: string, data: {
   title: string;
@@ -12,6 +13,16 @@ export async function saveArticleAction(id: string, data: {
   moderationStatus?: string;      // ← добавить
   submittedAt?: Date | null;      // ← добавить
 }) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { success: false, error: "Необходимо авторизоваться" };
+  }
+
+  // Проверка: только ACTIVE пользователи могут управлять статьями
+  if (user.status === "CANDIDATE") {
+    return { success: false, error: "Только проверенные психологи могут управлять статьями" };
+  }
+
   try {
     await updateArticle(id, {
       title: data.title,
