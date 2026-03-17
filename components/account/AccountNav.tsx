@@ -4,16 +4,17 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { User } from '@prisma/client'
 import LogoutButton from '@/components/LogoutButton'
-import { 
-  Home, 
-  User as UserIcon, 
-  FileText, 
+import {
+  Home,
+  User as UserIcon,
+  FileText,
   Award,
   MessageCircleIcon,
-  Settings, 
+  Settings,
   LogOut,
   ClipboardList,
-  CheckCircle
+  CheckCircle,
+  Bell
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -60,6 +61,12 @@ export default function AccountNav({ user }: AccountNavProps) {
       label: 'Сертификация',
       icon: Award,
       show: user.status === 'ACTIVE' || user.status === 'CANDIDATE'
+    },
+    {
+      href: '/account/notifications',
+      label: 'Уведомления',
+      icon: Bell,
+      show: true // Доступ у всех статусов
     }
   ]
   
