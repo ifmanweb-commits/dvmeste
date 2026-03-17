@@ -7,7 +7,7 @@ import { EducationFormEdit } from '@/components/admin/EducationFormEdit';
 import { parseEducationFromDB } from "@/lib/education-helpers";
 import DeletePsychologistButton from "@/components/psychologist/DeletePsychologistButton";
 import { ParadigmSelector } from "@/components/admin/ParadigmSelector";
-import { updatePsychologist } from "@/lib/actions/manager-psychologist";                   
+import { updatePsychologistProfile } from "@/lib/actions/psychologist-profile";                   
 
 
 interface EditPsychologistFormProps {
@@ -172,8 +172,8 @@ export default function EditPsychologistForm({
     console.log("ID психолога:", psychologistId);
 
     try {
-      await updatePsychologist(psychologistId, formData);
-                                                   
+      await updatePsychologistProfile(psychologistId, formData);
+      router.refresh();
     } catch (error) {
       console.error("Ошибка при обновлении:", error);
       setErrorMessage(error instanceof Error ? error.message : "Ошибка обновления психолога");
@@ -222,7 +222,7 @@ export default function EditPsychologistForm({
                 <div className="grid gap-6 md:grid-cols-2">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      ФИО *
+                      Имя и фамилия *
                     </label>
                     <input
                         type="text"
@@ -234,27 +234,6 @@ export default function EditPsychologistForm({
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      URL адрес страницы *
-                      <span className="ml-2 text-xs text-amber-600">только латиница, цифры, дефис</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-500">/catalog/</span>
-                    <input
-                          type="text"
-                          name="slug"
-                          value={slug}
-                          onChange={handleSlugChange}
-                          required
-                          className="flex-1 rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20"
-                      />
-                    </div>
-
-                  </div>
-                </div>
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Пол</label>
                     <select
                         name="gender"
@@ -265,6 +244,19 @@ export default function EditPsychologistForm({
                       <option value="Ж">Женский</option>
                       <option value="Не указан">Не указан</option>
                     </select>
+                  </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Город</label>
+                    <input
+                        type="text"
+                        name="city"
+                        defaultValue={psychologist.city || ""}
+                        placeholder="Москва, Санкт-Петербург..."
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20"
+                    />
                   </div>
 
                   <div>
@@ -280,14 +272,62 @@ export default function EditPsychologistForm({
                   </div>
                 </div>
 
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Стоимость сеанса (₽)
+                    </label>
+                    <input
+                        type="number"
+                        name="price"
+                        min={0}
+                        defaultValue={psychologist.price}
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Бесплатных сессий
+                    </label>
+                    <input
+                        type="number"
+                        name="freeSession"
+                        min={0}
+                        max={10}
+                        defaultValue={psychologist.freeSession ?? 0}
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">От 0 до 10</p>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Город</label>
-                  <input
-                      type="text"
-                      name="city"
-                      defaultValue={psychologist.city || ""}
-                      placeholder="Москва, Санкт-Петербург..."
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Формат работы</label>
+                  <select
+                      name="workFormat"
+                      defaultValue={psychologist.workFormat}
                       className="w-full max-w-md rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20"
+                  >
+                    <option value="">Выберите формат работы</option>
+                    {workFormats.map((format, index) => (
+                        <option key={index} value={format}>
+                          {format}
+                        </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Контакты
+                  </label>
+                  <textarea
+                      name="contactInfo"
+                      rows={3}
+                      defaultValue={psychologist.contactInfo || ""}
+                      placeholder="Телефон, Email, Telegram..."
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20"
                   />
                 </div>
               </div>
@@ -395,39 +435,6 @@ export default function EditPsychologistForm({
                       defaultValue={psychologist.longBio || ""}
                       className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20"
                   />
-                </div>
-              </div>
-
-              {                     }
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-gray-800">Контакты и стоимость</h2>
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Стоимость сеанса (₽)
-                    </label>
-                    <input
-                        type="number"
-                        name="price"
-                        min={0}
-                        defaultValue={psychologist.price}
-                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Контакты
-                    </label>
-                    <textarea
-                        name="contactInfo"
-                        rows={3}
-                        defaultValue={psychologist.contactInfo || ""}
-                        placeholder="Телефон, Email, Telegram..."
-                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#4CAF50] focus:ring-2 focus:ring-[#4CAF50]/20"
-                    />
-                  </div>
                 </div>
               </div>
 

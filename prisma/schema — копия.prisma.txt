@@ -35,13 +35,16 @@ model User {
   draftData             Json?              @default("{}") @db.Json
   hasUnpublishedChanges Boolean            @default(false)
   avatarUrl             String?
+  freeSession           Int                @default(0)
   moderatedArticles     Article[]          @relation("ModeratedArticles")
   articles              Article[]          @relation("AuthorArticles")
+  articleCredits        ArticleCredit[]
   documents             Document[]         @relation("user_documents")
   verifiedDocuments     Document[]         @relation("verifier_documents")
   moderatorRecords      ModerationRecord[] @relation("moderator_records")
   moderationRecords     ModerationRecord[] @relation("moderated_user")
   sessions              Session[]
+  dialogs               Dialog[]
 
   @@index([email])
   @@index([status])
@@ -84,19 +87,17 @@ model Article {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   tags             String[]         @default([])
-  creditedMonth    Int?
-  creditedYear     Int?
   moderatorComment String?
   submittedAt      DateTime?
   moderationStatus ModerationStatus @default(DRAFT)
   moderator        User?            @relation("ModeratedArticles", fields: [moderatedBy], references: [id])
   user             User?            @relation("AuthorArticles", fields: [userId], references: [id])
+  credits          ArticleCredit[]
   articleImages    ArticleImage[]
 
   @@index([userId])
   @@index([moderationStatus])
   @@index([isPublished])
-  @@index([creditedYear, creditedMonth])
 }
 
 model ArticleImage {
@@ -108,6 +109,24 @@ model ArticleImage {
   article     Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
 
   @@index([articleId])
+}
+
+model ArticleCredit {
+  id           String   @id @default(cuid())
+  userId       String
+  articleId    String
+  articleTitle String
+  month        Int
+  year         Int
+  creditedAt   DateTime @default(now())
+  approvedAt   DateTime
+  moderatedBy  String?
+  article      Article  @relation(fields: [articleId], references: [id])
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year, month])
+  @@index([userId])
+  @@index([year, month])
 }
 
 model Document {
@@ -155,6 +174,36 @@ model ModerationRecord {
   @@index([userId])
   @@index([status])
   @@index([moderatorId])
+}
+enum DialogStatus {
+  ACTIVE    // требует ответа модератора
+  WAITING   // ждем ответа пользователя
+  ARCHIVED  // закрыт/архив
+}
+model Dialog {
+  id              String       @id @default(cuid())
+  userId          String       @unique // один диалог на пользователя
+  status          DialogStatus @default(ACTIVE)
+  lastMessageAt   DateTime     @default(now())
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages        Message[]
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  dialogId    String   // связь с диалогом
+  direction   String   // 'to_moder' или 'to_user'
+  text        String   @db.Text
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  dialog      Dialog   @relation(fields: [dialogId], references: [id], onDelete: Cascade)
+
+  @@index([dialogId])
+  @@index([createdAt])
 }
 
 model Page {

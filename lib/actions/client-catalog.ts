@@ -96,6 +96,7 @@ export async function getPsychologists(
       certificationLevel: true,
       shortBio: true,
       price: true,
+      freeSession: true,
       avatarUrl: true,
       createdAt: true,
     },
@@ -139,12 +140,13 @@ export async function getPsychologists(
     return { items: [], nextCursor: null, hasMore: false };
   }
 
-  // 6. Получаем фото для всех пользователей
+  // 6. Получаем проверенные фото для всех пользователей
   const userIds = filteredUsers.map(u => u.id);
   const photos = await prisma.document.findMany({
     where: {
       userId: { in: userIds },
       type: "PHOTO",
+      verifiedAt: { not: null }, // Только проверенные фото
     },
     select: {
       userId: true,
@@ -162,12 +164,13 @@ export async function getPsychologists(
     return acc;
   }, {} as Record<string, string[]>);
 
-  // 7. Получаем статистику образования
+  // 7. Получаем статистику проверенного образования
   const educationStats = await prisma.document.groupBy({
     by: ['userId', 'type'],
     where: {
       userId: { in: userIds },
       type: { in: ["ACADEMIC_EDUCATION", "PROFESSIONAL_TRAINING", "COURSE"] },
+      verifiedAt: { not: null }, // Только проверенные документы
     },
     _count: true,
   });
@@ -187,11 +190,19 @@ export async function getPsychologists(
 
   // 8. Формируем результат
   const items: PsychologistCatalogItem[] = filteredUsers.map((user) => {
-    // Собираем изображения: сначала avatarUrl, потом фото из document
+    // Получаем проверенные фото пользователя
     const userPhotos = photosByUser[user.id] || [];
-    const allImages = user.avatarUrl 
-      ? [user.avatarUrl, ...userPhotos.filter(p => p !== user.avatarUrl)]
-      : userPhotos;
+    
+    // Проверяем, есть ли avatarUrl среди проверенных фото
+    const hasVerifiedAvatar = user.avatarUrl && userPhotos.includes(user.avatarUrl);
+    
+    // Для превью используем:
+    // 1. Аватар, если он прошёл модерацию
+    // 2. Иначе первое проверенное фото
+    // 3. Иначе null (будет заглушка)
+    const previewImage = hasVerifiedAvatar 
+      ? user.avatarUrl 
+      : (userPhotos[0] ?? null);
     
     return {
       id: user.id,
@@ -205,7 +216,8 @@ export async function getPsychologists(
       certificationLevel: user.certificationLevel,
       shortBio: user.shortBio || "",
       price: user.price,
-      images: allImages,
+      freeSession: user.freeSession ?? 0,
+      images: previewImage ? [previewImage] : [], // Для каталога только одно фото (превью)
       educationCount: statsByUser[user.id]?.diplomas || 0,
       coursesCount: statsByUser[user.id]?.courses || 0,
     };

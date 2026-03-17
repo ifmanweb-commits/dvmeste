@@ -37,14 +37,20 @@ export function ProfileFormContainer({
   const [user, setUser] = useState(() => {
     // Извлекаем черновик из JSON-поля draftData 
     const draft = (initialUser.draftData as any) || {};
+    // Правильно читаем данные из draft
+    const draftData = draft?.data || {};
+    const draftStatus = draft?.status;
+    const draftComment = draft?.comment;
 
     return {
       ...initialUser,
       // Если в черновике есть значение, берем его, иначе — из основного профиля 
-      shortBio: draft.shortBio ?? initialUser.shortBio,
-      longBio: draft.longBio ?? initialUser.longBio,
-      mainParadigm: draft.mainParadigm ?? initialUser.mainParadigm,
-      firstDiplomaDate: draft.firstDiplomaDate ?? initialUser.firstDiplomaDate,
+      shortBio: draftData.shortBio ?? initialUser.shortBio,
+      longBio: draftData.longBio ?? initialUser.longBio,
+      mainParadigm: draftData.mainParadigm ?? initialUser.mainParadigm,
+      firstDiplomaDate: draftData.firstDiplomaDate ?? initialUser.firstDiplomaDate,
+      draftStatus: draftStatus,
+      draftComment: draftComment
     };
   });
 
@@ -288,24 +294,13 @@ export function ProfileFormContainer({
         {/* Вкладка 1: Личные данные */}
         <div className={cn(activeTab !== 'basic' && "hidden")}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input 
-              label="Имя и фамилия" 
-              value={user.fullName || ''} 
+            <Input
+              label="Имя и фамилия"
+              value={user.fullName || ''}
               onChange={(e) => handleBasicChange('fullName', e.target.value)}
             />
-            <Input 
-              label="Город" 
-              value={user.city || ''} 
-              onChange={(e) => handleBasicChange('city', e.target.value)}
-            />
-            <Input 
-              label="Цена приема (₽)" 
-              type="number"
-              value={user.price || ''} 
-              onChange={(e) => handleBasicChange('price', parseInt(e.target.value) || 0)}
-            />
-            <Select 
-              label="Пол" 
+            <Select
+              label="Пол"
               value={user.gender || ''}
               onChange={(e) => handleBasicChange('gender', e.target.value)}
             >
@@ -313,14 +308,33 @@ export function ProfileFormContainer({
               <option value="male">Мужской</option>
               <option value="female">Женский</option>
             </Select>
-            <Input 
-              label="Дата рождения" 
+            <Input
+              label="Город"
+              value={user.city || ''}
+              onChange={(e) => handleBasicChange('city', e.target.value)}
+            />
+            <Input
+              label="Дата рождения"
               type="date"
-              value={user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : ''} 
+              value={user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : ''}
               onChange={(e) => handleBasicChange('birthDate', new Date(e.target.value))}
             />
-            <Select 
-              label="Формат работы" 
+            <Input
+              label="Цена приема (₽)"
+              type="number"
+              value={user.price || ''}
+              onChange={(e) => handleBasicChange('price', parseInt(e.target.value) || 0)}
+            />
+            <Input
+              label="Бесплатных сессий"
+              type="number"
+              min={0}
+              max={10}
+              value={user.freeSession ?? 0}
+              onChange={(e) => handleBasicChange('freeSession', parseInt(e.target.value) || 0)}
+            />
+            <Select
+              label="Формат работы"
               value={user.workFormat || ''}
               onChange={(e) => handleBasicChange('workFormat', e.target.value)}
             >
@@ -329,8 +343,8 @@ export function ProfileFormContainer({
               <option value="BOTH">И то, и другое</option>
             </Select>
             <div className="md:col-span-2">
-              <Input 
-                label="Контакты (Telegram, WhatsApp)" 
+              <Input
+                label="Контакты (Telegram, WhatsApp)"
                 value={user.contactInfo || ''} 
                 onChange={(e) => handleBasicChange('contactInfo', e.target.value)}
               />
@@ -348,6 +362,22 @@ export function ProfileFormContainer({
         <div className={cn(activeTab !== 'detailed' && "hidden")}>
           {isCandidate ? <LockedFeature title="Раздел закрыт" description="Доступно участникам каталога." /> : (
             <div className="space-y-8">
+
+              {/* Индикатор статуса черновика */}
+              {(user as any).draftStatus === 'PENDING' && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
+                  ⏳ Ваши изменения отправлены на модерацию и ожидают проверки
+                </div>
+              )}
+
+              {(user as any).draftStatus === 'REJECTED' && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-red-800 mb-1">✋ Изменения отклонены</p>
+                  <p className="text-sm text-red-700">{(user as any).draftComment || 'Комментарий отсутствует'}</p>
+                  <p className="text-sm text-red-700 mt-2">Вы можете исправить данные и отправить снова</p>
+                </div>
+              )}
+
               <ParadigmSelector 
                 label="Ваши рабочие методы"
                 options={availableParadigms}
@@ -381,7 +411,7 @@ export function ProfileFormContainer({
               </div>
               <div className="mt-8 flex justify-end">
                 <button onClick={handleSaveDetailed} disabled={loading} className="bg-blue-600 text-white px-8 py-2 rounded-lg">
-                  {loading ? "Сохранение..." : "Сохранить черновик"}
+                  {loading ? "Сохранение..." : (user as any).draftStatus === 'PENDING' ? "Обновить черновик" : "Сохранить черновик"}
                 </button>
               </div>
             </div>

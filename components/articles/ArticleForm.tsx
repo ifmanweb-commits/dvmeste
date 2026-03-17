@@ -87,7 +87,7 @@ export default function ArticleForm({
   //const [allCatalogs, setAllCatalogs] = useState<string[]>([]);
   const [authorId, setAuthorId] = useState(initialData.authorId || initialData.user?.id || "");
   const [authorName, setAuthorName] = useState(initialData.author?.fullName || initialData.user?.fullName || "");
-  const [isPublished, setIsPublished] = useState(!!initialData.publishedAt || !!initialData.isPublished);
+  const [isPublished, setIsPublished] = useState(!!initialData.isPublished);
   const [authorSearch, setAuthorSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +95,7 @@ export default function ArticleForm({
   const [submitting, setSubmitting] = useState(false);
   const [slugWarning, setSlugWarning] = useState<string | null>(null);
   const [articleImages, setArticleImages] = useState<string[]>([]);
+  const [generatingSlug, setGeneratingSlug] = useState(false);
 
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -182,6 +183,74 @@ export default function ArticleForm({
     }
 
     return null;
+  };
+
+  // Функция проверки существования slug через API
+  const checkSlugExists = async (slugToCheck: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/articles/check-slug?slug=${encodeURIComponent(slugToCheck)}${articleId ? `&excludeId=${articleId}` : ''}`);
+      if (!response.ok) return false;
+      
+      const data = await response.json();
+      return data.exists || false;
+    } catch (error) {
+      console.error('Error checking slug:', error);
+      return false;
+    }
+  };
+
+  // Функция генерации уникального slug
+  const generateUniqueSlug = async (baseSlug: string): Promise<string> => {
+    let slug = baseSlug;
+    let counter = 1;
+    
+    // Проверяем существование slug
+    while (await checkSlugExists(slug)) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+      
+      // Защита от бесконечного цикла
+      if (counter > 100) {
+        slug = `${baseSlug}-${Date.now().toString(36)}`;
+        break;
+      }
+    }
+    
+    return slug;
+  };
+
+  // Обработчик нажатия кнопки "Генерировать"
+  const handleGenerateSlug = async () => {
+    if (generatingSlug) return;
+    
+    setGeneratingSlug(true);
+    try {
+      // Генерируем базовый slug из названия или используем ID статьи
+      let baseSlug = '';
+      if (title.trim()) {
+        baseSlug = slugFromArticleTitle(title);
+      } else if (articleId) {
+        baseSlug = articleId;
+      } else {
+        baseSlug = generateRandomArticleSlug();
+      }
+      
+      // Если базовый slug пустой, генерируем случайный
+      if (!baseSlug.trim()) {
+        baseSlug = generateRandomArticleSlug();
+      }
+      
+      // Генерируем уникальный slug
+      const uniqueSlug = await generateUniqueSlug(baseSlug);
+      setSlug(uniqueSlug);
+      setIsSlugManuallyEdited(false);
+      setSlugWarning(null);
+    } catch (error) {
+      console.error('Error generating slug:', error);
+      setError('Не удалось сгенерировать slug');
+    } finally {
+      setGeneratingSlug(false);
+    }
   };
 
                               
@@ -375,7 +444,7 @@ export default function ArticleForm({
                 required
                 disabled={isSubmitting}
             />
-            <div>
+            <div className="relative">
               <FormInput
                   label="URL (slug) *"
                   value={slug}
@@ -384,6 +453,14 @@ export default function ArticleForm({
                   placeholder="my-article"
                   disabled={isSubmitting}
               />
+              <button
+                type="button"
+                onClick={handleGenerateSlug}
+                disabled={generatingSlug || isSubmitting}
+                className="absolute right-3 top-8 text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {generatingSlug ? 'Генерация...' : 'Генерировать'}
+              </button>
               {                                            }
               {slugWarning && (
                   <p className="text-sm text-amber-600 mt-1 flex items-center gap-1">

@@ -287,15 +287,10 @@ function EditPsychologistForm() {
                 <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">ФИО <DraftIndicator fieldName="fullName" /></label>
                 <input name="fullName" defaultValue={user.fullName || ""} className={inputClasses("fullName")} />
               </div>
-              
+
               <div>
                 <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">Email <DraftIndicator fieldName="email" /></label>
                 <input name="email" defaultValue={user.email || ""} className={inputClasses("email")} />
-              </div>
-
-              <div>
-                <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">Цена (₽) <DraftIndicator fieldName="price" /></label>
-                <input type="number" name="price" defaultValue={user.price || ""} className={inputClasses("price")} />
               </div>
 
               <div>
@@ -304,26 +299,46 @@ function EditPsychologistForm() {
               </div>
 
               <div>
-                <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">Пол <DraftIndicator fieldName="gender" /></label>
-                <select name="gender" defaultValue={user.gender || ""} className={inputClasses("gender")}>
-                  <option value="">Не указан</option>
-                  <option value="MALE">Мужской</option>
-                  <option value="FEMALE">Женский</option>
-                </select>
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">Цена (₽) <DraftIndicator fieldName="price" /></label>
+                <input type="number" name="price" defaultValue={user.price || ""} className={inputClasses("price")} />
               </div>
 
               <div>
-                <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">Дата рождения <DraftIndicator fieldName="birthDate" /></label>
-                <input type="date" name="birthDate" defaultValue={formatDateForInput(user.birthDate)} className={inputClasses("birthDate")} />
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">Бесплатных консультаций <DraftIndicator fieldName="freeSession" /></label>
+                <input 
+                  type="number" 
+                  name="freeSession" 
+                  defaultValue={user.freeSession ?? 0} 
+                  min={0}
+                  max={10}
+                  className={inputClasses("freeSession")} 
+                />
+                <p className="text-xs text-gray-500 mt-1">От 0 до 10</p>
               </div>
 
-              <div>
-                <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">Формат работы <DraftIndicator fieldName="workFormat" /></label>
-                <select name="workFormat" defaultValue={user.workFormat || ""} className={inputClasses("workFormat")}>
-                  <option value="ONLINE">Онлайн</option>
-                  <option value="OFFLINE">Оффлайн</option>
-                  <option value="BOTH">Оба формата</option>
-                </select>
+              <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="flex items-center text-xs font-medium text-gray-600 mb-1">Дата рождения <DraftIndicator fieldName="birthDate" /></label>
+                  <input type="date" name="birthDate" defaultValue={formatDateForInput(user.birthDate)} className={`${inputClasses("birthDate")} text-xs py-1.5`} />
+                </div>
+
+                <div>
+                  <label className="flex items-center text-xs font-medium text-gray-600 mb-1">Пол <DraftIndicator fieldName="gender" /></label>
+                  <select name="gender" defaultValue={user.gender || ""} className={`${inputClasses("gender")} text-xs py-1.5`}>
+                    <option value="">Не указан</option>
+                    <option value="MALE">Мужской</option>
+                    <option value="FEMALE">Женский</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="flex items-center text-xs font-medium text-gray-600 mb-1">Формат работы <DraftIndicator fieldName="workFormat" /></label>
+                  <select name="workFormat" defaultValue={user.workFormat || ""} className={`${inputClasses("workFormat")} text-xs py-1.5`}>
+                    <option value="ONLINE">Онлайн</option>
+                    <option value="OFFLINE">Оффлайн</option>
+                    <option value="BOTH">Оба формата</option>
+                  </select>
+                </div>
               </div>
 
               <div className="md:col-span-2">

@@ -20,6 +20,7 @@ export async function updateBasicProfile(values: any) {
         fullName: values.fullName,
         city: values.city,
         price: Number(values.price),
+        freeSession: Number(values.freeSession ?? 0),
         gender: values.gender,
         birthDate: values.birthDate ? new Date(values.birthDate) : null,
         workFormat: values.workFormat,
@@ -28,6 +29,8 @@ export async function updateBasicProfile(values: any) {
     })
 
     revalidatePath('/account/profile')
+    revalidatePath('/catalog')
+    revalidatePath('/catalog/[slug]')
     return { success: true }
   } catch (e) {
     return { error: "Ошибка при обновлении профиля" }
@@ -42,23 +45,38 @@ export async function updateDetailedProfileDraft(values: any) {
   }
 
   try {
+    // Получаем текущий draftData, чтобы не потерять существующие поля
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { draftData: true }
+    });
+
+    const currentDraft = (currentUser?.draftData as any) || {};
+
+    // Формируем правильную структуру JSON
+    const draftData = {
+      status: 'PENDING',
+      submittedAt: new Date().toISOString(),
+      data: {
+        shortBio: values.shortBio || '',
+        longBio: values.longBio || '',
+        mainParadigm: values.mainParadigm || [],
+        firstDiplomaDate: values.firstDiplomaDate || null,
+      }
+    };
+
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        // Данные сохраняются в JSON-поле draftData, не меняя публичный профиль
-        draftData: {
-          shortBio: values.shortBio,
-          longBio: values.longBio,
-          mainParadigm: values.mainParadigm,
-          firstDiplomaDate: values.firstDiplomaDate,
-        },
+        draftData: draftData as any,
         hasUnpublishedChanges: true
       },
-    })
+    });
 
     revalidatePath('/account/profile')
     return { success: true }
   } catch (e) {
+    console.error('Error saving draft:', e);
     return { error: "Ошибка при сохранении черновика" }
   }
 }

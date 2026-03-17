@@ -39,6 +39,7 @@ export interface PsychologistCatalogItem {
   certificationLevel: number;
   shortBio: string;            // string
   price: number | null;        // ← разрешить null
+  freeSession: number;         // 0-10, уровень бесплатной консультации
   images: string[];
   educationCount: number;
   coursesCount: number;

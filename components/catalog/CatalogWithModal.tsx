@@ -61,20 +61,41 @@ export function CatalogWithModal({ items, nextCursor, hasMore, searchParams }: P
   );
 }
 
+function formatWorkFormat(workFormat: string | undefined): string[] {
+  if (!workFormat) return [];
+  
+  // Если формат уже человекочитаемый (содержит кириллицу)
+  if (/[а-яА-Я]/.test(workFormat)) {
+    return workFormat.split(/[,\/]/).map(m => m.trim()).filter(Boolean);
+  }
+  
+  // Если формат в виде констант (ONLINE, OFFLINE, BOTH)
+  const formats: Record<string, string> = {
+    ONLINE: 'Онлайн',
+    OFFLINE: 'Оффлайн',
+    BOTH: 'Онлайн и оффлайн'
+  };
+  
+  return workFormat
+    .split(',')
+    .map(f => f.trim().toUpperCase())
+    .filter(Boolean)
+    .map(f => formats[f] || f);
+}
+
 function PsychologistCard({ psychologist }: { psychologist: PsychologistCatalogItem }) {
-  const { 
-    slug, fullName, city, mainParadigm, certificationLevel, 
-    shortBio, price, images, educationCount, coursesCount, workFormat 
+  const {
+    slug, fullName, city, mainParadigm, certificationLevel,
+    shortBio, price, images, educationCount, coursesCount, workFormat,
+    freeSession
   } = psychologist;
   
   const rawImage = images[0] ?? null;
   const imageSrc = rawImage ? normalizeImageSrc(rawImage) : null;
   const unoptimized = rawImage ? isExternalImageSrc(rawImage) : false;
 
-  // Парсим модальности (workFormat может быть строкой типа "Онлайн, Офлайн")
-  const modalities = workFormat 
-    ? workFormat.split(/[,\/]/).map(m => m.trim()).filter(Boolean)
-    : [];
+  // Форматируем модальности (workFormat: ONLINE, OFFLINE, BOTH)
+  const modalities = formatWorkFormat(workFormat);
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-all hover:border-[#5858E2]/30">
@@ -102,33 +123,38 @@ function PsychologistCard({ psychologist }: { psychologist: PsychologistCatalogI
 
         {/* Контент справа */}
         <div className="flex-1 p-4 sm:p-5 flex flex-col">
-          {/* Верхняя строка: имя + уровень + цена */}
+          {/* Верхняя строка: имя + квалификация + формат работы */}
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-semibold text-lg text-gray-900">
-                  {fullName}
-                </h3>
+                <Link
+                  href={`/catalog/${slug}`}
+                  className="text-sm font-medium text-[#5858E2] hover:underline"
+                >
+                  <h3 className="font-semibold text-lg text-gray-900">
+                    {fullName}
+                  </h3>
+                </Link>
               </div>
               <p className="text-sm text-gray-500 mt-0.5">{city || "Город не указан"}</p>
-              {/* Бейдж уровня квалификации */}
+              {/* Бейдж уровня квалификации - зеленый */}
               <div className="mt-2">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#5858E2] text-white">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#A7FF5A] text-gray-900">
                   {certificationLevel} уровень квалификации
                 </span>
               </div>
             </div>
-            
-            {/* Цена и бесплатная сессия - правый верхний угол */}
-            <div className="text-right flex-shrink-0">
-              <div className="font-bold text-lg text-[#5858E2]">
-                {price ? `${price} ₽` : 'Договорная'}
-              </div>
-              <div className="mt-1">
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#A7FF5A] text-gray-900">
-                  Первая сессия — бесплатно
+
+            {/* Формат работы - правый верхний угол */}
+            <div className="flex flex-wrap gap-1.5 justify-end">
+              {modalities.map((m, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
+                >
+                  {m}
                 </span>
-              </div>
+              ))}
             </div>
           </div>
 
@@ -151,20 +177,20 @@ function PsychologistCard({ psychologist }: { psychologist: PsychologistCatalogI
             {shortBio}
           </p>
 
-          {/* Нижняя строка: кнопки + модальности */}
+          {/* Нижняя строка: цена + бесплатные сессии | кнопки */}
           <div className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3 border-t border-gray-100">
-            {/* Модальности слева */}
-            <div className="flex flex-wrap gap-1.5">
-              {modalities.map((m, i) => (
-                <span 
-                  key={i}
-                  className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
-                >
-                  {m}
+            {/* Цена и бесплатные сессии слева */}
+            <div className="flex items-center gap-2">
+              <div className="font-bold text-lg text-[#5858E2]">
+                {price ? `${price} ₽` : 'Договорная'}
+              </div>
+              {freeSession > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#A7FF5A] text-gray-900">
+                  {freeSession} бесплатн{freeSession === 1 ? 'ая' : freeSession >= 2 && freeSession <= 4 ? 'ых' : 'ых'} сесси{freeSession === 1 ? 'я' : freeSession >= 2 && freeSession <= 4 ? 'и' : 'й'}
                 </span>
-              ))}
+              )}
             </div>
-            
+
             {/* Кнопки справа */}
             <div className="flex items-center gap-3">
               <Link

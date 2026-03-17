@@ -8,7 +8,8 @@ import {
   Home, 
   User as UserIcon, 
   FileText, 
-  Award, 
+  Award,
+  MessageCircleIcon,
   Settings, 
   LogOut,
   ClipboardList,
@@ -49,22 +50,16 @@ export default function AccountNav({ user }: AccountNavProps) {
       show: user.status !== 'PENDING' // Только для кандидатов и активных
     },
     {
+      href: '/account/messages',
+      label: 'Служба заботы',
+      icon: MessageCircleIcon,
+      show: user.status !== 'BLOCKED' // Только для кандидатов и активных
+    },
+    {
       href: '/account/certification',
       label: 'Сертификация',
       icon: Award,
       show: user.status === 'ACTIVE' || user.status === 'CANDIDATE'
-    },
-    {
-      href: '/account/documents',
-      label: 'Документы',
-      icon: ClipboardList,
-      show: user.status !== 'PENDING'
-    },
-    {
-      href: '/account/settings',
-      label: 'Настройки',
-      icon: Settings,
-      show: true
     }
   ]
   

@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { buildMetadata, canonicalUrl, personJsonLd } from "@/lib/seo";
 import { ComplaintModalTrigger } from "@/components/complaint/ComplaintModalTrigger";
 import { normalizeEmbeddedLocalAssetUrls } from "@/lib/html-local-assets";
+import { EducationBlock } from "./components/EducationBlock";
 
 export const revalidate = 60;
 
@@ -117,23 +118,43 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
 
   if (!user || !user.isPublished || user.status !== "ACTIVE") notFound();
 
-  // 2. Получаем фото из документов
+  // 2. Получаем проверенные фото из документов
   const photos = await prisma.document.findMany({
     where: {
       userId: user.id,
       type: "PHOTO",
+      verifiedAt: { not: null }, // Только проверенные фото
     },
     select: { url: true },
     orderBy: { uploadedAt: "asc" },
   });
 
-  // 3. Формируем массив фото: сначала аватар, потом остальные
-  const allPhotos = user.avatarUrl
-    ? [user.avatarUrl, ...photos.map(p => p.url).filter(url => url !== user.avatarUrl)]
-    : photos.map(p => p.url);
+  // 3. Проверяем, есть ли avatarUrl среди проверенных фото
+  const photoUrls = photos.map(p => p.url);
+  const hasVerifiedAvatar = user.avatarUrl && photoUrls.includes(user.avatarUrl);
+  
+  // Формируем массив фото: сначала аватар (если прошёл модерацию), потом остальные проверенные
+  const allPhotos: string[] = hasVerifiedAvatar
+    ? [user.avatarUrl!, ...photoUrls.filter(url => url !== user.avatarUrl)]
+    : photoUrls;
 
-  // 4. Временно скрываем образование (потом доделаем)
-  // const education = await prisma.document.findMany({ ... });
+  // 4. Получаем проверенные документы об образовании
+  const education = await prisma.document.findMany({
+    where: {
+      userId: user.id,
+      type: { in: ['ACADEMIC_EDUCATION', 'PROFESSIONAL_TRAINING', 'COURSE', 'SUPPORTING_DOC', 'OTHER'] },
+      verifiedAt: { not: null }, // Только проверенные документы
+    },
+    select: {
+      type: true,
+      organization: true,
+      programName: true,
+      year: true,
+    },
+    orderBy: {
+      uploadedAt: 'asc',
+    },
+  });
 
   const pageUrl = canonicalUrl(`/catalog/${slug}`);
   const firstImage = allPhotos[0];
@@ -278,8 +299,7 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
               </div>
 
               <div className="mt-4 pt-4 border-t border-gray-100">
-                <h2 className="mb-2 text-lg font-semibold text-gray-900">О себе</h2>
-                <div className="space-y-2">
+                <div className="space-y-2 whitespace-pre-wrap">
                   <p className="text-sm text-gray-700">{user.shortBio}</p>
                   {user.longBio && (
                     <div
@@ -310,8 +330,7 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
                 </div>
               )}
 
-              {/* Блок образования временно скрыт */}
-              {/* {education.length > 0 && ( ... )} */}
+              <EducationBlock education={education} />
 
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

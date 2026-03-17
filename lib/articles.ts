@@ -270,6 +270,7 @@ export async function updateArticle(id: string, data: {
 
                             
     if (data.isPublished !== undefined) {
+      updateData.isPublished = data.isPublished;
       updateData.publishedAt = data.isPublished ? new Date() : null;
     }
 
@@ -362,7 +363,7 @@ const getArticlesCached = unstable_cache(
         where: {
           ...(tag ? { tags: { has: tag } } : {}),
           ...(authorId ? { userId: authorId } : {}),
-          ...(publishedOnly ? { publishedAt: { not: null } } : {}),
+          ...(publishedOnly ? { isPublished: true } : {}),
           ...searchCondition,
         },
         orderBy: { publishedAt: "desc" },
@@ -410,10 +411,10 @@ const getAllArticleTagsCached = unstable_cache(
 export async function getArticleTags() {
   try {
     // Используем тот же фильтр, что и в getArticles для publishedOnly
-    // publishedAt: { not: null } вместо isPublished: true
+    // isPublished: true вместо publishedAt: { not: null }
     const articles = await prisma.article.findMany({
       select: { tags: true },
-      where: { publishedAt: { not: null } }
+      where: { isPublished: true }
     });
 
     const tags = new Set<string>();
@@ -465,7 +466,7 @@ export async function getArticlesForAdmin({
     // Фильтр по статусу модерации (исключаем DRAFT)
     const statusFilter = {
       moderationStatus: {
-        not: "DRAFT"
+        not: ModerationStatus.DRAFT
       }
     };
 

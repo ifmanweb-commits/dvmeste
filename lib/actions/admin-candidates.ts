@@ -85,6 +85,7 @@ export async function getCandidatesList({
         email: true,
         city: true,
         gender: true,
+        birthDate: true,
         price: true,
         certificationLevel: true,
         status: true,

@@ -4,9 +4,6 @@ import { type HTMLAttributes, forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
-                                                     
-  glass?: boolean;
-                        
   padding?: "none" | "sm" | "md" | "lg";
 }
 
@@ -18,13 +15,12 @@ const paddingStyles: Record<NonNullable<CardProps["padding"]>, string> = {
 };
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ glass = true, padding = "md", className, children, ...props }, ref) => {
+  ({ padding = "md", className, children, ...props }, ref) => {
     return (
       <div
         ref={ref}
         className={cn(
-          "rounded-card border border-neutral-light/80 bg-white/70 transition-shadow hover:shadow-glass-strong",
-          glass && "backdrop-blur-md shadow-glass",
+          "rounded-card border border-neutral-light/80 bg-white/70 transition-shadow hover:shadow-glass-strong backdrop-blur-md shadow-glass",
           paddingStyles[padding],
           className
         )}
@@ -43,6 +39,20 @@ export function CardHeader({
   ...props
 }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cn("mb-4 font-display font-semibold text-lg", className)} {...props} />;
+}
+
+export function CardDescription({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("text-sm text-muted-foreground mt-1", className)} {...props} />;
+}
+
+export function CardTitle({
+  className,
+  ...props
+}: HTMLAttributes<HTMLHeadingElement>) {
+  return <h3 className={cn("font-bold text-xl leading-none tracking-tight", className)} {...props} />;
 }
 
 export function CardContent({

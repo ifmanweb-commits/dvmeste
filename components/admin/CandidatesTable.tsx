@@ -13,9 +13,10 @@ interface Candidate {
   city: string | null;
   price: number | null;
   gender: string | null;
+  birthDate: Date | null;
   certificationLevel: number;
-  status: PsychologistStatus; // Изменено со string на Enum
-  createdAt: Date;            // Изменено со string на Date
+  status: PsychologistStatus;
+  createdAt: Date;
   workFormat: string | null;
   mainParadigm: string[];
   contactInfo: string | null;
@@ -34,6 +35,27 @@ const formatDate = (dateString: Date) => {
     month: '2-digit',
     year: 'numeric'
   });
+};
+
+const calculateAge = (birthDate: Date | null): number | null => {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+};
+
+const getGenderDisplay = (gender: string | null): string => {
+  if (!gender) return '—';
+  switch (gender) {
+    case 'MALE': return 'М';
+    case 'FEMALE': return 'Ж';
+    default: return '—';
+  }
 };
 
 export function CandidatesTable({ candidates, currentPage, totalPages, search }: CandidatesTableProps) {
@@ -73,43 +95,102 @@ export function CandidatesTable({ candidates, currentPage, totalPages, search }:
   };
 return (
     <div className="relative">
-      <table className="min-w-full divide-y divide-gray-200 bg-white rounded-lg overflow-hidden border shadow">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Кандидат</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Город</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Статус</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Пол</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Цена</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Контакты</th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Действия</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {candidates.map((candidate) => (
-            <tr key={candidate.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-6 py-4">
-                <div className="text-m font-medium text-gray-900">{candidate.fullName || 'Имя не указано'}</div>
-                <div className="text-sm text-gray-500">{candidate.email}</div>
-              </td>
-              <td className="px-6 py-4 text-sm text-gray-500">{candidate.city || '—'}</td>
-              <td className="px-6 py-4">{getStatusDisplay(candidate.status)}</td>
-              <td className="px-6 py-4">{candidate.gender || '—'}</td>
-              <td className="px-6 py-4">{candidate.price || '—'}</td>
-              <td className="px-6 py-4">{candidate.contactInfo  || '—'}</td>
-              <td className="px-6 py-4 text-right">
-                <button
-                  onClick={() => openConfirm(candidate.id, candidate.fullName)}
-                  className="inline-flex items-center text-[#5858E2] hover:text-[#4747b5] font-medium text-sm transition-colors"
-                >
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  Сделать участником
-                </button>
-              </td>
+      {/* Десктопная версия - таблица */}
+      <div className="hidden md:block">
+        <table className="min-w-full divide-y divide-gray-200 bg-white rounded-lg overflow-hidden border shadow">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Кандидат</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Пол</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Возраст</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Город</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Статус</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Цена</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Контакты</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Действия</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {candidates.map((candidate) => {
+              const age = calculateAge(candidate.birthDate);
+              return (
+                <tr key={candidate.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="text-m font-medium text-gray-900">{candidate.fullName || 'Имя не указано'}</div>
+                    <div className="text-sm text-gray-500">{candidate.email}</div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{getGenderDisplay(candidate.gender)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{age ? `${age} лет` : '—'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{candidate.city || '—'}</td>
+                  <td className="px-6 py-4">{getStatusDisplay(candidate.status)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{candidate.price ? `${candidate.price} ₽` : '—'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{candidate.contactInfo || '—'}</td>
+                  <td className="px-6 py-4 text-right">
+                    <button
+                      onClick={() => openConfirm(candidate.id, candidate.fullName)}
+                      className="inline-flex items-center text-[#5858E2] hover:text-[#4747b5] font-medium text-sm transition-colors"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Сделать участником
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Мобильная версия - карточки */}
+      <div className="md:hidden space-y-4">
+        {candidates.map((candidate) => {
+          const age = calculateAge(candidate.birthDate);
+          return (
+            <div key={candidate.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900">{candidate.fullName || 'Имя не указано'}</h3>
+                  <p className="text-sm text-gray-500">{candidate.email}</p>
+                </div>
+                {getStatusDisplay(candidate.status)}
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-500">Пол:</span>
+                  <span className="ml-2 font-medium text-gray-900">{getGenderDisplay(candidate.gender)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Возраст:</span>
+                  <span className="ml-2 font-medium text-gray-900">{age ? `${age} лет` : '—'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Город:</span>
+                  <span className="ml-2 font-medium text-gray-900">{candidate.city || '—'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Цена:</span>
+                  <span className="ml-2 font-medium text-gray-900">{candidate.price ? `${candidate.price} ₽` : '—'}</span>
+                </div>
+              </div>
+              
+              {candidate.contactInfo && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <p className="text-xs text-gray-500 truncate">{candidate.contactInfo}</p>
+                </div>
+              )}
+              
+              <button
+                onClick={() => openConfirm(candidate.id, candidate.fullName)}
+                className="mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#5858E2] text-white text-sm font-medium rounded-lg hover:bg-[#4747b5] transition-colors"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Сделать участником
+              </button>
+            </div>
+          );
+        })}
+      </div>
 
       {/* Модальное окно подтверждения */}
       {isModalOpen && (

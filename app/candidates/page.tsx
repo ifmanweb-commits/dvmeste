@@ -27,6 +27,30 @@ function formatWorkFormat(workFormat: string | null): string {
   }
 }
 
+function getGenderDisplay(gender: string | null): string {
+  if (!gender) return "—";
+  switch (gender) {
+    case "MALE":
+      return "М";
+    case "FEMALE":
+      return "Ж";
+    default:
+      return "—";
+  }
+}
+
+function calculateAge(birthDate: Date | null): number | null {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 export default async function CandidatesPage({
   searchParams,
 }: {
@@ -46,6 +70,8 @@ export default async function CandidatesPage({
         id: true,
         fullName: true,
         city: true,
+        gender: true,
+        birthDate: true,
         workFormat: true,
         contactInfo: true,
         price: true,
@@ -88,13 +114,19 @@ export default async function CandidatesPage({
           </div>
         ) : (
           <>
-            {/* Таблица */}
-            <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+            {/* Десктопная версия - таблица */}
+            <div className="hidden md:block bg-white rounded-xl border border-neutral-200 overflow-hidden">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-neutral-200">
                   <tr>
                     <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
                       Имя
+                    </th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
+                      Пол
+                    </th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
+                      Возраст
                     </th>
                     <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
                       Город
@@ -111,32 +143,85 @@ export default async function CandidatesPage({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
-                  {candidates.map((candidate) => (
-                    <tr
-                      key={candidate.id}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <span className="text-gray-900">
-                          {escapeHtml(candidate.fullName)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-700">
-                        {escapeHtml(candidate.city) || "—"}
-                      </td>
-                      <td className="px-6 py-4 text-gray-700">
-                        {formatWorkFormat(candidate.workFormat)}
-                      </td>
-                      <td className="px-6 py-4 text-gray-600">
-                        {escapeHtml(candidate.contactInfo) || "—"}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-gray-900">
-                        {candidate.price ? `${candidate.price} ₽` : "—"}
-                      </td>
-                    </tr>
-                  ))}
+                  {candidates.map((candidate) => {
+                    const age = calculateAge(candidate.birthDate);
+                    return (
+                      <tr
+                        key={candidate.id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-6 py-4">
+                          <span className="text-gray-900">
+                            {escapeHtml(candidate.fullName)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-gray-700">
+                          {getGenderDisplay(candidate.gender)}
+                        </td>
+                        <td className="px-6 py-4 text-gray-700">
+                          {age ? `${age} лет` : "—"}
+                        </td>
+                        <td className="px-6 py-4 text-gray-700">
+                          {escapeHtml(candidate.city) || "—"}
+                        </td>
+                        <td className="px-6 py-4 text-gray-700">
+                          {formatWorkFormat(candidate.workFormat)}
+                        </td>
+                        <td className="px-6 py-4 text-gray-600 max-w-xs truncate">
+                          {escapeHtml(candidate.contactInfo) || "—"}
+                        </td>
+                        <td className="px-6 py-4 font-medium text-gray-900">
+                          {candidate.price ? `${candidate.price} ₽` : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Мобильная версия - карточки */}
+            <div className="md:hidden space-y-4">
+              {candidates.map((candidate) => {
+                const age = calculateAge(candidate.birthDate);
+                return (
+                  <div key={candidate.id} className="bg-white rounded-xl border border-neutral-200 p-4 shadow-sm">
+                    <h3 className="font-semibold text-gray-900 mb-2">
+                      {escapeHtml(candidate.fullName)}
+                    </h3>
+                    
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-gray-500">Пол:</span>
+                        <span className="ml-2 font-medium text-gray-900">{getGenderDisplay(candidate.gender)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Возраст:</span>
+                        <span className="ml-2 font-medium text-gray-900">{age ? `${age} лет` : "—"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Город:</span>
+                        <span className="ml-2 font-medium text-gray-900">{escapeHtml(candidate.city) || "—"}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Цена:</span>
+                        <span className="ml-2 font-medium text-gray-900">{candidate.price ? `${candidate.price} ₽` : "—"}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3 pt-3 border-t border-neutral-100">
+                      <p className="text-xs text-gray-500">
+                        <span className="font-medium">Формат:</span> {formatWorkFormat(candidate.workFormat)}
+                      </p>
+                      {candidate.contactInfo && (
+                        <p className="text-xs text-gray-500 mt-1 truncate">
+                          <span className="font-medium">Контакты:</span> {escapeHtml(candidate.contactInfo)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Пагинация */}
