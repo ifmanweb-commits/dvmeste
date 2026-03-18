@@ -14,7 +14,8 @@ import {
   LogOut,
   ClipboardList,
   CheckCircle,
-  Bell
+  Bell,
+  Radio
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -66,6 +67,12 @@ export default function AccountNav({ user }: AccountNavProps) {
       href: '/account/notifications',
       label: 'Уведомления',
       icon: Bell,
+      show: true // Доступ у всех статусов
+    },
+    {
+      href: '/account/push',
+      label: 'Push-уведомления',
+      icon: Radio,
       show: true // Доступ у всех статусов
     }
   ]

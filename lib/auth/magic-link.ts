@@ -27,7 +27,9 @@ export async function createMagicLink(email: string) {
   })
   
   // Формируем ссылку
-  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+    || process.env.NEXTAUTH_URL
+    || 'http://localhost:3000'
   const link = `${baseUrl}/api/auth/verify?token=${token}&email=${encodeURIComponent(email)}`
   
   // Отправляем письмо используя твой emailService
