@@ -157,6 +157,23 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
     },
   });
 
+  // 5. Получаем опубликованные статьи психолога
+  const articles = await prisma.article.findMany({
+    where: {
+      userId: user.id,
+      isPublished: true,
+    },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      publishedAt: true,
+    },
+    orderBy: {
+      publishedAt: 'desc',
+    },
+  });
+
   const pageUrl = canonicalUrl(`/catalog/${slug}`);
   const firstImage = allPhotos[0];
   const imageUrl = firstImage
@@ -320,6 +337,25 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
                   large
                 />
               </div>
+
+              {/* Статьи психолога */}
+              {articles.length > 0 && (
+                <div className="mt-6">
+                  <h2 className="mb-2 text-base font-semibold text-gray-900">Автор статей:</h2>
+                  <ul className="space-y-1">
+                    {articles.map((article) => (
+                      <li key={article.id}>
+                        <Link
+                          href={`/articles/${article.slug}`}
+                          className="text-sm text-[#5858E2] hover:text-[#4d4dd0] hover:underline"
+                        >
+                          {article.title}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <EducationBlock education={education} />
 
