@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { buildMetadata, canonicalUrl, personJsonLd } from "@/lib/seo";
 import { ComplaintModalTrigger } from "@/components/complaint/ComplaintModalTrigger";
+import LeadFormModal from "@/components/lead/LeadFormModal";
 import { normalizeEmbeddedLocalAssetUrls } from "@/lib/html-local-assets";
 import { EducationBlock } from "./components/EducationBlock";
 
@@ -281,12 +282,11 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
                       })}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <a
-                        href="#contact-booking"
-                        className="inline-flex items-center scroll-auto justify-center rounded-lg bg-[#5858E2] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#4d4dd0]"
-                      >
-                        Записаться
-                      </a>
+                      <LeadFormModal
+                        psychologistId={user.id}
+                        psychologistName={user.fullName || undefined}
+                        triggerLabel="Связаться"
+                      />
                       <ComplaintModalTrigger
                         psychologistName={user.fullName || 'Без имени'}
                         psychologistSlug={user.slug || ''}
@@ -310,25 +310,16 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
                 </div>
               </div>
 
-              {hasContactInfo && (
-                <div id="contact-booking" className="mt-4 pt-4 border-t border-gray-100">
-                  <h2 className="mb-2 text-lg font-semibold text-gray-900">
-                    Записаться на консультацию
-                  </h2>
-                  <div className="rounded-lg border border-[#4CAF50]/35 bg-[#EEF8F0] p-3 shadow-sm sm:p-4">
-                    {contactInfoIsHtml ? (
-                      <div
-                        className="text-sm text-[#2f4d33] [&_a]:font-semibold [&_a]:text-[#2F8F46] [&_a]:underline"
-                        dangerouslySetInnerHTML={{ __html: normalizedContactInfoHtml }}
-                      />
-                    ) : (
-                      <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-[#2f4d33]">
-                        {contactInfoRaw}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              {/* Кнопка записи на консультацию - большая зеленая, по центру */}
+              <div className="mt-6 flex justify-center">
+                <LeadFormModal
+                  psychologistId={user.id}
+                  psychologistName={user.fullName || undefined}
+                  triggerLabel="Записаться на консультацию"
+                  triggerClassName="inline-flex items-center justify-center rounded-lg bg-[#4CAF50] px-6 py-3 text-base font-semibold text-white hover:bg-[#45a049] shadow-md"
+                  large
+                />
+              </div>
 
               <EducationBlock education={education} />
 

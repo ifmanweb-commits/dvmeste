@@ -15,7 +15,8 @@ import {
   ClipboardList,
   CheckCircle,
   Bell,
-  Radio
+  Radio,
+  Users
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -44,6 +45,12 @@ export default function AccountNav({ user }: AccountNavProps) {
       label: 'Профиль',
       icon: UserIcon,
       show: true
+    },
+    {
+      href: '/account/leads',
+      label: 'Заявки',
+      icon: Users,
+      show: user.status === 'ACTIVE' || user.status === 'CANDIDATE' // Только для активных психологов
     },
     {
       href: '/account/articles',

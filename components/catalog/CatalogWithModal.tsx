@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui";
 import { normalizeImageSrc, isExternalImageSrc } from "@/lib/image-src";
 import type { PsychologistCatalogItem } from "@/types/catalog";
+import LeadFormModal from "@/components/lead/LeadFormModal";
 
 type Props = {
   items: PsychologistCatalogItem[];
@@ -199,12 +200,11 @@ function PsychologistCard({ psychologist }: { psychologist: PsychologistCatalogI
               >
                 Подробнее
               </Link>
-              <button
-                type="button"
-                className="px-4 py-2 bg-[#5858E2] text-white text-sm font-medium rounded-xl hover:bg-[#4b4bcf] transition-colors"
-              >
-                Связаться
-              </button>
+              <LeadFormModal
+                psychologistId={psychologist.id}
+                psychologistName={psychologist.fullName}
+                triggerLabel="Связаться"
+              />
             </div>
           </div>
         </div>

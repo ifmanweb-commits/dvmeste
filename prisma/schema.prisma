@@ -48,6 +48,9 @@ model User {
   dialogs               Dialog[]
   notifications         Notification[]
   pushSubscriptions     PushSubscription[]
+  complaintsFrom        Complaint[] @relation("psychologist_complaints_from")
+  complaintsTo          Complaint[] @relation("psychologist_complaints_to")
+  leads                 Lead[]
 
   @@index([email])
   @@index([status])
@@ -314,4 +317,96 @@ model PushSubscription {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// ==================== МОДЕЛИ СИСТЕМЫ ЗАЯВОК ====================
+
+model Client {
+  id              String   @id @default(cuid())
+  email           String   @unique // @encrypted
+  emailHash       String?  @unique
+  name            String?  // @encrypted
+  phone           String?  // @encrypted
+  telegram        String?  // @encrypted
+  vk              String?  // @encrypted
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Репутация (невидимая для клиента)
+  complaintCount  Int      @default(0)
+  isShadowBanned  Boolean  @default(false)
+
+  leads           Lead[]
+  complaintsFrom  Complaint[] @relation("client_complaints_from")
+  complaintsTo    Complaint[] @relation("client_complaints_to")
+
+  @@index([email])
+  @@index([emailHash])
+}
+
+model Lead {
+  id               String     @id @default(cuid())
+  clientId         String
+  psychologistId   String
+  message          String?    @db.Text
+  status           LeadStatus @default(NEW)
+  statusChangedAt  DateTime?
+  createdAt        DateTime   @default(now())
+  viewedAt         DateTime?
+
+  // Для подозрительных клиентов
+  isSuspicious     Boolean    @default(false)
+  suspiciousReason String?
+
+  // IP адрес для ограничения заявок
+  ipAddress        String?
+
+  client           Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  psychologist     User       @relation(fields: [psychologistId], references: [id], onDelete: Cascade)
+  complaints       Complaint[]
+
+  @@index([clientId])
+  @@index([psychologistId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Complaint {
+  id                 String   @id @default(cuid())
+  fromType           String   // 'client' или 'psychologist'
+  fromClientId       String?
+  fromPsychologistId String?
+  toClientId         String?
+  toPsychologistId   String?
+  reason             String
+  description        String?  @db.Text
+  leadId             String?
+  createdAt          DateTime @default(now())
+  resolvedAt         DateTime?
+  resolvedBy         String?
+  resolution         String?
+
+  fromClient         Client?  @relation("client_complaints_from", fields: [fromClientId], references: [id])
+  fromPsychologist   User?    @relation("psychologist_complaints_from", fields: [fromPsychologistId], references: [id])
+  toClient           Client?  @relation("client_complaints_to", fields: [toClientId], references: [id])
+  toPsychologist     User?    @relation("psychologist_complaints_to", fields: [toPsychologistId], references: [id])
+  lead               Lead?    @relation(fields: [leadId], references: [id])
+
+  @@index([fromType])
+  @@index([toClientId])
+  @@index([toPsychologistId])
+  @@index([createdAt])
+}
+
+enum LeadStatus {
+  NEW
+  ACCEPTED
+  REJECTED
+  CONTACTED
+  APPOINTMENT
+  FREE_SESSION
+  PAID_SESSION
+  NO_CONTACT
+  CLIENT_REJECTED
+  ARCHIVED
 }
