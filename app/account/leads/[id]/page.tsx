@@ -2,11 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { LeadStatus } from "@prisma/client";
+import { LeadStatus, LeadResolution } from "@prisma/client";
 import {
   LEAD_STATUS_LABELS,
   LEAD_STATUS_COLORS,
   LEAD_STATUS_ACTIONS,
+  RESOLUTION_LABELS,
+  RESOLUTION_COLORS,
+  RESOLUTION_OPTIONS,
   LeadAction,
 } from "@/lib/lead-status-config";
 
@@ -23,6 +26,7 @@ interface Lead {
   };
   message: string | null;
   status: LeadStatus;
+  resolution: LeadResolution | null;
   isSuspicious: boolean;
   suspiciousReason: string | null;
   createdAt: string;
@@ -53,7 +57,7 @@ function getButtonVariantClass(variant: string): string {
     success: "bg-green-600 hover:bg-green-700 text-white",
     danger: "bg-red-600 hover:bg-red-700 text-white",
     warning: "bg-yellow-600 hover:bg-yellow-700 text-white",
-    neutral: "bg-gray-200 hover:bg-gray-300 text-gray-800",
+    neutral: "bg-gray-600 hover:bg-gray-700 text-white",
   };
   return variants[variant] || variants.neutral;
 }
@@ -159,6 +163,112 @@ function RejectModal({
               className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
             >
               {isLoading ? "Отправка..." : "Отказаться"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Модалка завершения заявки
+function CompleteModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  isLoading,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (resolution: LeadResolution) => Promise<void>;
+  isLoading: boolean;
+}) {
+  const [selectedResolution, setSelectedResolution] = useState<LeadResolution | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedResolution(null);
+      setError("");
+    }
+  }, [isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedResolution) {
+      setError("Выберите исход заявки");
+      return;
+    }
+    await onSubmit(selectedResolution);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+        <button
+          onClick={onClose}
+          disabled={isLoading}
+          className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+        >
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h3 className="mb-4 text-lg font-semibold text-gray-900">Завершение заявки</h3>
+        <p className="text-sm text-gray-600 mb-4">Выберите исход этой заявки:</p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            {RESOLUTION_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  selectedResolution === option.value
+                    ? "border-[#5858E2] bg-[#5858E2]/5"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="resolution"
+                  value={option.value}
+                  checked={selectedResolution === option.value}
+                  onChange={(e) => setSelectedResolution(e.target.value as LeadResolution)}
+                  className="mt-1"
+                />
+                <div>
+                  <p className="font-medium text-sm text-gray-900">{option.label}</p>
+                  <p className="text-xs text-gray-500">{option.description}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white hover:bg-[#4d4dd0] disabled:opacity-50"
+            >
+              {isLoading ? "Сохранение..." : "Завершить"}
             </button>
           </div>
         </form>
@@ -306,6 +416,7 @@ export default function LeadDetailPage() {
 
   // Модалки
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [showComplaintModal, setShowComplaintModal] = useState(false);
 
   // Загрузка данных заявки
@@ -336,24 +447,61 @@ export default function LeadDetailPage() {
 
   // Обработка действия со статусом
   const handleAction = async (action: LeadAction) => {
-    if (action.status === LeadStatus.REJECTED) {
+    if (action.id === "reject") {
       setShowRejectModal(true);
       return;
     }
 
-    setActionLoading(action.id);
+    if (action.id === "complete") {
+      setShowCompleteModal(true);
+      return;
+    }
+
+    if (action.id === "accept") {
+      setActionLoading("accept");
+      try {
+        const response = await fetch(`/api/leads/${leadId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "accept",
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          fetchLead();
+        } else {
+          alert(result.error || "Ошибка при обновлении статуса");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Ошибка при обновлении статуса");
+      } finally {
+        setActionLoading(null);
+      }
+    }
+  };
+
+  // Обработка отказа
+  const handleReject = async (clientReason: string, internalReason: string) => {
+    setActionLoading("reject");
     try {
       const response = await fetch(`/api/leads/${leadId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          status: action.status,
+          action: "reject",
+          clientReason,
+          internalReason,
         }),
       });
 
       const result = await response.json();
 
       if (result.success) {
+        setShowRejectModal(false);
         fetchLead();
       } else {
         alert(result.error || "Ошибка при обновлении статуса");
@@ -366,24 +514,23 @@ export default function LeadDetailPage() {
     }
   };
 
-  // Обработка отказа
-  const handleReject = async (clientReason: string, internalReason: string) => {
-    setActionLoading("reject");
+  // Обработка завершения
+  const handleComplete = async (resolution: LeadResolution) => {
+    setActionLoading("complete");
     try {
       const response = await fetch(`/api/leads/${leadId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          status: LeadStatus.REJECTED,
-          clientReason,
-          internalReason,
+          action: "complete",
+          resolution,
         }),
       });
 
       const result = await response.json();
 
       if (result.success) {
-        setShowRejectModal(false);
+        setShowCompleteModal(false);
         fetchLead();
       } else {
         alert(result.error || "Ошибка при обновлении статуса");
@@ -497,7 +644,7 @@ export default function LeadDetailPage() {
               />
             </svg>
             <span>
-              На этого клиента жаловались {lead.client.complaintCount} раз. Будьте осторожны
+              На этого клиента жаловали {lead.client.complaintCount} раз. Будьте осторожны
             </span>
           </div>
         )}
@@ -506,13 +653,24 @@ export default function LeadDetailPage() {
         <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Информация о клиенте</h2>
-            <span
-              className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColorClass(
-                LEAD_STATUS_COLORS[lead.status]
-              )}`}
-            >
-              {LEAD_STATUS_LABELS[lead.status]}
-            </span>
+            <div className="flex items-center gap-2">
+              <span
+                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColorClass(
+                  LEAD_STATUS_COLORS[lead.status]
+                )}`}
+              >
+                {LEAD_STATUS_LABELS[lead.status]}
+              </span>
+              {lead.resolution && (
+                <span
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColorClass(
+                    RESOLUTION_COLORS[lead.resolution]
+                  )}`}
+                >
+                  {RESOLUTION_LABELS[lead.resolution]}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -612,6 +770,13 @@ export default function LeadDetailPage() {
         onClose={() => setShowRejectModal(false)}
         onSubmit={handleReject}
         isLoading={actionLoading === "reject"}
+      />
+
+      <CompleteModal
+        isOpen={showCompleteModal}
+        onClose={() => setShowCompleteModal(false)}
+        onSubmit={handleComplete}
+        isLoading={actionLoading === "complete"}
       />
 
       <ComplaintModal

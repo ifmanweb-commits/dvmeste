@@ -345,24 +345,25 @@ model Client {
 }
 
 model Lead {
-  id               String     @id @default(cuid())
+  id               String         @id @default(cuid())
   clientId         String
   psychologistId   String
-  message          String?    @db.Text
-  status           LeadStatus @default(NEW)
+  message          String?        @db.Text
+  status           LeadStatus     @default(NEW)
+  resolution       LeadResolution?
   statusChangedAt  DateTime?
-  createdAt        DateTime   @default(now())
+  createdAt        DateTime       @default(now())
   viewedAt         DateTime?
 
   // Для подозрительных клиентов
-  isSuspicious     Boolean    @default(false)
+  isSuspicious     Boolean        @default(false)
   suspiciousReason String?
 
   // IP адрес для ограничения заявок
   ipAddress        String?
 
-  client           Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  psychologist     User       @relation(fields: [psychologistId], references: [id], onDelete: Cascade)
+  client           Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  psychologist     User           @relation(fields: [psychologistId], references: [id], onDelete: Cascade)
   complaints       Complaint[]
 
   @@index([clientId])
@@ -401,12 +402,14 @@ model Complaint {
 enum LeadStatus {
   NEW
   ACCEPTED
-  REJECTED
-  CONTACTED
-  APPOINTMENT
-  FREE_SESSION
-  PAID_SESSION
-  NO_CONTACT
-  CLIENT_REJECTED
-  ARCHIVED
+  COMPLETED
+}
+
+enum LeadResolution {
+  PSYCHOLOGIST_REJECTED  // психолог отказал сразу
+  NO_CONTACT             // не удалось связаться
+  NO_AGREEMENT           // связались, но не договорились
+  CLIENT_DROPPED         // договорились, клиент пропал
+  FREE_ONLY              // только бесплатная сессия
+  PAID_COMPLETED         // были платные сессии
 }

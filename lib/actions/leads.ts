@@ -5,7 +5,7 @@ import { hashEmail } from "@/lib/utils/hash-email";
 import { getClientIpFromRequest } from "@/lib/utils/get-client-ip";
 import { emailService } from "@/lib/email.service";
 import { cookies } from "next/headers";
-import { LeadStatus } from "@prisma/client";
+import { LeadStatus, LeadResolution } from "@prisma/client";
 
 // ==================== ИНТЕРФЕЙСЫ ====================
 
@@ -33,6 +33,7 @@ export interface LeadFilters {
 export interface UpdateLeadData {
   clientReason?: string;
   internalReason?: string;
+  resolution?: LeadResolution;
 }
 
 // Тип для клиента с complaintCount
@@ -315,16 +316,48 @@ export async function getLeadById(
 }
 
 /**
- * Обновление статуса заявки
+ * Принять заявку
  */
-export async function updateLeadStatus(
+export async function acceptLead(
   leadId: string,
-  status: LeadStatus,
+  psychologistId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const lead = await prisma.lead.findFirst({
+      where: {
+        id: leadId,
+        psychologistId,
+      },
+    });
+
+    if (!lead) {
+      return { success: false, error: "Заявка не найдена" };
+    }
+
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        status: LeadStatus.ACCEPTED,
+        statusChangedAt: new Date(),
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error accepting lead:", error);
+    return { success: false, error: "Ошибка при принятии заявки" };
+  }
+}
+
+/**
+ * Отказаться от заявки
+ */
+export async function rejectLead(
+  leadId: string,
   psychologistId: string,
   data?: UpdateLeadData
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Проверка, что заявка принадлежит психологу
     const lead = await prisma.lead.findFirst({
       where: {
         id: leadId,
@@ -339,17 +372,107 @@ export async function updateLeadStatus(
       return { success: false, error: "Заявка не найдена" };
     }
 
-    // Обновление статуса
     await prisma.lead.update({
       where: { id: leadId },
       data: {
-        status,
+        status: LeadStatus.COMPLETED,
+        resolution: LeadResolution.PSYCHOLOGIST_REJECTED,
         statusChangedAt: new Date(),
       },
     });
 
-    // Если статус REJECTED и есть clientReason — отправляем письмо клиенту
-    if (status === LeadStatus.REJECTED && data?.clientReason && lead.client.email) {
+    // Отправляем письмо клиенту если есть причина
+    if (data?.clientReason && lead.client.email) {
+      try {
+        await sendRejectionEmail(lead.client.email, data.clientReason);
+      } catch (emailError) {
+        console.error("Error sending rejection email:", emailError);
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error rejecting lead:", error);
+    return { success: false, error: "Ошибка при отказе от заявки" };
+  }
+}
+
+/**
+ * Завершить заявку с указанием resolution
+ */
+export async function completeLead(
+  leadId: string,
+  psychologistId: string,
+  resolution: LeadResolution
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const lead = await prisma.lead.findFirst({
+      where: {
+        id: leadId,
+        psychologistId,
+      },
+    });
+
+    if (!lead) {
+      return { success: false, error: "Заявка не найдена" };
+    }
+
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        status: LeadStatus.COMPLETED,
+        resolution,
+        statusChangedAt: new Date(),
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error completing lead:", error);
+    return { success: false, error: "Ошибка при завершении заявки" };
+  }
+}
+
+/**
+ * Обновление статуса заявки (обратная совместимость)
+ */
+export async function updateLeadStatus(
+  leadId: string,
+  status: LeadStatus,
+  psychologistId: string,
+  data?: UpdateLeadData
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const lead = await prisma.lead.findFirst({
+      where: {
+        id: leadId,
+        psychologistId,
+      },
+      include: {
+        client: true,
+      },
+    });
+
+    if (!lead) {
+      return { success: false, error: "Заявка не найдена" };
+    }
+
+    const updateData: any = {
+      status,
+      statusChangedAt: new Date(),
+    };
+
+    if (data?.resolution) {
+      updateData.resolution = data.resolution;
+    }
+
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: updateData,
+    });
+
+    // Если статус COMPLETED и есть clientReason — отправляем письмо клиенту
+    if (status === LeadStatus.COMPLETED && data?.clientReason && lead.client.email) {
       try {
         await sendRejectionEmail(lead.client.email, data.clientReason);
       } catch (emailError) {
