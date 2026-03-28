@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { createHash } from 'crypto';
 
 const prisma = new PrismaClient();
 
@@ -6,11 +7,12 @@ async function main() {
   console.log('🚀 Запуск seed: создание администратора...');
 
   const adminEmail = 'ifman@yandex.ru';
+  const normalizedEmail = adminEmail.toLowerCase().trim();
+  const emailHash = createHash('sha256').update(normalizedEmail).digest('hex');
 
-  // Проверяем, существует ли уже пользователь с таким email
+  // Проверяем, существует ли уже пользователь с таким emailHash
   const existingUser = await prisma.user.findUnique({
-    where: { email: adminEmail },
-    include: { psychologist: true }
+    where: { emailHash }
   });
 
   if (existingUser) {
@@ -18,72 +20,30 @@ async function main() {
     
     // Обновляем существующего пользователя
     await prisma.user.update({
-      where: { email: adminEmail },
+      where: { id: existingUser.id },
       data: {
         isAdmin: true,
-        isPsychologist: true,
         isManager: false,
         fullName: existingUser.fullName || 'Администратор',
         emailVerified: existingUser.emailVerified || new Date(),
+        status: 'ACTIVE' as any
       }
     });
-
-    // Если у пользователя нет записи в Psychologist, создаём
-    if (!existingUser.psychologist) {
-      await prisma.psychologist.create({
-        data: {
-          email: adminEmail,
-          fullName: existingUser.fullName || 'Администратор',
-          slug: 'admin-psychologist',
-          status: 'ACTIVE',
-          isPublished: true,
-          gender: 'Не указан',
-          birthDate: new Date('1990-01-01'),
-          city: 'Не указан',
-          workFormat: 'Онлайн',
-          shortBio: '',
-          longBio: '',
-          price: 0,
-          contactInfo: '',
-          userId: existingUser.id,
-        }
-      });
-      console.log('✅ Запись в Psychologist создана');
-    }
 
     console.log('✅ Пользователь обновлён');
   } else {
     console.log('🆕 Создаём нового пользователя...');
 
     // Создаём нового пользователя
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
-        email: adminEmail,
+        email: normalizedEmail,
+        emailHash,
         fullName: 'Администратор',
         isAdmin: true,
-        isPsychologist: true,
         isManager: false,
         emailVerified: new Date(),
-      }
-    });
-
-    // Создаём запись в Psychologist
-    await prisma.psychologist.create({
-      data: {
-        email: adminEmail,
-        fullName: 'Администратор',
-        slug: 'admin-psychologist',
-        status: 'ACTIVE',
-        isPublished: true,
-        gender: 'Не указан',
-        birthDate: new Date('1990-01-01'),
-        city: 'Не указан',
-        workFormat: 'Онлайн',
-        shortBio: '',
-        longBio: '',
-        price: 0,
-        contactInfo: '',
-        userId: user.id,
+        status: 'ACTIVE' as any
       }
     });
 

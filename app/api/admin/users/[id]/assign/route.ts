@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth/require";
 
 export async function POST(
   request: Request,
@@ -8,22 +8,9 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const session = await getServerSession();
     
-    // Проверяем авторизацию
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
-    }
-
-    // Проверяем, что текущий пользователь - админ
-    const currentUser = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { isAdmin: true }
-    });
-
-    if (!currentUser?.isAdmin) {
-      return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
-    }
+    // Проверяем авторизацию и права админа
+    await requireAdmin();
 
     const { role } = await request.json();
 

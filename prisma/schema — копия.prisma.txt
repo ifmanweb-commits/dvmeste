@@ -45,6 +45,8 @@ model User {
   moderationRecords     ModerationRecord[] @relation("moderated_user")
   sessions              Session[]
   dialogs               Dialog[]
+  notifications         Notification[]
+  pushSubscriptions     PushSubscription[]
 
   @@index([email])
   @@index([status])
@@ -175,32 +177,34 @@ model ModerationRecord {
   @@index([status])
   @@index([moderatorId])
 }
-enum DialogStatus {
-  ACTIVE    // требует ответа модератора
-  WAITING   // ждем ответа пользователя
-  ARCHIVED  // закрыт/архив
-}
-model Dialog {
-  id              String       @id @default(cuid())
-  userId          String       @unique // один диалог на пользователя
-  status          DialogStatus @default(ACTIVE)
-  lastMessageAt   DateTime     @default(now())
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
 
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages        Message[]
+enum DialogStatus {
+  ACTIVE // требует ответа модератора
+  WAITING // ждем ответа пользователя
+  ARCHIVED // закрыт/архив
+}
+
+model Dialog {
+  id            String       @id @default(cuid())
+  userId        String       @unique // один диалог на пользователя
+  status        DialogStatus @default(ACTIVE)
+  lastMessageAt DateTime     @default(now())
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
 }
 
 model Message {
-  id          String   @id @default(cuid())
-  dialogId    String   // связь с диалогом
-  direction   String   // 'to_moder' или 'to_user'
-  text        String   @db.Text
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  dialogId  String // связь с диалогом
+  direction String // 'to_moder' или 'to_user'
+  text      String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-  dialog      Dialog   @relation(fields: [dialogId], references: [id], onDelete: Cascade)
+  dialog Dialog @relation(fields: [dialogId], references: [id], onDelete: Cascade)
 
   @@index([dialogId])
   @@index([createdAt])
@@ -260,4 +264,53 @@ enum DocumentType {
   LINK
   PHOTO
   OTHER
+}
+
+enum NotificationType {
+  LEAD // заявка от клиента
+  ARTICLE_APPROVED // статья одобрена
+  ARTICLE_REVISION // статья на доработку
+  PROFILE_APPROVED // профиль одобрен
+  PROFILE_REJECTED // профиль отклонен
+  DOCUMENT_VERIFIED // документ проверен
+  REMINDER // напоминание о статье
+  INFO // новости проекта
+}
+
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String
+  type       NotificationType
+  title      String
+  message    String
+  linkUrl    String?
+  linkText   String?
+  isRead     Boolean          @default(false)
+  isArchived Boolean          @default(false)
+  expiresAt  DateTime?
+  createdAt  DateTime         @default(now())
+  metadata   Json?            @default("{}")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model PushSubscription {
+  id         String   @id @default(cuid())
+  userId     String
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  deviceType String?  // 'desktop', 'mobile', 'tablet'
+  deviceOs   String?  // 'windows', 'macos', 'ios', 'android', 'linux'
+  browser    String?  // 'chrome', 'safari', 'firefox', 'edge', 'other'
+  userAgent  String?  // исходный User-Agent
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

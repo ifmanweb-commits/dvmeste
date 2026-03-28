@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createMagicLink } from '@/lib/auth/magic-link'
+import { createHash } from 'crypto'
 
 export const runtime = 'nodejs'
 
@@ -18,8 +19,10 @@ export async function POST(req: Request) {
     const normalizedEmail = email.toLowerCase().trim()
     
     // 1. Проверяем, есть ли пользователь
+    const emailHash = createHash('sha256').update(normalizedEmail).digest('hex')
+    
     let user = await prisma.user.findUnique({
-      where: { email: normalizedEmail }
+      where: { emailHash }
     })
     
     // 2. Если нет - создаем со статусом PENDING
@@ -27,6 +30,7 @@ export async function POST(req: Request) {
       user = await prisma.user.create({
         data: {
           email: normalizedEmail,
+          emailHash,
           status: 'PENDING',
           isAdmin: false,
           isManager: false,

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createSession, setSessionCookie } from '@/lib/auth/session'
+import { createHash } from 'crypto'
 
 export const runtime = 'nodejs'
 
@@ -37,8 +38,10 @@ export async function GET(req: Request) {
     })
     
     // 3. Ищем пользователя
+    const emailHash = createHash('sha256').update(normalizedEmail).digest('hex')
+    
     let user = await prisma.user.findUnique({
-      where: { email: normalizedEmail }
+      where: { emailHash }
     })
     
     if (!user) {

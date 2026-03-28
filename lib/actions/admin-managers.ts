@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { isDbSyncError } from "@/lib/db-error";
 import { getCurrentUser } from '@/lib/auth/session';
+import { createHash } from 'crypto';
 
 export type Manager = {
   id: string;
@@ -56,8 +57,10 @@ export async function findUserByEmail(email: string) {
   if (!prisma) return null;
 
   try {
+    const emailHash = createHash('sha256').update(email.toLowerCase().trim()).digest('hex')
+    
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { emailHash },
       select: {
         id: true,
         email: true,
