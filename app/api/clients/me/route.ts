@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCookie } from "@/lib/utils/cookies";
 
 /**
  * GET /api/clients/me - Получение данных текущего клиента
- * Читает clientId из куки и возвращает данные клиента
+ * Читает clientId из заголовка X-Client-Id
  */
 export async function GET(request: NextRequest) {
   try {
-    const cookieHeader = request.headers.get("cookie") || "";
-    const clientId = getCookie(cookieHeader, "clientId");
+    const clientId = request.headers.get("X-Client-Id");
 
     if (!clientId) {
       return NextResponse.json({

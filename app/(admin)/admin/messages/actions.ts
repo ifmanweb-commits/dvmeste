@@ -55,10 +55,17 @@ export async function getModerDialogs(archivePage: number = 1) {
       }
     })
 
-    // Разделяем по статусам
-    const active = allDialogs.filter(d => d.status === DialogStatus.ACTIVE)
-    const waiting = allDialogs.filter(d => d.status === DialogStatus.WAITING)
-    const allArchived = allDialogs.filter(d => d.status === DialogStatus.ARCHIVED)
+    // Разделяем по статусам и фильтруем пустые диалоги (без сообщений)
+    // "Требуют ответа" = ACTIVE (психолог написал последним и ждёт ответа модератора)
+    const active = allDialogs.filter(d => 
+      d.status === DialogStatus.ACTIVE && d.messages.length > 0
+    )
+    const waiting = allDialogs.filter(d => 
+      d.status === DialogStatus.WAITING && d.messages.length > 0
+    )
+    const allArchived = allDialogs.filter(d => 
+      d.status === DialogStatus.ARCHIVED && d.messages.length > 0
+    )
 
     // Пагинация для архивных
     const totalArchived = allArchived.length
@@ -217,6 +224,55 @@ export async function getDialogDetail(dialogId: string, page: number = 1, limit:
   } catch (error) {
     console.error("Error getting dialog detail:", error)
     return { success: false, error: "Ошибка при получении диалога" }
+  }
+}
+
+// Получение статистики диалогов для модератора (количество диалогов, требующих ответа)
+// Используется в дашборде
+export async function getDialogsStatsForModer(): Promise<{ success: boolean; stats?: { requireAnswer: number; waiting: number; archived: number }; error?: string }> {
+  try {
+    const user = await getCurrentUser()
+
+    if (!user || (!user.isAdmin && !user.isManager)) {
+      return { success: false, error: "Доступ запрещен" }
+    }
+
+    // Получаем все диалоги с последним сообщением
+    const allDialogs = await prisma.dialog.findMany({
+      include: {
+        messages: {
+          orderBy: {
+            createdAt: 'desc'
+          },
+          take: 1
+        }
+      }
+    })
+
+    // Фильтруем пустые диалоги и считаем по статусам
+    const requireAnswer = allDialogs.filter(d => 
+      d.status === DialogStatus.ACTIVE && d.messages.length > 0
+    ).length
+    
+    const waiting = allDialogs.filter(d => 
+      d.status === DialogStatus.WAITING && d.messages.length > 0
+    ).length
+    
+    const archived = allDialogs.filter(d => 
+      d.status === DialogStatus.ARCHIVED && d.messages.length > 0
+    ).length
+
+    return {
+      success: true,
+      stats: {
+        requireAnswer,
+        waiting,
+        archived
+      }
+    }
+  } catch (error) {
+    console.error("Error getting dialogs stats:", error)
+    return { success: false, error: "Ошибка при получении статистики" }
   }
 }
 

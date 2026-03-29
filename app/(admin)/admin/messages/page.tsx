@@ -23,10 +23,12 @@ export default async function AdminMessagesPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Сообщения психологов</h1>
-        <p className="text-gray-500 mt-1">Управление диалогами и ответы на вопросы</p>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-semibold">Сообщения психологов</h1>
+        <div className="text-sm text-gray-500">
+          Требуют ответа: {result.data!.active.length}
+        </div>
       </div>
 
       <DialogsTables initialData={result.data!} />

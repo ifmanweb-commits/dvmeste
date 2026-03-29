@@ -40,6 +40,7 @@ export function ComplaintModalTrigger({
   const [targetPsychologistName, setTargetPsychologistName] = useState((psychologistName || "").trim());
   const [targetPsychologistSlug, setTargetPsychologistSlug] = useState((psychologistSlug || "").trim());
   const [manualPsychologistName, setManualPsychologistName] = useState((psychologistName || "").trim());
+  const [email, setEmail] = useState("");
   const [complaintText, setComplaintText] = useState("");
   const [contactsText, setContactsText] = useState("");
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -72,6 +73,7 @@ export function ComplaintModalTrigger({
       setTargetPsychologistSlug(datasetSlug);
       setErrorText(null);
       setSuccessText(null);
+      setEmail("");
       setComplaintText("");
       setContactsText("");
       setIsOpen(true);
@@ -91,6 +93,7 @@ export function ComplaintModalTrigger({
     setIsOpen(false);
     setErrorText(null);
     setSuccessText(null);
+    setEmail("");
     setComplaintText("");
     setContactsText("");
     if (!listenToComplaintLinks) {
@@ -108,6 +111,7 @@ export function ComplaintModalTrigger({
     setIsOpen(true);
     setErrorText(null);
     setSuccessText(null);
+    setEmail("");
     setComplaintText("");
     setContactsText("");
   };
@@ -119,8 +123,19 @@ export function ComplaintModalTrigger({
     const psychologist = (manualPsychologistName || targetPsychologistName || "").trim();
     const complaint = complaintText.trim();
     const contacts = contactsText.trim();
+    const emailValue = email.trim().toLowerCase();
+    const clientId = typeof window !== "undefined" ? localStorage.getItem("clientId") : null;
+    
     if (!psychologist) {
       setErrorText("Укажите ФИО психолога.");
+      return;
+    }
+    if (!emailValue) {
+      setErrorText("Укажите ваш email.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+      setErrorText("Укажите корректный email.");
       return;
     }
     if (!complaint || complaint.length < 10) {
@@ -138,12 +153,15 @@ export function ComplaintModalTrigger({
 
     try {
       const sourceUrl = typeof window !== "undefined" ? window.location.href : "";
-      const response = await fetch("/api/complaints", {
+      // Отправляем жалобу через специальный endpoint для публичных жалоб
+      const response = await fetch("/api/complaints/public", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           psychologistName: psychologist,
           psychologistSlug: targetPsychologistSlug || "",
+          email: emailValue,
+          clientId: clientId,
           complaintText: complaint,
           contactsText: contacts,
           sourceUrl,
@@ -156,6 +174,7 @@ export function ComplaintModalTrigger({
       }
 
       setSuccessText("Жалоба отправлена. Спасибо за обращение.");
+      setEmail("");
       setComplaintText("");
       setContactsText("");
     } catch (error) {
@@ -196,76 +215,114 @@ export function ComplaintModalTrigger({
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 px-5 py-5">
-              <div>
-                <label htmlFor="psychologistName" className="mb-1 block text-sm font-medium text-gray-800">
-                  ФИО психолога
-                </label>
-                <input
-                  id="psychologistName"
-                  name="psychologistName"
-                  type="text"
-                  value={manualPsychologistName}
-                  onChange={(event) => setManualPsychologistName(event.target.value)}
-                  required
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none ring-[#5858E2]/30 transition focus:border-[#5858E2] focus:ring-2"
-                  placeholder="ФИО психолога"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="complaintText" className="mb-1 block text-sm font-medium text-gray-800">
-                  Опишите суть жалобы
-                </label>
-                <textarea
-                  id="complaintText"
-                  name="complaintText"
-                  value={complaintText}
-                  onChange={(event) => setComplaintText(event.target.value)}
-                  required
-                  rows={5}
-                  placeholder={COMPLAINT_PLACEHOLDER}
-                  className="w-full resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none ring-[#5858E2]/30 transition focus:border-[#5858E2] focus:ring-2"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="contactsText" className="mb-1 block text-sm font-medium text-gray-800">
-                  {CONTACTS_LABEL}
-                </label>
-                <textarea
-                  id="contactsText"
-                  name="contactsText"
-                  value={contactsText}
-                  onChange={(event) => setContactsText(event.target.value)}
-                  required
-                  rows={4}
-                  placeholder={CONTACTS_PLACEHOLDER}
-                  className="w-full resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none ring-[#5858E2]/30 transition focus:border-[#5858E2] focus:ring-2"
-                />
-              </div>
-
-              {errorText && <p className="text-sm text-red-700">{errorText}</p>}
-              {successText && <p className="text-sm text-green-700">{successText}</p>}
-
-              <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+            {successText ? (
+              /* Сообщение об успехе */
+              <div className="py-8 text-center">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                  <svg
+                    className="h-8 w-8 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">Жалоба отправлена!</h3>
+                <p className="mt-3 text-base text-gray-600">
+                  Спасибо за обращение. Мы рассмотрим вашу жалобу в ближайшее время.
+                </p>
                 <button
                   type="button"
                   onClick={resetAndClose}
-                  disabled={isSubmitting}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-6 rounded-lg bg-[#5858E2] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#4c4cd3]"
                 >
-                  Отмена
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white hover:bg-[#4c4cd3] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isSubmitting ? "Отправляем..." : "Отправить жалобу"}
+                  Закрыть
                 </button>
               </div>
-            </form>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4 px-5 py-5">
+                {effectivePsychologistName && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">ФИО психолога</p>
+                    <p className="mt-1 text-sm text-gray-900">{effectivePsychologistName}</p>
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-800">
+                    Ваш email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none ring-[#5858E2]/30 transition focus:border-[#5858E2] focus:ring-2"
+                    placeholder="example@mail.ru"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="complaintText" className="mb-1 block text-sm font-medium text-gray-800">
+                    Опишите суть жалобы
+                  </label>
+                  <textarea
+                    id="complaintText"
+                    name="complaintText"
+                    value={complaintText}
+                    onChange={(event) => setComplaintText(event.target.value)}
+                    required
+                    rows={5}
+                    placeholder={COMPLAINT_PLACEHOLDER}
+                    className="w-full resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none ring-[#5858E2]/30 transition focus:border-[#5858E2] focus:ring-2"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="contactsText" className="mb-1 block text-sm font-medium text-gray-800">
+                    {CONTACTS_LABEL}
+                  </label>
+                  <textarea
+                    id="contactsText"
+                    name="contactsText"
+                    value={contactsText}
+                    onChange={(event) => setContactsText(event.target.value)}
+                    required
+                    rows={4}
+                    placeholder={CONTACTS_PLACEHOLDER}
+                    className="w-full resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none ring-[#5858E2]/30 transition focus:border-[#5858E2] focus:ring-2"
+                  />
+                </div>
+
+                {errorText && <p className="text-sm text-red-700">{errorText}</p>}
+
+                <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={resetAndClose}
+                    disabled={isSubmitting}
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white hover:bg-[#4c4cd3] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSubmitting ? "Отправляем..." : "Отправить жалобу"}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { hashEmail } from "@/lib/utils/hash-email";
 import { getClientIpFromRequest } from "@/lib/utils/get-client-ip";
 import { emailService } from "@/lib/email.service";
-import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { LeadStatus, LeadResolution } from "@prisma/client";
 
 // ==================== ИНТЕРФЕЙСЫ ====================
@@ -28,6 +28,27 @@ export interface LeadFilters {
   statuses?: LeadStatus[]; // Для фильтрации по нескольким статусам (вкладки)
   page?: number;
   limit?: number;
+}
+
+// Интерфейсы для админки
+export interface AdminLeadFilters {
+  search?: string; // email клиента или имя психолога
+  status?: LeadStatus;
+  statuses?: LeadStatus[];
+  resolution?: LeadResolution;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  limit?: number;
+  sort?: 'asc' | 'desc';
+}
+
+export interface LeadStats {
+  total: number;
+  new: number;
+  accepted: number;
+  completed: number;
+  suspicious: number;
 }
 
 export interface UpdateLeadData {
@@ -55,7 +76,7 @@ export interface ClientWithComplaintCount {
 export async function createLead(
   data: CreateLeadInput,
   request: Request
-): Promise<{ success: boolean; leadId?: string; error?: string }> {
+): Promise<{ success: boolean; leadId?: string; clientId?: string; error?: string }> {
   try {
     // 1. Проверка согласия на обработку ПД
     if (!data.consent) {
@@ -118,7 +139,29 @@ export async function createLead(
       suspiciousReason = `Много жалоб (${client.complaintCount})`;
     }
 
-    // 7. Создание заявки
+    // 7. Обновление данных клиента если они изменились
+    const updateClientData: any = {};
+    if (data.client.name && client.name !== data.client.name) {
+      updateClientData.name = data.client.name;
+    }
+    if (data.client.phone && client.phone !== data.client.phone) {
+      updateClientData.phone = data.client.phone;
+    }
+    if (data.client.telegram && client.telegram !== data.client.telegram) {
+      updateClientData.telegram = data.client.telegram;
+    }
+    if (data.client.vk && client.vk !== data.client.vk) {
+      updateClientData.vk = data.client.vk;
+    }
+
+    if (Object.keys(updateClientData).length > 0) {
+      client = await prisma.client.update({
+        where: { id: client.id },
+        data: updateClientData,
+      });
+    }
+
+    // 8. Создание заявки
     const lead = await prisma.lead.create({
       data: {
         clientId: client.id,
@@ -135,18 +178,6 @@ export async function createLead(
       },
     });
 
-    // 8. Установка cookie clientId если rememberMe
-    if (data.rememberMe) {
-      const cookieStore = await cookies();
-      cookieStore.set("clientId", client.id, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 30, // 30 дней
-        path: "/",
-      });
-    }
-
     // 9. Отправка уведомлений психологу
     try {
       await sendLeadNotifications(lead);
@@ -155,7 +186,7 @@ export async function createLead(
       // Не блокируем создание заявки при ошибке уведомления
     }
 
-    return { success: true, leadId: lead.id };
+    return { success: true, leadId: lead.id, clientId: client.id };
   } catch (error) {
     console.error("Error creating lead:", error);
     return { success: false, error: "Ошибка при создании заявки" };
@@ -684,5 +715,344 @@ async function createLeadNotificationRecord(psychologistId: string, leadId: stri
     });
   } catch (error) {
     console.error("Error creating notification record:", error);
+  }
+}
+
+// ==================== ADMIN SERVER ACTIONS ====================
+
+/**
+ * Получение списка заявок для админки с фильтрами и пагинацией
+ */
+export async function getAdminLeads(filters: AdminLeadFilters = {}) {
+  try {
+    const page = filters.page || 1;
+    const limit = filters.limit || 50;
+    const skip = (page - 1) * limit;
+    const sort = filters.sort || 'desc';
+
+    const where: any = {};
+
+    // Поиск по email клиента или имени/email психолога
+    if (filters.search) {
+      where.OR = [
+        {
+          client: {
+            email: {
+              contains: filters.search,
+              mode: 'insensitive',
+            },
+          },
+        },
+        {
+          psychologist: {
+            fullName: {
+              contains: filters.search,
+              mode: 'insensitive',
+            },
+          },
+        },
+        {
+          psychologist: {
+            email: {
+              contains: filters.search,
+              mode: 'insensitive',
+            },
+          },
+        },
+      ];
+    }
+
+    // Фильтр по статусу
+    if (filters.status) {
+      where.status = filters.status;
+    } else if (filters.statuses && filters.statuses.length > 0) {
+      where.status = { in: filters.statuses };
+    }
+
+    // Фильтр по resolution
+    if (filters.resolution) {
+      where.resolution = filters.resolution;
+    }
+
+    // Фильтр по дате
+    if (filters.dateFrom || filters.dateTo) {
+      where.createdAt = {};
+      if (filters.dateFrom) {
+        where.createdAt.gte = new Date(filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        where.createdAt.lte = new Date(filters.dateTo);
+      }
+    }
+
+    const [leads, total] = await Promise.all([
+      prisma.lead.findMany({
+        where,
+        include: {
+          client: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              isShadowBanned: true,
+            },
+          },
+          psychologist: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              slug: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: sort,
+        },
+        skip,
+        take: limit,
+      }),
+      prisma.lead.count({ where }),
+    ]);
+
+    return {
+      success: true,
+      data: {
+        leads: leads.map((lead) => ({
+          id: lead.id,
+          clientId: lead.clientId,
+          psychologistId: lead.psychologistId,
+          message: lead.message,
+          status: lead.status,
+          resolution: lead.resolution,
+          isSuspicious: lead.isSuspicious,
+          suspiciousReason: lead.suspiciousReason,
+          createdAt: lead.createdAt,
+          viewedAt: lead.viewedAt,
+          statusChangedAt: lead.statusChangedAt,
+          client: {
+            id: lead.client.id,
+            email: lead.client.email,
+            name: lead.client.name,
+            isShadowBanned: lead.client.isShadowBanned,
+          },
+          psychologist: {
+            id: lead.psychologist.id,
+            fullName: lead.psychologist.fullName,
+            email: lead.psychologist.email,
+            slug: lead.psychologist.slug,
+          },
+        })),
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(total / limit),
+          hasMore: skip + leads.length < total,
+          total,
+        },
+      },
+    };
+  } catch (error) {
+    console.error("Error getting admin leads:", error);
+    return { success: false, error: "Ошибка при получении заявок", data: null };
+  }
+}
+
+/**
+ * Пометить заявку как подозрительную (для form action)
+ */
+export async function markLeadAsSuspicious(formData: FormData): Promise<void> {
+  const { requireAdmin } = await import("@/lib/auth/require");
+  await requireAdmin();
+
+  const leadId = formData.get("leadId") as string;
+  if (!leadId) {
+    throw new Error("Не указан ID заявки");
+  }
+
+  await prisma.lead.update({
+    where: { id: leadId },
+    data: {
+      isSuspicious: true,
+      suspiciousReason: "Помечено модератором",
+    },
+  });
+
+  revalidatePath("/admin/leads");
+  revalidatePath(`/admin/leads/${leadId}`);
+}
+
+/**
+ * Теневой бан клиента (для form action)
+ */
+export async function shadowBanClient(formData: FormData): Promise<void> {
+  const { requireAdmin } = await import("@/lib/auth/require");
+  await requireAdmin();
+
+  const clientId = formData.get("clientId") as string;
+  if (!clientId) {
+    throw new Error("Не указан ID клиента");
+  }
+
+  await prisma.client.update({
+    where: { id: clientId },
+    data: {
+      isShadowBanned: true,
+    },
+  });
+
+  revalidatePath("/admin/leads");
+  revalidatePath(`/admin/leads/${clientId}`);
+}
+
+/**
+ * Получить заявку по ID для админки
+ */
+export async function getAdminLeadById(leadId: string) {
+  try {
+    const { requireAdmin } = await import("@/lib/auth/require");
+    await requireAdmin();
+
+    const lead = await prisma.lead.findUnique({
+      where: { id: leadId },
+      include: {
+        client: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            phone: true,
+            telegram: true,
+            vk: true,
+            isShadowBanned: true,
+            complaintCount: true,
+            createdAt: true,
+          },
+        },
+        psychologist: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    if (!lead) {
+      return { success: false, error: "Заявка не найдена", data: null };
+    }
+
+    return {
+      success: true,
+      data: {
+        id: lead.id,
+        clientId: lead.clientId,
+        psychologistId: lead.psychologistId,
+        message: lead.message,
+        status: lead.status,
+        resolution: lead.resolution,
+        isSuspicious: lead.isSuspicious,
+        suspiciousReason: lead.suspiciousReason,
+        createdAt: lead.createdAt,
+        viewedAt: lead.viewedAt,
+        statusChangedAt: lead.statusChangedAt,
+        client: {
+          id: lead.client.id,
+          email: lead.client.email,
+          name: lead.client.name,
+          phone: lead.client.phone,
+          telegram: lead.client.telegram,
+          vk: lead.client.vk,
+          isShadowBanned: lead.client.isShadowBanned,
+          complaintCount: lead.client.complaintCount,
+          createdAt: lead.client.createdAt,
+        },
+        psychologist: {
+          id: lead.psychologist.id,
+          fullName: lead.psychologist.fullName,
+          email: lead.psychologist.email,
+          slug: lead.psychologist.slug,
+        },
+      },
+    };
+  } catch (error) {
+    console.error("Error getting admin lead by id:", error);
+    return { success: false, error: "Ошибка при получении заявки", data: null };
+  }
+}
+
+/**
+ * Получить статистику заявок
+ */
+export async function getLeadStats(filters?: AdminLeadFilters): Promise<{ success: boolean; stats?: LeadStats; error?: string }> {
+  try {
+    const where: any = {};
+
+    // Применяем фильтры если есть
+    if (filters) {
+      if (filters.status) {
+        where.status = filters.status;
+      }
+      if (filters.dateFrom || filters.dateTo) {
+        where.createdAt = {};
+        if (filters.dateFrom) {
+          where.createdAt.gte = new Date(filters.dateFrom);
+        }
+        if (filters.dateTo) {
+          where.createdAt.lte = new Date(filters.dateTo);
+        }
+      }
+    }
+
+    const [total, newCount, acceptedCount, completedCount, suspiciousCount] = await Promise.all([
+      prisma.lead.count({ where }),
+      prisma.lead.count({ where: { ...where, status: LeadStatus.NEW } }),
+      prisma.lead.count({ where: { ...where, status: LeadStatus.ACCEPTED } }),
+      prisma.lead.count({ where: { ...where, status: LeadStatus.COMPLETED } }),
+      prisma.lead.count({ where: { ...where, isSuspicious: true } }),
+    ]);
+
+    return {
+      success: true,
+      stats: {
+        total,
+        new: newCount,
+        accepted: acceptedCount,
+        completed: completedCount,
+        suspicious: suspiciousCount,
+      },
+    };
+  } catch (error) {
+    console.error("Error getting lead stats:", error);
+    return { success: false, error: "Ошибка при получении статистики" };
+  }
+}
+
+/**
+ * Получить ID диалога психолога для сообщений
+ */
+export async function getPsychologistDialogId(psychologistId: string): Promise<{ success: boolean; dialogId?: string; error?: string }> {
+  try {
+    // Ищем существующий диалог психолога
+    const dialog = await prisma.dialog.findUnique({
+      where: { userId: psychologistId },
+    });
+
+    if (!dialog) {
+      // Если диалога нет — создаём новый
+      const newDialog = await prisma.dialog.create({
+        data: {
+          userId: psychologistId,
+          status: "WAITING",
+        },
+      });
+      return { success: true, dialogId: newDialog.id };
+    }
+
+    return { success: true, dialogId: dialog.id };
+  } catch (error) {
+    console.error("Error getting psychologist dialog:", error);
+    return { success: false, error: "Ошибка при получении диалога" };
   }
 }

@@ -19,6 +19,9 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
   const menuItems = [
     { href: '/admin', label: 'Дашборд', roles: ['admin', 'manager'] },
     { href: '/admin/messages', label: 'Сообщения', roles: ['admin', 'manager'] },
+    { href: '/admin/leads', label: 'Заявки', roles: ['admin', 'manager'] },
+    { href: '/admin/clients', label: 'Клиенты', roles: ['admin', 'manager'] },
+    { href: '/admin/complaints', label: 'Жалобы', roles: ['admin', 'manager'] },
     { href: '/admin/psychologists', label: 'Психологи', roles: ['admin', 'manager'] },
     { href: '/admin/candidates', label: 'Кандидаты', roles: ['admin', 'manager'] },
     { href: '/admin/moderation/profiles', label: 'Модерация профилей', roles: ['admin', 'manager'] },

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { getCookieClient, setCookieClient } from "@/lib/utils/cookies";
 
 interface ClientData {
   id: string;
@@ -67,20 +66,36 @@ export default function LeadFormModal({
   // Загрузка данных клиента при открытии модалки
   useEffect(() => {
     if (isOpen) {
-      const clientId = getCookieClient("clientId");
+      const clientId = localStorage.getItem("clientId");
+      const rememberMe = localStorage.getItem("rememberMe") === "true";
+
       if (clientId) {
-        fetch("/api/clients/me")
+        fetch("/api/clients/me", {
+          headers: { "X-Client-Id": clientId },
+        })
           .then((res) => res.json())
           .then((data) => {
             if (data.success && data.data) {
               setClientData(data.data);
-              setFormData((prev) => ({
-                ...prev,
-                name: data.data.name || "",
-                email: data.data.email || "",
-                phone: data.data.phone || "",
-                telegram: data.data.telegram || "",
-              }));
+
+              // Подставляем данные в форму только если rememberMe === true
+              if (rememberMe) {
+                setFormData((prev) => ({
+                  ...prev,
+                  name: data.data.name || "",
+                  email: data.data.email || "",
+                  phone: data.data.phone || "",
+                  telegram: data.data.telegram || "",
+                  rememberMe: true,
+                }));
+              } else {
+                // Просто запоминаем email для удобства
+                setFormData((prev) => ({
+                  ...prev,
+                  email: data.data.email || "",
+                  rememberMe: false,
+                }));
+              }
             }
           })
           .catch((err) => console.error("Error loading client data:", err));
@@ -169,7 +184,6 @@ export default function LeadFormModal({
             vk: undefined,
           },
           message: formData.message,
-          rememberMe: formData.rememberMe,
           consent: formData.consent,
           honeypot: "", // Скрытое поле для ботов
           formOpenTime: formOpenTimeValue ? new Date(formOpenTimeValue).toISOString() : undefined,
@@ -181,13 +195,9 @@ export default function LeadFormModal({
       if (result.success) {
         setIsSuccess(true);
 
-        // Если rememberMe — сохраняем clientId в куки
-        if (formData.rememberMe && clientData) {
-          setCookieClient("clientId", clientData.id, {
-            maxAge: 60 * 60 * 24 * 30, // 30 дней
-            path: "/",
-            sameSite: "lax",
-          });
+        // Сохраняем clientId в localStorage (бессрочно)
+        if (result.clientId) {
+          localStorage.setItem("clientId", result.clientId);
         }
 
         // Очищаем localStorage
@@ -426,7 +436,12 @@ export default function LeadFormModal({
                       <input
                         type="checkbox"
                         checked={formData.rememberMe}
-                        onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setFormData({ ...formData, rememberMe: checked });
+                          // Синхронизируем с localStorage
+                          localStorage.setItem("rememberMe", checked ? "true" : "false");
+                        }}
                         className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#5858E2] focus:ring-[#5858E2]"
                       />
                       <span className="text-xs text-gray-600">

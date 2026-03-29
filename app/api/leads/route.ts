@@ -53,7 +53,11 @@ export async function POST(request: NextRequest) {
     );
 
     if (result.success) {
-      return NextResponse.json({ success: true, leadId: result.leadId });
+      return NextResponse.json({ 
+        success: true, 
+        leadId: result.leadId,
+        clientId: result.clientId 
+      });
     } else {
       return NextResponse.json(
         { success: false, error: result.error },

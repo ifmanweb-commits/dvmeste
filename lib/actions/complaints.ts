@@ -39,7 +39,6 @@ export async function createComplaint(
     // Подготовка данных для создания жалобы
     const complaintData: any = {
       fromType: data.fromType,
-      toType: data.toType,
       reason: data.reason,
       description: data.description || null,
       leadId: data.leadId || null,
