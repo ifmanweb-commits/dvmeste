@@ -4,6 +4,7 @@ interface ModerationData {
   photos: number;
   articles: number;
   unreadMessages: number;
+  psychologistComplaints: number;
 }
 
 interface ModerationCardsProps {
@@ -16,6 +17,7 @@ const moderationItems = [
   { key: "photos" as const, label: "Фото профилей", href: "/admin/moderation/photos" },
   { key: "articles" as const, label: "Статьи", href: "/admin/moderation/articles" },
   { key: "unreadMessages" as const, label: "Требуют ответа", href: "/admin/messages" },
+  { key: "psychologistComplaints" as const, label: "Жалобы на психологов", href: "/admin/complaints/psychologists" },
 ];
 
 export function ModerationCards({ data }: ModerationCardsProps) {

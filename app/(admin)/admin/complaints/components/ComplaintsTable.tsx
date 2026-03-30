@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { getComplaintReasonLabel } from "@/lib/constants/complaint-reasons";
+import { DeleteComplaintModal } from "@/components/complaint/DeleteComplaintModal";
 
 interface Complaint {
   id: string;
@@ -15,6 +19,11 @@ interface Complaint {
   resolvedAt: Date | null;
   resolvedBy: string | null;
   resolution: string | null;
+}
+
+interface ComplaintWithModalData extends Complaint {
+  fromName: string;
+  toName: string;
 }
 
 interface ComplaintsTableProps {
@@ -34,12 +43,30 @@ const formatDate = (date: Date) => {
   }).format(date);
 };
 
+function getComplaintModalData(complaint: Complaint, type: "client" | "psychologist"): ComplaintWithModalData {
+  const fromName = type === "client"
+    ? (complaint.fromPsychologist?.fullName || "Удалён")
+    : (complaint.fromClient?.name || "Удалён");
+
+  const toName = type === "client"
+    ? (complaint.toClient?.name || "Удалён")
+    : (complaint.toPsychologist?.fullName || "Удалён");
+
+  return {
+    ...complaint,
+    fromName,
+    toName,
+  };
+}
+
 export function ComplaintsTable({
   complaints,
   currentPage,
   totalPages,
   type,
 }: ComplaintsTableProps) {
+  const [deleteModalComplaint, setDeleteModalComplaint] = useState<ComplaintWithModalData | null>(null);
+
   return (
     <div>
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -55,17 +82,20 @@ export function ComplaintsTable({
               </th>
               <th className="px-4 py-3 text-left font-medium text-gray-700">Причина</th>
               <th className="px-4 py-3 text-left font-medium text-gray-700">Описание</th>
+              <th className="px-4 py-3 text-left font-medium text-gray-700">Действия</th>
             </tr>
           </thead>
           <tbody>
             {complaints.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                   Жалоб не найдено
                 </td>
               </tr>
             ) : (
-              complaints.map((complaint) => (
+              complaints.map((complaint) => {
+                const modalData = getComplaintModalData(complaint, type);
+                return (
                 <tr
                   key={complaint.id}
                   className="border-t border-gray-100 hover:bg-gray-50"
@@ -141,12 +171,34 @@ export function ComplaintsTable({
                   <td className="px-4 py-3 text-gray-600 max-w-xs truncate">
                     {complaint.description || "—"}
                   </td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => setDeleteModalComplaint(modalData)}
+                      className="text-red-600 hover:text-red-800 text-sm font-medium"
+                      title="Удалить жалобу"
+                    >
+                      Удалить
+                    </button>
+                  </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
+
+      {deleteModalComplaint && (
+        <DeleteComplaintModal
+          complaintId={deleteModalComplaint.id}
+          complaintDate={deleteModalComplaint.createdAt}
+          fromName={deleteModalComplaint.fromName}
+          toName={deleteModalComplaint.toName}
+          reason={getComplaintReasonLabel(deleteModalComplaint.reason)}
+          onClose={() => setDeleteModalComplaint(null)}
+        />
+      )}
 
       {/* Пагинация */}
       {totalPages > 1 && (

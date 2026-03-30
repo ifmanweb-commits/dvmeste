@@ -408,8 +408,34 @@ export async function deleteComplaint(complaintId: string) {
   try {
     await requireAdmin();
 
-    await prisma.complaint.delete({
+    // Сначала получаем жалобу, чтобы узнать toClientId
+    const complaint = await prisma.complaint.findUnique({
       where: { id: complaintId },
+      select: { toClientId: true, toPsychologistId: true },
+    });
+
+    if (!complaint) {
+      return { success: false, error: "Жалоба не найдена" };
+    }
+
+    // Удаляем жалобу и уменьшаем complaintCount у клиента (если жалоба была на клиента)
+    await prisma.$transaction(async (tx) => {
+      // Удаляем жалобу
+      await tx.complaint.delete({
+        where: { id: complaintId },
+      });
+
+      // Если жалоба была на клиента, уменьшаем complaintCount
+      if (complaint.toClientId) {
+        await tx.client.update({
+          where: { id: complaint.toClientId },
+          data: {
+            complaintCount: {
+              decrement: 1,
+            },
+          },
+        });
+      }
     });
 
     return { success: true, message: "Жалоба удалена" };

@@ -111,7 +111,7 @@ export function ComplaintsDetailTable({
                   <td className="px-4 py-3">
                     {complaint.fromClient ? (
                       <Link
-                        href={`/admin/leads?client=${complaint.fromClient.email}`}
+                        href={`/admin/clients/${complaint.fromClient.id}`}
                         className="text-[#5858E2] hover:underline"
                       >
                         {complaint.fromClient.name || "Без имени"}

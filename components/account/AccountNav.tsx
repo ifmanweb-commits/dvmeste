@@ -16,7 +16,9 @@ import {
   CheckCircle,
   Bell,
   Radio,
-  Users
+  Users,
+  Eye,
+  ShieldCheck
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -106,7 +108,8 @@ export default function AccountNav({ user }: AccountNavProps) {
         </div>
         
         {/* Статус пользователя */}
-        <div className="mt-3 flex items-center">
+        <div className="mt-3 flex flex-wrap gap-2">
+          {/* Бейдж статуса аккаунта */}
           <span className={cn(
             "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
             user.status === 'ACTIVE' && "bg-green-100 text-green-800",
@@ -115,16 +118,26 @@ export default function AccountNav({ user }: AccountNavProps) {
             user.status === 'REJECTED' && "bg-red-100 text-red-800",
             user.status === 'BLOCKED' && "bg-red-100 text-red-800"
           )}>
-            {user.status === 'ACTIVE' && <CheckCircle className="w-3 h-3 mr-1" />}
-            {user.status === 'ACTIVE' && 'В каталоге'}
+            {user.status === 'ACTIVE' && <ShieldCheck className="w-3 h-3 mr-1" />}
+            {user.status === 'ACTIVE' && 'Проверен'}
             {user.status === 'CANDIDATE' && 'Кандидат'}
             {user.status === 'PENDING' && 'Ожидает'}
             {user.status === 'REJECTED' && 'Отклонен'}
             {user.status === 'BLOCKED' && 'Заблокирован'}
           </span>
           
+          {/* Бейдж "В каталоге" - только для ACTIVE с isPublished */}
+          {user.status === 'ACTIVE' && user.isPublished && (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+              <Eye className="w-3 h-3 mr-1" />
+              В каталоге
+            </span>
+          )}
+          
+          {/* Бейдж уровня сертификации */}
           {user.certificationLevel > 0 && (
-            <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <Award className="w-3 h-3 mr-1" />
               Ур. {user.certificationLevel}
             </span>
           )}

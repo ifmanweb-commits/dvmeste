@@ -10,6 +10,7 @@ export interface DashboardStats {
     photos: number;
     articles: number;
     unreadMessages: number;
+    psychologistComplaints: number;
   };
   problematicLeads: {
     noResponseOver2Days: number;
@@ -93,6 +94,28 @@ export async function getDashboardStats(): Promise<{ success: boolean; stats?: D
       d.status === DialogStatus.ACTIVE && 
       d.messages.length > 0 && 
       d.messages[0]?.direction === "to_moder"
+    ).length;
+
+    // Жалобы на психологов, которые ещё не приняты (статус CANDIDATE)
+    // Получаем все жалобы на психологов
+    const allComplaints = await prisma.complaint.findMany({
+      where: {
+        toPsychologistId: {
+          not: null,
+        },
+      },
+      include: {
+        toPsychologist: {
+          select: {
+            status: true,
+          },
+        },
+      },
+    });
+
+    // Считаем только жалобы на психологов со статусом CANDIDATE (не приняты)
+    const psychologistComplaints = allComplaints.filter(
+      c => c.toPsychologist?.status === PsychologistStatus.CANDIDATE
     ).length;
 
     // ==================== ПРОБЛЕМНЫЕ ЗАЯВКИ ====================
@@ -195,6 +218,7 @@ export async function getDashboardStats(): Promise<{ success: boolean; stats?: D
           photos: photosCount,
           articles: articlesCount,
           unreadMessages: dialogsRequiringAnswer, // Теперь это количество диалогов, требующих ответа
+          psychologistComplaints,
         },
         problematicLeads: {
           noResponseOver2Days,

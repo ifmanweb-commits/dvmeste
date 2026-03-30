@@ -563,9 +563,6 @@ async function sendLeadNotifications(lead: any) {
  * Отправка email уведомления о новой заявке
  */
 async function sendLeadEmailNotification(psychologistEmail: string, lead: any) {
-  const clientName = lead.client.name || "Клиент";
-  const clientEmail = lead.client.email;
-
   const html = `
 <!DOCTYPE html>
 <html>
@@ -575,11 +572,8 @@ async function sendLeadEmailNotification(psychologistEmail: string, lead: any) {
   </head>
   <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <h2 style="color: #5858E2; border-bottom: 2px solid #5858E2; padding-bottom: 10px;">Новая заявка от клиента</h2>
-    <p><strong>Имя:</strong> ${clientName}</p>
-    <p><strong>Email:</strong> ${clientEmail}</p>
-    ${lead.client.phone ? `<p><strong>Телефон:</strong> ${lead.client.phone}</p>` : ""}
-    ${lead.client.telegram ? `<p><strong>Telegram:</strong> ${lead.client.telegram}</p>` : ""}
-    ${lead.message ? `<p><strong>Сообщение:</strong><br>${lead.message}</p>` : ""}
+    <p>Клиент оставил заявку на консультацию.</p>
+    <p>Пожалуйста, как можно скорее перейдите в личный кабинет и примите решение — берете вы эту заявку или нет.</p>
     <p style="margin-top: 30px;">
       <a href="${process.env.NEXTAUTH_URL || "http://localhost:3000"}/account/leads" 
          style="background-color: #5858E2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
@@ -1054,5 +1048,84 @@ export async function getPsychologistDialogId(psychologistId: string): Promise<{
   } catch (error) {
     console.error("Error getting psychologist dialog:", error);
     return { success: false, error: "Ошибка при получении диалога" };
+  }
+}
+
+/**
+ * Получить количество новых заявок психолога
+ */
+export async function getNewLeadsCount(psychologistId: string): Promise<{ success: boolean; count?: number; error?: string }> {
+  try {
+    const count = await prisma.lead.count({
+      where: {
+        psychologistId,
+        status: LeadStatus.NEW,
+      },
+    });
+
+    return { success: true, count };
+  } catch (error) {
+    console.error("Error getting new leads count:", error);
+    return { success: false, error: "Ошибка при получении количества новых заявок" };
+  }
+}
+
+/**
+ * Получить заявки, которые приняты больше X дней назад и до сих пор не закрыты
+ */
+export async function getAcceptedLeadsOlderThanDays(
+  psychologistId: string,
+  days: number
+): Promise<{ success: boolean; leads?: Array<{
+  id: string;
+  client: ClientWithComplaintCount;
+  message: string | null;
+  status: LeadStatus;
+  createdAt: Date;
+  statusChangedAt: Date | null;
+}>; error?: string }> {
+  try {
+    const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const leads = await prisma.lead.findMany({
+      where: {
+        psychologistId,
+        status: LeadStatus.ACCEPTED,
+        statusChangedAt: {
+          lte: cutoffDate,
+        },
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            phone: true,
+            telegram: true,
+            vk: true,
+            complaintCount: true,
+          },
+        },
+      },
+      orderBy: {
+        statusChangedAt: "asc",
+      },
+    });
+
+    return {
+      success: true,
+      leads: leads.map((lead) => ({
+        id: lead.id,
+        client: lead.client,
+        message: lead.message,
+        status: lead.status,
+        createdAt: lead.createdAt,
+        statusChangedAt: lead.statusChangedAt,
+      })),
+    };
+  } catch (error) {
+    console.error("Error getting accepted leads older than days:", error);
+    return { success: false, error: "Ошибка при получении заявок" };
   }
 }

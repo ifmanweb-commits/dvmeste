@@ -252,7 +252,8 @@ export default function LeadsPage() {
                             minute: "2-digit",
                           })}
                         </span>
-                        {lead.client.email && (
+                        {/* Email показываем только если заявка принята */}
+                        {lead.status === LeadStatus.ACCEPTED && lead.client.email && (
                           <span className="truncate">{lead.client.email}</span>
                         )}
                       </div>

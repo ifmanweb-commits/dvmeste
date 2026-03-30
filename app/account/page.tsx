@@ -1,61 +1,45 @@
-// app/account/articles/page.tsx
-import ArticlesStats from "@/components/articles/AcArticlesStats";
-import ArticleCard from "@/components/articles/AcArticleCard";
+import { getCurrentUser } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
+import { getDashboardData, getPsychologistPublishStatus } from "@/lib/actions/account-dashboard";
+import DashboardClient from "@/components/account/DashboardClient";
 
-export default function MyArticlesPage() {
-  // Имитация данных из БД
-  const mockArticles = [
-    {
-      id: "1",
-      title: "Психосоматика: как эмоции влияют на тело",
-      moderationStatus: "APPROVED" as const,
-      updatedAt: "2026-03-05",
-      creditedMonth: 4,
-      creditedYear: 2026
-    },
-    {
-      id: "2",
-      title: "10 техник борьбы с тревожностью",
-      moderationStatus: "REVISION" as const,
-      updatedAt: "2026-03-09",
-      moderatorComment: "Нужно добавить ссылки на исследования и структурировать список техник."
-    },
-    {
-      id: "3",
-      title: "Почему важно соблюдать личные границы",
-      moderationStatus: "PENDING" as const,
-      updatedAt: "2026-03-10"
-    }
-  ];
+export default async function AccountDashboardPage() {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  // Получаем данные дашборда
+  const dashboardResult = await getDashboardData(user.id);
+  const publishStatusResult = await getPsychologistPublishStatus(user.id);
+
+  if (!dashboardResult.success || !dashboardResult.data) {
+    return (
+      <div className="p-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
+          Ошибка при загрузке данных дашборда
+        </div>
+      </div>
+    );
+  }
+
+  const isPublished = publishStatusResult.isPublished ?? false;
+  const status = publishStatusResult.status ?? user.status;
 
   return (
-    <div className="min-h-screen bg-slate-50/30">
-      <div className="max-w-6xl mx-auto py-12 px-4">
-        <header className="mb-10">
-          <h1 className="text-4xl font-black text-slate-900 mb-2 tracking-tight">
-            Мои статьи
-          </h1>
-          <p className="text-slate-500">Управляйте вашими публикациями и отслеживайте статус биллинга.</p>
-        </header>
+    <div className="p-8">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Дашборд</h1>
+        <p className="text-gray-600">Обзор вашей активности на платформе</p>
+      </header>
 
-        <ArticlesStats 
-          lastCreditedMonth={4} 
-          lastCreditedYear={2026} 
-          draftCount={1} 
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {mockArticles.map(art => (
-            <ArticleCard key={art.id} article={art} />
-          ))}
-        </div>
-        
-        {mockArticles.length === 0 && (
-          <div className="text-center py-20 bg-white border-2 border-dashed rounded-3xl">
-            <p className="text-slate-400 font-medium">У вас пока нет ни одной статьи.</p>
-          </div>
-        )}
-      </div>
+      <DashboardClient
+        data={dashboardResult.data}
+        isPublished={isPublished}
+        status={status}
+        certificationLevel={user.certificationLevel}
+      />
     </div>
   );
 }

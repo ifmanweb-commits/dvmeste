@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getClientById } from "@/lib/actions/admin-clients";
 import { LEAD_STATUS_LABELS, LEAD_STATUS_COLORS } from "@/lib/lead-status-config";
 import { getComplaintReasonLabel } from "@/lib/constants/complaint-reasons";
+import { ClientBanButton } from "@/components/client/ClientBanButton";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -210,9 +211,13 @@ export default async function ClientDetailPage({ params }: PageProps) {
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="text-lg font-semibold mb-4">Жалобы на клиента ({complaintsTo.length})</h2>
         {complaintsTo.length === 0 ? (
-          <p className="text-gray-500">Жалоб нет</p>
+          <>
+            <p className="text-gray-500">Жалоб нет</p>
+            <ClientBanButton clientId={client.id} isBanned={client.isShadowBanned} />
+          </>
         ) : (
-          <div className="space-y-4">
+          <>
+            <div className="space-y-4">
             {complaintsTo.map((complaint) => (
               <div
                 key={complaint.id}
@@ -277,7 +282,9 @@ export default async function ClientDetailPage({ params }: PageProps) {
                 )}
               </div>
             ))}
-          </div>
+            </div>
+            <ClientBanButton clientId={client.id} isBanned={client.isShadowBanned} />
+          </>
         )}
       </div>
 

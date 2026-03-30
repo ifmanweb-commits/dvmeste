@@ -44,6 +44,15 @@ export default function ArticlesStats({
     diff = -1;
   }
 
+  // Функция для получения названия месяца
+  const getMonthName = (month: number): string => {
+    const monthNames = [
+      'январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
+      'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'
+    ];
+    return monthNames[month - 1] || '';
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
       {/* Карточка статуса Баланса */}
@@ -58,7 +67,9 @@ export default function ArticlesStats({
           </span>
         </div>
         <p className="text-xs mt-2 text-slate-500">
-          {lastCreditedMonth ? `Оплачено до: ${lastCreditedMonth}.${lastCreditedYear}` : 'Нет одобренных статей'}
+          {lastCreditedMonth && lastCreditedYear 
+            ? `Последний оплаченный месяц - ${getMonthName(lastCreditedMonth)} ${lastCreditedYear}` 
+            : 'Нет одобренных статей'}
         </p>
       </div>
 
