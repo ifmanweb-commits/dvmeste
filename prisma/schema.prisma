@@ -15,6 +15,7 @@ model User {
   fullName              String?
   isAdmin               Boolean            @default(false)
   isManager             Boolean            @default(false)
+  isSupervisor          Boolean            @default(false)
   status                PsychologistStatus @default(PENDING)
   isPublished           Boolean            @default(false)
   slug                  String?            @unique
@@ -51,6 +52,10 @@ model User {
   complaintsFrom        Complaint[] @relation("psychologist_complaints_from")
   complaintsTo          Complaint[] @relation("psychologist_complaints_to")
   leads                 Lead[]
+
+  // Курсы
+  courses      UserCourse[]
+  courseKeys   CourseKeyUse[]
 
   @@index([email])
   @@index([status])
@@ -412,4 +417,72 @@ enum LeadResolution {
   CLIENT_DROPPED         // договорились, клиент пропал
   FREE_ONLY              // только бесплатная сессия
   PAID_COMPLETED         // были платные сессии
+}
+
+// ==================== КУРСЫ ====================
+
+model Course {
+  id          String   @id @default(cuid())
+  slug        String   @unique          // "pp", "pm", "pa", "mak"
+  title       String                    // "Психолог-практик"
+  shortTitle  String                    // "ПП" — для бейджей
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  enrollments UserCourse[]
+  keys        CourseKey[]
+
+  @@index([slug])
+}
+
+// ==================== СВЯЗЬ ПОЛЬЗОВАТЕЛЬ-КУРС ====================
+
+model UserCourse {
+  id         String   @id @default(cuid())
+  userId     String
+  courseId   String
+  status     String   // "enrolled" или "graduated"
+  assignedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+}
+
+// ==================== ПРОМОКОДЫ ====================
+
+model CourseKey {
+  id         String   @id @default(cuid())
+  courseId   String
+  key        String   @unique
+  status     String   // "enrolled" или "graduated" — статус, который присваивается пользователю
+  maxUses    Int      @default(1)       // 0 — без ограничений
+  usedCount  Int      @default(0)
+  expiresAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  uses   CourseKeyUse[]
+
+  @@index([key])
+  @@index([courseId])
+}
+
+model CourseKeyUse {
+  id         String   @id @default(cuid())
+  keyId      String
+  userId     String
+  usedAt     DateTime @default(now())
+
+  key  CourseKey @relation(fields: [keyId], references: [id], onDelete: Cascade)
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([keyId])
+  @@index([userId])
 }

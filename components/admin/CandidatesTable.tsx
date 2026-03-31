@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react";
 import { activateCandidate } from "@/lib/actions/admin-candidates";
-import { CheckCircle, X, AlertTriangle } from "lucide-react";
+import { CheckCircle, X, AlertTriangle, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { PsychologistStatus } from "@prisma/client";
@@ -12,6 +12,7 @@ interface Candidate {
   email: string;
   city: string | null;
   price: number | null;
+  freeSession: number;
   gender: string | null;
   birthDate: Date | null;
   certificationLevel: number;
@@ -126,13 +127,15 @@ return (
                   <td className="px-6 py-4 text-sm text-gray-500">{candidate.price ? `${candidate.price} ₽` : '—'}</td>
                   <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{candidate.contactInfo || '—'}</td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => openConfirm(candidate.id, candidate.fullName)}
-                      className="inline-flex items-center text-[#5858E2] hover:text-[#4747b5] font-medium text-sm transition-colors"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      Сделать участником
-                    </button>
+                    {candidate.status !== 'PENDING' && (
+                      <Link
+                        href={`/admin/candidates/${candidate.id}/edit`}
+                        className="inline-flex items-center text-[#5858E2] hover:text-[#4747b5] font-medium text-sm transition-colors"
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Редактировать
+                      </Link>
+                    )}
                   </td>
                 </tr>
               );
@@ -180,51 +183,19 @@ return (
                 </div>
               )}
               
-              <button
-                onClick={() => openConfirm(candidate.id, candidate.fullName)}
-                className="mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#5858E2] text-white text-sm font-medium rounded-lg hover:bg-[#4747b5] transition-colors"
-              >
-                <CheckCircle className="w-4 h-4" />
-                Сделать участником
-              </button>
+              {candidate.status !== 'PENDING' && (
+                <Link
+                  href={`/admin/candidates/${candidate.id}/edit`}
+                  className="mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#5858E2] text-white text-sm font-medium rounded-lg hover:bg-[#4747b5] transition-colors"
+                >
+                  <Edit className="w-4 h-4" />
+                  Редактировать
+                </Link>
+              )}
             </div>
           );
         })}
       </div>
-
-      {/* Модальное окно подтверждения */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-blue-50 rounded-full text-[#5858E2]">
-              <AlertTriangle className="w-6 h-6" />
-            </div>
-            
-            <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">
-              Подтверждение активации
-            </h3>
-            <p className="text-sm text-center text-gray-500 mb-6">
-              Вы уверены, что хотите сделать <b>{selectedCandidate?.name}</b> участником каталога? Ему будет открыт полный доступ к профилю.
-            </p>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
-              >
-                Отмена
-              </button>
-              <button
-                onClick={handleActivate}
-                disabled={loading}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#5858E2] rounded-xl hover:bg-[#4747b5] transition-colors disabled:opacity-50"
-              >
-                {loading ? "Минутку..." : "Да, принять"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Пагинация */}
       {totalPages > 1 && (

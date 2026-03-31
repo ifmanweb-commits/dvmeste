@@ -9,6 +9,8 @@ import {
   deleteDocumentAsAdmin,
   togglePsychologistPublish
 } from "@/lib/actions/admin-psychologists";
+import { getAllCoursesForSelect } from "@/lib/actions/courses";
+import { CoursesBlock } from "@/components/admin/CoursesBlock";
 import { ParadigmSelector } from "@/components/admin/ParadigmSelector";
 import { formatDateForInput } from "@/lib/utils"; // Ваша новая функция-хелпер
 import { 
@@ -37,6 +39,7 @@ function EditPsychologistForm() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [paradigms, setParadigms] = useState<string[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
@@ -52,10 +55,14 @@ function EditPsychologistForm() {
 
   useEffect(() => {
     async function loadData() {
-      const data = await getPsychologistById(id);
+      const [data, allCourses] = await Promise.all([
+        getPsychologistById(id),
+        getAllCoursesForSelect(),
+      ]);
       if (data) {
         setUser(data);
         setParadigms(data.mainParadigm || []);
+        setCourses(allCourses);
       }
       setLoading(false);
     }
@@ -450,6 +457,20 @@ function EditPsychologistForm() {
                 )}
               </div>
             </div>
+          </section>
+
+          {/* СЕКЦИЯ 5: Курсы */}
+          <section>
+            <CoursesBlock 
+              psychologistId={user.id}
+              courses={courses}
+              userCourses={user.courses?.map((uc: any) => ({
+                id: uc.id,
+                courseId: uc.courseId,
+                status: uc.status,
+                course: uc.course,
+              })) || []}
+            />
           </section>
 
           {/* Финальные действия */}

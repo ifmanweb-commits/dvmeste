@@ -207,6 +207,11 @@ export async function getPsychologistById(id: string) {
             publishedAt: 'desc'
           }
         },
+        courses: {
+          include: {
+            course: true,
+          },
+        },
       },
     })
     return user
