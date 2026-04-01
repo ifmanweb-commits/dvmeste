@@ -57,6 +57,11 @@ model User {
   courses      UserCourse[]
   courseKeys   CourseKeyUse[]
 
+  // Сертификация
+  certificationAwards CertificationAward[] @relation(name: "CertificationAwards")
+  challengeAttempts ChallengeAttempt[] @relation(name: "UserChallengeAttempts")
+  challengeStates ChallengeUserState[] @relation(name: "UserChallengeStates")
+
   @@index([email])
   @@index([status])
   @@index([isPublished])
@@ -485,4 +490,148 @@ model CourseKeyUse {
 
   @@index([keyId])
   @@index([userId])
+}
+
+// ==================== СИСТЕМА СЕРТИФИКАЦИИ И ТЕСТОВ ====================
+
+enum ChallengeType {
+  TEST
+  WORK
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Challenge {
+  id           String             @id @default(cuid())
+  slug         String             @unique
+  title        String
+  description  String?
+  type         ChallengeType
+  isActive     Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  test         TestChallenge?
+  work         WorkChallenge?
+  requirements CertificationRequirement[]
+  attempts     ChallengeAttempt[]
+  userStates   ChallengeUserState[]
+
+  @@index([slug])
+  @@index([type])
+  @@index([isActive])
+}
+
+model TestChallenge {
+  id             String      @id @default(cuid())
+  challengeId    String      @unique
+  questionsPool  Json        // банк вопросов в формате JSON
+  questionsCount Int         // сколько вопросов выбирается в тест
+  passingScore   Int         // сколько правильных ответов нужно для сдачи
+  timeLimit      Int?        // лимит времени в минутах (null = без лимита)
+  freeAttempts   Int         @default(2)
+  unlockPrice    Int?        // цена разблокировки в копейках (null = нельзя купить)
+
+  challenge      Challenge   @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+}
+
+model WorkChallenge {
+  id              String    @id @default(cuid())
+  challengeId     String    @unique
+  requiredReviews Int       @default(1)
+  reviewsToPass   Int       @default(1)
+  reviewPrice     Int?
+
+  challenge       Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+}
+
+model ChallengeAttempt {
+  id                    String        @id @default(cuid())
+  challengeId           String
+  userId                String
+  status                AttemptStatus @default(IN_PROGRESS)
+  passed                Boolean?
+  startedAt             DateTime?
+  finishedAt            DateTime?
+  selectedQuestionIndices Json?       // индексы выбранных вопросов из пула
+  answers               Json?         // ответы пользователя: { "0": [2], "1": [0,3] }
+  score                 Int?
+
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  challenge             Challenge     @relation(fields: [challengeId], references: [id])
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserChallengeAttempts")
+
+  @@index([challengeId])
+  @@index([userId])
+  @@index([status])
+}
+
+model ChallengeUserState {
+  id          String   @id @default(cuid())
+  challengeId String
+  userId      String
+  attemptsLeft Int
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserChallengeStates")
+
+  @@unique([challengeId, userId])
+  @@index([userId])
+}
+
+model Certification {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String?
+  level       Int?     // null = не повышает уровень, иначе новый уровень
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  requirements CertificationRequirement[]
+  awards       CertificationAward[]
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model CertificationRequirement {
+  id              String   @id @default(cuid())
+  certificationId String
+  challengeId     String
+  order           Int      @default(0)
+
+  certification   Certification @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+  challenge       Challenge     @relation(fields: [challengeId], references: [id])
+
+  @@index([certificationId])
+  @@index([challengeId])
+}
+
+model CertificationAward {
+  id              String   @id @default(cuid())
+  certificationId String
+  userId          String
+  awardedAt       DateTime @default(now())
+
+  certification   Certification @relation(fields: [certificationId], references: [id])
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade, name: "CertificationAwards")
+
+  @@unique([certificationId, userId])
+  @@index([userId])
+  @@index([certificationId])
 }
