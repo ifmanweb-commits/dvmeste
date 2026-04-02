@@ -27,9 +27,10 @@ import { cn } from '@/lib/utils'
 interface AccountNavProps {
   user: User
   isMobile?: boolean
+  onNavigate?: () => void
 }
 
-export default function AccountNav({ user, isMobile }: AccountNavProps) {
+export default function AccountNav({ user, isMobile, onNavigate }: AccountNavProps) {
   const pathname = usePathname()
   
   const handleLogout = async () => {
@@ -177,6 +178,7 @@ export default function AccountNav({ user, isMobile }: AccountNavProps) {
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={onNavigate}
                   className={cn(
                     "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
                     isActive 

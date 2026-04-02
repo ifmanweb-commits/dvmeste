@@ -90,8 +90,8 @@ export default function ArticlesStats({
         )}
       </div>
 
-      {/* Кнопка действия */}
-      <div className="flex items-center justify-end">
+      {/* Кнопка действия - скрыта на мобильных */}
+      <div className="hidden sm:flex items-center justify-end">
         <button 
           onClick={handleCreate}
           disabled={draftCount >= 2 || isCreating}

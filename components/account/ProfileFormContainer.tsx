@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { User, Document, DocumentType } from '@prisma/client'
 import { cn } from '@/lib/utils'
 import { Lock, User as UserIcon, FileText, ClipboardList, Plus, Camera, Trash2, Star, Check } from 'lucide-react'
@@ -20,13 +21,24 @@ type UserWithDocuments = User & {
 interface ProfileFormProps {
   user: UserWithDocuments;
   availableParadigms: string[];
+  activeTab: string;
 }
 
 export function ProfileFormContainer({ 
   user: initialUser, 
-  availableParadigms 
+  availableParadigms,
+  activeTab: initialActiveTab
 }: ProfileFormProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('basic')
+  const router = useRouter();
+  
+  // Синхронизация с URL через searchParams
+  const setActiveTab = (tab: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    router.push(url.toString());
+  };
+  
+  const activeTab = initialActiveTab;
   const isCandidate = initialUser.status === 'CANDIDATE' || initialUser.status === 'PENDING'
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
@@ -271,11 +283,11 @@ export function ProfileFormContainer({
   ]
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+    <div className="bg-transparent sm:bg-white sm:rounded-xl sm:border sm:border-gray-200 sm:shadow-sm overflow-hidden">
       {/* Блок сообщений - общий для всех вкладок */}
       {message && (
         <div className={cn(
-          "mx-6 mt-6 p-4 rounded-lg text-sm flex items-start gap-3",
+          "mx-4 sm:mx-6 mt-6 p-4 rounded-lg text-sm flex items-start gap-3",
           message.type === 'success' && "bg-green-50 text-green-800 border border-green-200",
           message.type === 'error' && "bg-red-50 text-red-800 border border-red-200"
         )}>
@@ -293,7 +305,8 @@ export function ProfileFormContainer({
         </div>
       )}
 
-      <div className="flex border-b border-gray-200 bg-gray-50/50">
+      {/* Десктопная навигация (скрыта на мобильных) */}
+      <div className="hidden sm:flex border-b border-gray-200 bg-gray-50/50">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -311,10 +324,31 @@ export function ProfileFormContainer({
         ))}
       </div>
 
-      <div className="p-6">
+      {/* Мобильная навигация (bottom navigation) */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 pb-safe">
+        <div className="flex justify-around items-center h-16">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as Tab)}
+              className={cn(
+                "flex flex-col items-center justify-center w-full h-full transition-colors",
+                activeTab === tab.id ? "text-blue-600" : "text-gray-400"
+              )}
+            >
+              <tab.icon className={cn("w-5 h-5", tab.locked && "text-gray-300")} />
+              <span className={cn("text-[10px] mt-0.5 font-medium", activeTab === tab.id ? "text-blue-600" : "text-gray-400")}>
+                {tab.label.split(' ')[0]}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="px-4 sm:px-6 pb-20 sm:pb-6">
         {/* Вкладка 1: Личные данные */}
         <div className={cn(activeTab !== 'basic' && "hidden")}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 -mx-4 sm:mx-0">
             <Input
               label="Имя и фамилия"
               value={user.fullName || ''}

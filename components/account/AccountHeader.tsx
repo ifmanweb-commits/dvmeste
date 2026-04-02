@@ -57,7 +57,7 @@ export default function AccountHeader({ user }: AccountHeaderProps) {
             </div>
 
             {/* Навигация */}
-            <AccountNav user={user} isMobile />
+            <AccountNav user={user} isMobile onNavigate={() => setIsMobileMenuOpen(false)} />
           </div>
         </div>
       )}

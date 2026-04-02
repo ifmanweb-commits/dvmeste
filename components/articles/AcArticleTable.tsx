@@ -81,15 +81,15 @@ export default function AcArticleTable({ articles }: { articles: Article[] }) {
       <table className="w-full text-left border-collapse bg-white">
         <thead>
           <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase text-[10px] font-black tracking-widest">
-            <th className="px-6 py-4">Статус / Дата</th>
-            <th className="px-6 py-4">Название</th>
-            <th className="px-6 py-4 text-right">Управление</th>
+            <th className="px-4 sm:px-6 py-4">Статус / Дата</th>
+            <th className="px-4 sm:px-6 py-4">Название</th>
+            <th className="hidden sm:table-cell px-6 py-4 text-right">Управление</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
           {articles.map((article) => (
             <tr key={article.id} className="group transition-colors hover:bg-slate-50/30">
-              <td className="px-6 py-5 align-top w-[200px]">
+              <td className="px-4 sm:px-6 py-5 align-top w-[200px]">
                 {article.moderationStatus === 'REVISION' && (
                   <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-red-100 text-red-700 text-[10px] font-bold uppercase"><AlertCircle size={12}/> Нужны правки</span>
                 )}
@@ -104,7 +104,7 @@ export default function AcArticleTable({ articles }: { articles: Article[] }) {
                 </div>
               </td>
 
-              <td className="px-6 py-5 align-top">
+              <td className="px-4 sm:px-6 py-5 align-top">
                 <h3 className="text-[15px] font-bold text-slate-800 leading-tight">
                   {article.title || "Новая статья без заголовка"}
                 </h3>
@@ -118,7 +118,7 @@ export default function AcArticleTable({ articles }: { articles: Article[] }) {
                 </p>
               </td>
 
-              <td className="px-6 py-5 align-top text-right">
+              <td className="hidden sm:table-cell px-6 py-5 align-top text-right">
                 {article.moderationStatus !== 'PENDING' && (
                   <div className="flex justify-end gap-3">
                     <Link

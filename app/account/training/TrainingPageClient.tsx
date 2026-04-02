@@ -114,9 +114,9 @@ export default function TrainingPageClient({
         <h1 className="font-display text-2xl font-bold text-gray-900 mb-6">Обучение</h1>
 
         {/* Форма активации */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm mb-8">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm mb-8">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Активировать доступ</h2>
-          <form onSubmit={handleActivate} className="flex gap-3">
+          <form onSubmit={handleActivate} className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
               value={key}
@@ -128,7 +128,7 @@ export default function TrainingPageClient({
             <button
               type="submit"
               disabled={isActivating || !key.trim()}
-              className="rounded-lg bg-[#5858E2] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto rounded-lg bg-[#5858E2] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isActivating ? 'Активация...' : 'Активировать'}
             </button>
@@ -167,14 +167,14 @@ export default function TrainingPageClient({
                 return (
                   <div
                     key={userCourse.id}
-                    className="p-6 hover:bg-gray-50 transition-colors"
+                    className="p-4 sm:p-6 hover:bg-gray-50 transition-colors"
                   >
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4 gap-3">
                       <div className="flex-1">
-                        <h3 className="text-xl font-bold text-gray-900">{userCourse.course.title}</h3>
+                        <h3 className="text-lg sm:text-xl font-bold text-gray-900">{userCourse.course.title}</h3>
                         <p className="text-sm text-gray-500 mt-1">{userCourse.course.shortTitle}</p>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(userCourse.status)}`}>
                           {getStatusText(userCourse.status)}
                         </span>
@@ -192,9 +192,9 @@ export default function TrainingPageClient({
                           {challenges.map((challenge) => (
                             <div
                               key={challenge.id}
-                              className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3"
+                              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg bg-gray-50 px-4 py-3"
                             >
-                              <div>
+                              <div className="flex-1">
                                 <p className="font-medium text-gray-900">{challenge.title}</p>
                                 <p className="text-sm text-gray-500">
                                   {challenge.test?.questionsCount || '?'} вопросов | Проходной:{' '}
@@ -203,7 +203,7 @@ export default function TrainingPageClient({
                               </div>
                               <Link
                                 href={`/account/training/test/${challenge.slug}`}
-                                className="rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
+                                className="w-full sm:w-auto rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9] text-center"
                               >
                                 Пройти тренировку
                               </Link>

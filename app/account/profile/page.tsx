@@ -2,20 +2,37 @@
 import { notFound, redirect } from "next/navigation";
 import { ProfileFormContainer } from "@/components/account/ProfileFormContainer";
 import { getCurrentUser } from '@/lib/auth/session';
-import { prisma } from '@/lib/prisma'; // Убедись, что импорт верный
+import { prisma } from '@/lib/prisma';
 
-export default async function ProfilePage() {
+type PageProps = {
+  searchParams: Promise<{ tab?: string }>;
+};
+
+const VALID_TABS = ['basic', 'detailed', 'photos', 'docs'] as const;
+type ValidTab = typeof VALID_TABS[number];
+
+function validateTab(tab?: string): ValidTab {
+  if (!tab || !VALID_TABS.includes(tab as ValidTab)) {
+    return 'basic';
+  }
+  return tab as ValidTab;
+}
+
+export default async function ProfilePage({ searchParams }: PageProps) {
   const sessionUser = await getCurrentUser();
   
   if (!sessionUser) {
     redirect('/auth/login');
   }
 
+  const params = await searchParams;
+  const activeTab = validateTab(params.tab);
+
   // Получаем свежие данные из БД со всеми новыми полями
   const user = await prisma.user.findUnique({
     where: { id: sessionUser.id },
     include: {
-      documents: true // Понадобится для вкладки документов
+      documents: true
     }
   });
   if (!user) {
@@ -24,9 +41,8 @@ export default async function ProfilePage() {
 
   // Список парадигм консультирования
   const paradigmsData = await prisma.dataList.findUnique({
-    where: { slug: 'paradigms' } // или key, проверь имя поля в своей схеме
+    where: { slug: 'paradigms' }
   });
-  // Парсим массив из поля data
   const availableParadigms = (paradigmsData?.items as string[]) || [];
 
   return (
@@ -36,7 +52,7 @@ export default async function ProfilePage() {
         <p className="text-gray-500 mt-2">Управление профилем и квалификацией</p>
       </div>
 
-      <ProfileFormContainer user={user} availableParadigms={availableParadigms}/>
+      <ProfileFormContainer user={user} availableParadigms={availableParadigms} activeTab={activeTab} />
     </div>
   );
 }
