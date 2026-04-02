@@ -40,6 +40,17 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
   const [selectedCertification, setSelectedCertification] = useState<string>("all");
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [list, setList] = useState(initialList);
+  
+  // Поиск по email (через хэш)
+  const [emailSearch, setEmailSearch] = useState("");
+  const [emailSearchResult, setEmailSearchResult] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    inCatalog: boolean;
+  } | null>(null);
+  const [isEmailSearching, setIsEmailSearching] = useState(false);
+  const [emailSearchError, setEmailSearchError] = useState<string | null>(null);
 
   // Синхронизируем, если данные обновились на сервере (например, при переходе по страницам)
   useEffect(() => {
@@ -194,11 +205,54 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
     }).length : 0;
 
                                      
+  // Поиск пользователя по email (через API с хэшем)
+  const handleEmailSearch = async () => {
+    if (!emailSearch.trim()) {
+      setEmailSearchResult(null);
+      setEmailSearchError(null);
+      return;
+    }
+
+    setIsEmailSearching(true);
+    setEmailSearchError(null);
+    setEmailSearchResult(null);
+
+    try {
+      const response = await fetch(`/api/admin/users/find?email=${encodeURIComponent(emailSearch.trim())}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Ошибка поиска");
+      }
+
+      if (!data.user) {
+        setEmailSearchError("Пользователь с таким email не найден");
+      } else {
+        setEmailSearchResult(data.user);
+      }
+    } catch (err: any) {
+      setEmailSearchError(err.message || "Ошибка при поиске");
+    } finally {
+      setIsEmailSearching(false);
+    }
+  };
+
+  // Фильтрация списка по найденному пользователю
+  const filteredBySearch = useMemo(() => {
+    if (!emailSearchResult) return filteredPsychologists;
+    
+    // Если найден пользователь, показываем только его карточку
+    return filteredPsychologists.filter(p => p.id === emailSearchResult.id);
+  }, [filteredPsychologists, emailSearchResult]);
+
   const resetFilters = () => {
     setSearchQuery("");
     setShowOnlyPublished(false);
     setSelectedCity("all");
     setSelectedCertification("all");
+    setEmailSearch("");
+    setEmailSearchResult(null);
+    setEmailSearchError(null);
   };
 
                                         
@@ -304,6 +358,39 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
             </button>
           )}
         </div>
+
+        {                       }
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex-1 min-w-[300px]">
+            <label htmlFor="emailSearch" className="block text-sm font-medium text-gray-700 mb-1">
+              Поиск по email
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                id="emailSearch"
+                value={emailSearch}
+                onChange={(e) => setEmailSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleEmailSearch()}
+                placeholder="example@mail.ru"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5858E2]/20 focus:border-[#5858E2] outline-none"
+              />
+              <button
+                onClick={handleEmailSearch}
+                disabled={isEmailSearching || !emailSearch.trim()}
+                className="px-4 py-2 bg-[#5858E2] text-white rounded-lg hover:bg-[#4a4ac7] disabled:opacity-50 whitespace-nowrap"
+              >
+                {isEmailSearching ? "..." : "Найти"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {emailSearchError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+            <p className="text-sm text-red-800">{emailSearchError}</p>
+          </div>
+        )}
 
         {                     }
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -453,7 +540,7 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
         )}
       </div>
 
-      {filteredPsychologists.length === 0 ? (
+      {filteredBySearch.length === 0 ? (
         <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
           <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -475,7 +562,7 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
         </div>
       ) : (
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredPsychologists.map((p) => {
+          {filteredBySearch.map((p) => {
             const certificationLevel = getSafeCertificationLevel(p.certificationLevel);
             const isPending = loadingId === p.id;
 

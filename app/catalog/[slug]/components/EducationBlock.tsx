@@ -1,8 +1,6 @@
 'use client'
 
 import Image from 'next/image'
-import { CheckCircle } from 'lucide-react'
-import { Tooltip } from '@/components/ui/Tooltip'
 import { DocumentType } from '@prisma/client'
 
 interface EducationItem {
@@ -38,15 +36,15 @@ const TYPE_ICONS: Record<DocumentType, string> = {
   PHOTO: '/images/edu-icons/other.png',
 }
 
-// Названия типов
-const TYPE_LABELS: Record<DocumentType, string> = {
-  ACADEMIC_EDUCATION: 'Академическое образование',
-  PROFESSIONAL_TRAINING: 'Профессиональная переподготовка',
-  COURSE: 'Курсы и интенсивы',
-  SUPPORTING_DOC: 'Подтверждающий документ',
+// Названия типов (короткие)
+const TYPE_LABELS_SHORT: Record<DocumentType, string> = {
+  ACADEMIC_EDUCATION: 'Диплом',
+  PROFESSIONAL_TRAINING: 'Повышение квалификации',
+  COURSE: 'Курсы',
+  SUPPORTING_DOC: 'Другое',
   OTHER: 'Другое',
-  LINK: 'Ссылка',
-  PHOTO: 'Фото',
+  LINK: 'Другое',
+  PHOTO: 'Другое',
 }
 
 // Цвета фона для разных типов (от тёмно-зелёного к белому)
@@ -79,55 +77,55 @@ export function EducationBlock({ education }: EducationBlockProps) {
 
   return (
     <div className="mt-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-3">Образование</h2>
+      <h2 className="text-lg font-semibold text-gray-900 mb-1">Образование</h2>
+      <p className="text-sm text-green-700 mb-3">Все документы предоставлены и проверены</p>
       
-      {/* Десктопная версия - таблица */}
+      {/* Десктопная версия - компактная таблица */}
       <div className="hidden sm:block overflow-hidden rounded-lg border border-gray-200">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="w-12 px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Иконка
+              </th>
+              <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Тип
               </th>
-              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Учебное заведение
+              <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Заведение
               </th>
-              <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Специальность
+              <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Содержание
               </th>
-              <th scope="col" className="w-20 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="w-16 px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Год
-              </th>
-              <th scope="col" className="w-12 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                ✓
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
             {sortedEducation.map((item, index) => (
               <tr key={index} className={TYPE_COLORS[item.type]}>
-                <td className="px-4 py-3">
+                <td className="px-3 py-2">
                   <Image
                     src={TYPE_ICONS[item.type]}
-                    alt={TYPE_LABELS[item.type]}
-                    width={120}
-                    height={120}
-                    className="w-28 h-28 object-contain"
+                    alt={TYPE_LABELS_SHORT[item.type]}
+                    width={48}
+                    height={48}
+                    className="w-12 h-12 object-contain mx-auto"
+                    unoptimized
                   />
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-900">
+                <td className="px-3 py-2 text-sm text-gray-900">
+                  {TYPE_LABELS_SHORT[item.type]}
+                </td>
+                <td className="px-3 py-2 text-sm text-gray-900">
                   {item.organization || '—'}
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-900">
+                <td className="px-3 py-2 text-sm text-gray-900">
                   {item.programName || '—'}
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                <td className="px-3 py-2 text-sm text-gray-900 whitespace-nowrap">
                   {item.year || '—'}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-center">
-                  <Tooltip content="Документ проверен">
-                    <CheckCircle className="w-5 h-5 text-green-600 mx-auto" />
-                  </Tooltip>
                 </td>
               </tr>
             ))}
@@ -138,32 +136,30 @@ export function EducationBlock({ education }: EducationBlockProps) {
       {/* Мобильная версия - вертикальные карточки */}
       <div className="sm:hidden space-y-3">
         {sortedEducation.map((item, index) => (
-          <div key={index} className={`rounded-lg border border-gray-200 p-4 ${TYPE_COLORS[item.type]}`}>
-            <div className="flex items-start gap-3 mb-3">
+          <div key={index} className={`rounded-lg border border-gray-200 p-3 ${TYPE_COLORS[item.type]}`}>
+            <div className="flex items-start gap-2 mb-2">
               <Image
                 src={TYPE_ICONS[item.type]}
-                alt={TYPE_LABELS[item.type]}
-                width={95}
-                height={95}
-                className="w-[95px] h-[95px] object-contain shrink-0"
+                alt={TYPE_LABELS_SHORT[item.type]}
+                width={50}
+                height={50}
+                className="w-[50px] h-[50px] object-contain shrink-0"
+                unoptimized
               />
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">
-                  {TYPE_LABELS[item.type]}
+                <p className="text-xs font-medium text-gray-900">
+                  {TYPE_LABELS_SHORT[item.type]}
                 </p>
               </div>
-              <Tooltip content="Документ проверен">
-                <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
-              </Tooltip>
             </div>
             
-            <div className="space-y-2 text-sm">
+            <div className="space-y-1 text-xs">
               <div className="flex justify-between">
                 <span className="text-gray-500">Заведение:</span>
                 <span className="text-gray-900 font-medium">{item.organization || '—'}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Специальность:</span>
+                <span className="text-gray-500">Содержание:</span>
                 <span className="text-gray-900 font-medium">{item.programName || '—'}</span>
               </div>
               <div className="flex justify-between">

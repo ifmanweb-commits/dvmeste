@@ -30,6 +30,7 @@ export default function NewCertificationPage() {
   const [isSlugEdited, setIsSlugEdited] = useState(false);
   const [description, setDescription] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [level, setLevel] = useState<number | ''>('');
 
   // Требования
   const [requirements, setRequirements] = useState<Requirement[]>([]);
@@ -159,6 +160,7 @@ export default function NewCertificationPage() {
           title,
           description,
           isActive,
+          level: level === '' ? null : level,
           requirements: requirements.filter(r => r.challengeId),
         }),
       });
@@ -242,16 +244,35 @@ export default function NewCertificationPage() {
                 />
               </div>
 
-              <div>
-                <label className="flex items-center">
+              <div className="flex gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Уровень квалификации
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={isActive}
-                    onChange={(e) => setIsActive(e.target.checked)}
-                    className="mr-2 h-4 w-4 rounded border-gray-300 text-[#5858E2] focus:ring-[#5858E2]"
+                    type="number"
+                    min="0"
+                    value={level}
+                    onChange={(e) => setLevel(e.target.value === '' ? '' : parseInt(e.target.value))}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                    placeholder="Не указано"
                   />
-                  <span className="text-sm text-gray-700">Активен</span>
-                </label>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Оставьте пустым, если не повышает уровень
+                  </p>
+                </div>
+
+                <div className="flex items-end">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={isActive}
+                      onChange={(e) => setIsActive(e.target.checked)}
+                      className="mr-2 h-4 w-4 rounded border-gray-300 text-[#5858E2] focus:ring-[#5858E2]"
+                    />
+                    <span className="text-sm text-gray-700">Активен</span>
+                  </label>
+                </div>
               </div>
             </div>
           </div>

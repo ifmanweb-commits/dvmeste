@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
       title,
       description,
       isActive = true,
+      level = null,
       requirements = [], // массив { challengeId, order }
     } = body;
 
@@ -90,6 +91,7 @@ export async function POST(request: NextRequest) {
         title,
         description,
         isActive,
+        level: level !== null ? parseInt(level) : null,
         requirements: {
           create: requirements.map((req: { challengeId: string; order: number }) => ({
             challengeId: req.challengeId,

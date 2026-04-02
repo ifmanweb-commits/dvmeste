@@ -70,6 +70,27 @@ function getMonthWord(months: number): string {
   return "месяцев";
 }
 
+function calculateAge(birthDate: Date | null): number | null {
+  if (!birthDate) return null;
+  try {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    if (isNaN(birth.getTime())) return null;
+    
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age > 0 ? age : null;
+  } catch (error) {
+    console.error("Ошибка при расчёте возраста:", error);
+    return null;
+  }
+}
+
 function formatWorkFormat(workFormat: string): string {
   switch (workFormat) {
     case "ONLINE":
@@ -264,6 +285,20 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
                         <Badge variant="neutral">Нет парадигм</Badge>
                       )}
                     </div>
+
+                    {/* Возраст */}
+                    {user.birthDate && (
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-1.5">
+                          <svg className="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-sm font-medium text-purple-700">
+                            Возраст: {calculateAge(user.birthDate)} лет
+                          </span>
+                        </div>
+                      </div>
+                    )}
 
                     {experience && (
                       <div className="flex items-center gap-2">

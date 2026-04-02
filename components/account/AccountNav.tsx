@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { User } from '@prisma/client'
 import LogoutButton from '@/components/LogoutButton'
+import Image from 'next/image'
 import {
   Home,
   User as UserIcon,
@@ -25,9 +26,10 @@ import { cn } from '@/lib/utils'
 
 interface AccountNavProps {
   user: User
+  isMobile?: boolean
 }
 
-export default function AccountNav({ user }: AccountNavProps) {
+export default function AccountNav({ user, isMobile }: AccountNavProps) {
   const pathname = usePathname()
   
   const handleLogout = async () => {
@@ -97,15 +99,28 @@ export default function AccountNav({ user }: AccountNavProps) {
   const visibleItems = menuItems.filter(item => item.show)
   
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col">
+    <aside className={cn(
+      "w-64 bg-white min-h-screen flex flex-col",
+      isMobile ? "border-b border-gray-200" : "border-r border-gray-200"
+    )}>
       {/* Шапка с информацией о пользователе */}
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-            <span className="text-blue-600 font-semibold">
-              {user.fullName?.[0] || user.email[0].toUpperCase()}
-            </span>
-          </div>
+          {user.avatarUrl ? (
+            <Image
+              src={user.avatarUrl}
+              alt={user.fullName || 'Аватар'}
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+              <span className="text-blue-600 font-semibold">
+                {user.fullName?.[0] || user.email[0].toUpperCase()}
+              </span>
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <p className="font-medium truncate">
               {user.fullName || 'Пользователь'}

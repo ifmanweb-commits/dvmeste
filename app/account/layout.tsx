@@ -1,6 +1,7 @@
 import { getCurrentUser } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
 import AccountNav from '@/components/account/AccountNav'
+import AccountHeader from '@/components/account/AccountHeader'
 
 export default async function AccountLayout({
   children,
@@ -19,11 +20,21 @@ export default async function AccountLayout({
   }
   
   return (
-    <div className="flex">
-      <AccountNav user={user} /> {/* навигация получает user */}
-      <main className="flex-1 p-8">
-        {children} {/* page.tsx НЕ получает user автоматически */}
-      </main>
+    <div className="min-h-screen bg-gray-50">
+      {/* Мобильный хедер */}
+      <AccountHeader user={user} />
+      
+      <div className="flex">
+        {/* Боковая панель - скрыта на мобильном, видна на md+ */}
+        <div className="hidden md:block">
+          <AccountNav user={user} />
+        </div>
+        
+        {/* Основной контент */}
+        <main className="flex-1 p-4 md:p-8">
+          {children}
+        </main>
+      </div>
     </div>
   )
 }

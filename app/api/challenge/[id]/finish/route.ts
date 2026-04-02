@@ -193,10 +193,13 @@ export async function POST(
             });
 
             // Обновляем уровень сертификации пользователя
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { certificationLevel: { increment: 1 } },
-            });
+            // Если level не null и больше текущего - присваиваем, иначе не меняем
+            if (cert.level !== null && cert.level > user.certificationLevel) {
+              await prisma.user.update({
+                where: { id: user.id },
+                data: { certificationLevel: cert.level },
+              });
+            }
           }
         }
       }
