@@ -82,7 +82,7 @@ export function CatalogSidebar({ initialParams, onFormSubmit, totalCount }: Prop
     const gender = (formData.get("gender") as string)?.trim() ?? "";
     const paradigm = (formData.get("paradigm") as string)?.trim() ?? "";
     const level = (formData.get("level") as string)?.trim() ?? "";
-    const sort = (formData.get("sort") as string)?.trim() ?? "createdAt-desc";
+    const sort = (formData.get("sort") as string)?.trim() ?? "sortOrder-asc";
     
                          
     const ageMin = (formData.get("ageMin") as string)?.trim() ?? "";
@@ -107,7 +107,7 @@ export function CatalogSidebar({ initialParams, onFormSubmit, totalCount }: Prop
 
   const selectedParadigm = get("paradigms") || get("paradigm");
   const selectedLevel = get("levels") || get("level");
-  const sortBy = get("sortBy") || "createdAt";
+  const sortBy = get("sortBy") || "sortOrder";
   const sortOrder = get("sortOrder") || "desc";
   const sortValue = `${sortBy}-${sortOrder}`;
 
@@ -255,7 +255,7 @@ export function CatalogSidebar({ initialParams, onFormSubmit, totalCount }: Prop
                 defaultValue={sortValue}
                 className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
               >
-                <option value="createdAt-desc">Сначала новые</option>
+                <option value="sortOrder-asc">Случайная</option>
                 <option value="price-asc">Дешевле</option>
                 <option value="price-desc">Дороже</option>
                 <option value="certificationLevel-desc">По уровню (высший)</option>

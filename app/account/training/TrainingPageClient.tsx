@@ -2,11 +2,22 @@
 
 import { useState } from 'react';
 import { activateCourseKey } from '@/lib/actions/courses';
+import Link from 'next/link';
 
 interface Course {
   id: string;
   title: string;
   shortTitle: string;
+}
+
+interface Challenge {
+  id: string;
+  title: string;
+  slug: string;
+  test: {
+    questionsCount: number;
+    passingScore: number;
+  } | null;
 }
 
 interface UserCourse {
@@ -21,17 +32,24 @@ interface TrainingPageClientProps {
   userId: string;
   initialUserCourses: UserCourse[];
   allCourses: Course[];
+  challengesByCourse: Record<string, { enrolled: string[]; graduated: string[] }>;
+  challengesMap: string;
 }
 
 export default function TrainingPageClient({
   userId,
   initialUserCourses,
   allCourses,
+  challengesByCourse,
+  challengesMap,
 }: TrainingPageClientProps) {
   const [key, setKey] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isActivating, setIsActivating] = useState(false);
   const [userCourses, setUserCourses] = useState<UserCourse[]>(initialUserCourses);
+
+  // Парсим challengesMap обратно в Map
+  const challengesMapObj = new Map<string, Challenge>(JSON.parse(challengesMap));
 
   const handleActivate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +95,17 @@ export default function TrainingPageClient({
     return status === 'enrolled' 
       ? 'bg-blue-100 text-blue-800' 
       : 'bg-green-100 text-green-800';
+  };
+
+  // Получаем тесты для курса на основе статуса пользователя
+  const getChallengesForCourse = (courseId: string, status: string): Challenge[] => {
+    const access = challengesByCourse[courseId];
+    if (!access) return [];
+
+    const challengeIds = status === 'enrolled' ? access.enrolled : access.graduated;
+    return challengeIds
+      .map((id) => challengesMapObj.get(id))
+      .filter((c): c is Challenge => c !== undefined);
   };
 
   return (
@@ -132,27 +161,60 @@ export default function TrainingPageClient({
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {userCourses.map((userCourse) => (
-                <div
-                  key={userCourse.id}
-                  className="p-6 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{userCourse.course.title}</h3>
-                      <p className="text-sm text-gray-500 mt-1">{userCourse.course.shortTitle}</p>
+              {userCourses.map((userCourse) => {
+                const challenges = getChallengesForCourse(userCourse.courseId, userCourse.status);
+
+                return (
+                  <div
+                    key={userCourse.id}
+                    className="p-6 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-gray-900">{userCourse.course.title}</h3>
+                        <p className="text-sm text-gray-500 mt-1">{userCourse.course.shortTitle}</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(userCourse.status)}`}>
+                          {getStatusText(userCourse.status)}
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          с {new Date(userCourse.assignedAt).toLocaleDateString('ru-RU')}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(userCourse.status)}`}>
-                        {getStatusText(userCourse.status)}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        с {new Date(userCourse.assignedAt).toLocaleDateString('ru-RU')}
-                      </span>
-                    </div>
+
+                    {/* Список доступных тестов */}
+                    {challenges.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3">Доступные тесты:</h4>
+                        <div className="space-y-2">
+                          {challenges.map((challenge) => (
+                            <div
+                              key={challenge.id}
+                              className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3"
+                            >
+                              <div>
+                                <p className="font-medium text-gray-900">{challenge.title}</p>
+                                <p className="text-sm text-gray-500">
+                                  {challenge.test?.questionsCount || '?'} вопросов | Проходной:{' '}
+                                  {challenge.test?.passingScore || '?'}
+                                </p>
+                              </div>
+                              <Link
+                                href={`/account/training/test/${challenge.slug}`}
+                                className="rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
+                              >
+                                Пройти тренировку
+                              </Link>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

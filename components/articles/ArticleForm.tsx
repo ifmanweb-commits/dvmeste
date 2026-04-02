@@ -485,7 +485,7 @@ export default function ArticleForm({
               value={shortText}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setShortText(e.target.value)}
               rows={4}
-              maxLength={200}
+              maxLength={500}
               required
               disabled={isSubmitting}
           />

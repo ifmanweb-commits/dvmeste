@@ -12,9 +12,10 @@ type Props = {
   nextCursor: string | null;
   hasMore: boolean;
   searchParams: Record<string, string | string[] | undefined>;
+  currentUserProfile: PsychologistCatalogItem | null;
 };
 
-export function CatalogWithModal({ items, nextCursor, hasMore, searchParams }: Props) {
+export function CatalogWithModal({ items, nextCursor, hasMore, searchParams, currentUserProfile }: Props) {
   const buildNextUrl = () => {
     const params = new URLSearchParams();
     Object.entries(searchParams).forEach(([key, value]) => {
@@ -32,7 +33,7 @@ export function CatalogWithModal({ items, nextCursor, hasMore, searchParams }: P
 
   return (
     <div className="min-h-[60vh]">
-      {items.length === 0 ? (
+      {items.length === 0 && !currentUserProfile ? (
         <div className="rounded-xl border border-neutral-200 bg-white p-6 text-center sm:rounded-2xl sm:p-12">
           <p className="font-display text-base font-semibold text-foreground sm:text-lg">
             По заданным фильтрам никого не найдено
@@ -42,6 +43,13 @@ export function CatalogWithModal({ items, nextCursor, hasMore, searchParams }: P
       ) : (
         <>
           <div className="flex flex-col gap-5">
+            {/* Анкета текущего психолога показывается первой */}
+            {currentUserProfile && (
+              <div className="relative">
+                <div className="absolute -left-3 top-0 bottom-0 w-1 bg-[#5858E2] rounded-l-lg"></div>
+                <PsychologistCard psychologist={currentUserProfile} isCurrentUser={true} />
+              </div>
+            )}
             {items.map((p) => (
               <PsychologistCard key={p.id} psychologist={p} />
             ))}
@@ -84,7 +92,13 @@ function formatWorkFormat(workFormat: string | undefined): string[] {
     .map(f => formats[f] || f);
 }
 
-function PsychologistCard({ psychologist }: { psychologist: PsychologistCatalogItem }) {
+function PsychologistCard({ 
+  psychologist, 
+  isCurrentUser = false 
+}: { 
+  psychologist: PsychologistCatalogItem;
+  isCurrentUser?: boolean;
+}) {
   const {
     slug, fullName, city, mainParadigm, certificationLevel,
     shortBio, price, images, educationCount, coursesCount, workFormat,

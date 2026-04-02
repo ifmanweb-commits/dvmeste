@@ -38,6 +38,7 @@ model User {
   hasUnpublishedChanges Boolean            @default(false)
   avatarUrl             String?
   freeSession           Int                @default(0)
+  sortOrder             Int                @default(0)
   moderatedArticles     Article[]          @relation("ModeratedArticles")
   articles              Article[]          @relation("AuthorArticles")
   articleCredits        ArticleCredit[]
@@ -437,6 +438,7 @@ model Course {
 
   enrollments UserCourse[]
   keys        CourseKey[]
+  challengeAccess CourseChallengeAccess[]
 
   @@index([slug])
 }
@@ -492,6 +494,23 @@ model CourseKeyUse {
   @@index([userId])
 }
 
+// ==================== СВЯЗЬ КУРСОВ С ИСПЫТАНИЯМИ ====================
+
+model CourseChallengeAccess {
+  id          String   @id @default(cuid())
+  courseId    String
+  challengeId String
+  status      String   // "enrolled" (ученик) или "graduated" (выпускник)
+  order       Int      @default(0)
+
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  challenge Challenge @relation(fields: [challengeId], references: [id])
+
+  @@unique([courseId, challengeId, status])
+  @@index([courseId])
+  @@index([challengeId])
+}
+
 // ==================== СИСТЕМА СЕРТИФИКАЦИИ И ТЕСТОВ ====================
 
 enum ChallengeType {
@@ -519,6 +538,7 @@ model Challenge {
   requirements CertificationRequirement[]
   attempts     ChallengeAttempt[]
   userStates   ChallengeUserState[]
+  courseAccess CourseChallengeAccess[]
 
   @@index([slug])
   @@index([type])

@@ -20,7 +20,8 @@ function computeAge(birthDate: Date | null): number | null {
 
 export async function getPsychologists(
   filters: CatalogFilters = {},
-  pagination: CatalogPagination = { limit: CATALOG_PAGE_SIZE }
+  pagination: CatalogPagination = { limit: CATALOG_PAGE_SIZE },
+  excludeUserId?: string // Исключить текущего пользователя из списка
 ): Promise<CatalogResult> {
   if (!prisma) return { items: [], nextCursor: null, hasMore: false };
 
@@ -78,7 +79,13 @@ export async function getPsychologists(
     // Сортировка по возрасту будет позже, после фильтрации
     orderBy.birthDate = sortOrder === "asc" ? "desc" : "asc"; // моложе = больше дата
   } else {
-    orderBy.createdAt = "desc";
+    // Сортировка по умолчанию - по sortOrder (случайный порядок)
+    orderBy.sortOrder = "asc";
+  }
+
+  // Исключаем текущего пользователя, если передан
+  if (excludeUserId) {
+    where.id = { not: excludeUserId };
   }
 
   // 3. Получаем пользователей

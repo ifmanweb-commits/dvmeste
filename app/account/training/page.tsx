@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { getSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { getUserCourses, activateCourseKey, getAllCoursesForSelect } from "@/lib/actions/courses";
+import { prisma } from "@/lib/prisma";
 import TrainingPageClient from "./TrainingPageClient";
 
 export default async function TrainingPage() {
@@ -15,6 +16,44 @@ export default async function TrainingPage() {
     getUserCourses(session.user.id),
     getAllCoursesForSelect(),
   ]);
+
+  // Получаем все связи курсов с испытаниями
+  const courseAccesses = await prisma.courseChallengeAccess.findMany({
+    where: {
+      courseId: {
+        in: userCourses.map((uc) => uc.courseId),
+      },
+    },
+    include: {
+      challenge: {
+        include: {
+          test: true,
+        },
+      },
+    },
+    orderBy: { order: "asc" },
+  });
+
+  // Группируем испытания по курсам и статусам
+  const challengesByCourse: Record<string, { enrolled: string[]; graduated: string[] }> = {};
+  for (const access of courseAccesses) {
+    if (!challengesByCourse[access.courseId]) {
+      challengesByCourse[access.courseId] = { enrolled: [], graduated: [] };
+    }
+    challengesByCourse[access.courseId][access.status].push(access.challengeId);
+  }
+
+  // Получаем данные о тестах
+  const allChallengeIds = courseAccesses.map((a) => a.challengeId);
+  const challenges = await prisma.challenge.findMany({
+    where: { id: { in: allChallengeIds } },
+    include: {
+      test: true,
+    },
+  });
+
+  // Создаём мапу challengeId -> challenge
+  const challengesMap = new Map(challenges.map((c) => [c.id, c]));
 
   return (
     <Suspense fallback={
@@ -37,6 +76,8 @@ export default async function TrainingPage() {
         userId={session.user.id}
         initialUserCourses={userCourses}
         allCourses={allCourses}
+        challengesByCourse={challengesByCourse}
+        challengesMap={JSON.stringify(Array.from(challengesMap.entries()))}
       />
     </Suspense>
   );

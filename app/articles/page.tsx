@@ -218,7 +218,7 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
 
                     {/* Короткий текст (excerpt) */}
                     {article.excerpt && (
-                      <p className="text-gray-600 text-sm line-clamp-3 mb-4">
+                      <p className="text-gray-600 text-sm mb-4">
                         {article.excerpt}
                       </p>
                     )}
