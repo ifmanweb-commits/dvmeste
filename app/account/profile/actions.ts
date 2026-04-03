@@ -25,6 +25,7 @@ export async function updateBasicProfile(values: any) {
         birthDate: values.birthDate ? new Date(values.birthDate) : null,
         workFormat: values.workFormat,
         contactInfo: values.contactInfo,
+        showCandidate: values.showCandidate,
       },
     })
 

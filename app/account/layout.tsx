@@ -2,6 +2,7 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
 import AccountNav from '@/components/account/AccountNav'
 import AccountHeader from '@/components/account/AccountHeader'
+import { getBalance } from '@/lib/billing'
 
 export default async function AccountLayout({
   children,
@@ -19,6 +20,9 @@ export default async function AccountLayout({
     redirect('/auth/verify-email')
   }
   
+  // Получаем баланс пользователя
+  const balance = await getBalance(user.id)
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Мобильный хедер */}
@@ -27,7 +31,7 @@ export default async function AccountLayout({
       <div className="flex">
         {/* Боковая панель - скрыта на мобильном, видна на md+ */}
         <div className="hidden md:block">
-          <AccountNav user={user} />
+          <AccountNav user={{ ...user, balance }} />
         </div>
         
         {/* Основной контент */}

@@ -20,6 +20,13 @@ interface TestSettings {
   unlockPrice: number;
 }
 
+interface WorkSettings {
+  instructions: string;
+  requiredReviews: number;
+  reviewsToPass: number;
+  reviewPrice: number;
+}
+
 export default function NewChallengePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,6 +47,14 @@ export default function NewChallengePage() {
     timeLimit: 0,
     freeAttempts: 2,
     unlockPrice: 0,
+  });
+
+  // Настройки квалификационной работы
+  const [workSettings, setWorkSettings] = useState<WorkSettings>({
+    instructions: '',
+    requiredReviews: 1,
+    reviewsToPass: 1,
+    reviewPrice: 0,
   });
 
   // Вопросы
@@ -223,6 +238,12 @@ export default function NewChallengePage() {
             timeLimit: testSettings.timeLimit || null,
             freeAttempts: testSettings.freeAttempts,
             unlockPrice: testSettings.unlockPrice,
+          }),
+          ...(challengeType === 'WORK' && {
+            instructions: workSettings.instructions || null,
+            requiredReviews: workSettings.requiredReviews,
+            reviewsToPass: workSettings.reviewsToPass,
+            reviewPrice: workSettings.reviewPrice,
           }),
         }),
       });
@@ -627,6 +648,92 @@ export default function NewChallengePage() {
                 )}
               </div>
             </>
+          )}
+
+          {/* Настройки квалификационной работы */}
+          {challengeType === 'WORK' && (
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">
+                Настройки квалификационной работы
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Инструкция для супервизоров
+                  </label>
+                  <textarea
+                    value={workSettings.instructions}
+                    onChange={(e) =>
+                      setWorkSettings({
+                        ...workSettings,
+                        instructions: e.target.value,
+                      })
+                    }
+                    rows={4}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                    placeholder="Опишите инструкцию для супервизоров по проверке работы..."
+                  />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Количество проверок
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={workSettings.requiredReviews}
+                      onChange={(e) =>
+                        setWorkSettings({
+                          ...workSettings,
+                          requiredReviews: parseInt(e.target.value) || 1,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Нужно положительных решений
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={workSettings.reviewsToPass}
+                      onChange={(e) =>
+                        setWorkSettings({
+                          ...workSettings,
+                          reviewsToPass: parseInt(e.target.value) || 1,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Цена испытания (₽)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={workSettings.reviewPrice}
+                      onChange={(e) =>
+                        setWorkSettings({
+                          ...workSettings,
+                          reviewPrice: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">0 = бесплатно</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Кнопки действий */}

@@ -2,12 +2,13 @@ import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
 import { User } from '@prisma/client'
+import { SUPERADMIN_EMAIL } from '@/lib/config'
 
 const SESSION_NAME = 'session'
 const SESSION_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 дней
 
 // Тип пользователя со всеми нужными полями (берем напрямую из Prisma)
-export type UserWithAllFields = User
+export type UserWithAllFields = User & { isSuperAdmin: boolean }
 
 export async function createSession(userId: string) {
   const sessionToken = randomBytes(32).toString('hex')
@@ -71,7 +72,17 @@ export async function removeSession() {
   }
 }
 
-export async function getCurrentUser(): Promise<User | null> {
+export async function getCurrentUser(): Promise<UserWithAllFields | null> {
   const session = await getSession()
-  return session?.user || null
+  const user = session?.user || null
+  
+  if (!user) return null
+  
+  // Добавляем флаг суперадмина на уровне кода
+  const isSuperAdmin = user.email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase()
+  
+  return {
+    ...user,
+    isSuperAdmin
+  }
 }

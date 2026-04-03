@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { isDbSyncError } from "@/lib/db-error";
 import { getCurrentUser } from '@/lib/auth/session';
+import { SUPERADMIN_EMAIL } from '@/lib/config';
 import { createHash } from 'crypto';
 
 export type Manager = {
@@ -11,7 +12,10 @@ export type Manager = {
   email: string;
   role: "ADMIN" | "MANAGER";
   isActive: boolean;
-  inCatalog: boolean;  // теперь проверяем статус психолога
+  inCatalog: boolean;
+  isAdmin: boolean;
+  isManager: boolean;
+  isSupervisor: boolean;
 };
 
 export async function getManagersList(): Promise<Manager[]> {
@@ -22,7 +26,8 @@ export async function getManagersList(): Promise<Manager[]> {
       where: {
         OR: [
           { isAdmin: true },
-          { isManager: true }
+          { isManager: true },
+          { isSupervisor: true }
         ]
       },
       select: {
@@ -31,8 +36,9 @@ export async function getManagersList(): Promise<Manager[]> {
         fullName: true,
         isAdmin: true,
         isManager: true,
+        isSupervisor: true,
         emailVerified: true,
-        status: true,  // ← проверяем статус психолога вместо psychologist.id
+        status: true,
       },
       orderBy: {
         createdAt: 'desc'
@@ -45,7 +51,10 @@ export async function getManagersList(): Promise<Manager[]> {
       email: u.email,
       role: u.isAdmin ? 'ADMIN' : 'MANAGER',
       isActive: u.emailVerified !== null,
-      inCatalog: u.status === 'ACTIVE',  // психолог в каталоге, если статус ACTIVE
+      inCatalog: u.status === 'ACTIVE',
+      isAdmin: u.isAdmin,
+      isManager: u.isManager,
+      isSupervisor: u.isSupervisor,
     }));
   } catch (err) {
     if (isDbSyncError(err)) return [];
@@ -67,18 +76,19 @@ export async function findUserByEmail(email: string) {
         fullName: true,
         isAdmin: true,
         isManager: true,
-        // isPsychologist убрали, его нет в модели
+        isSupervisor: true,
         emailVerified: true,
-        status: true,  // ← вместо psychologist
+        status: true,
       }
     });
 
     if (!user) return null;
 
     // Определяем роль для отображения
-    let role: 'ADMIN' | 'MANAGER' | 'USER' = 'USER';
+    let role: 'ADMIN' | 'MANAGER' | 'SUPERVISOR' | 'USER' = 'USER';
     if (user.isAdmin) role = 'ADMIN';
     else if (user.isManager) role = 'MANAGER';
+    else if (user.isSupervisor) role = 'SUPERVISOR';
 
     return {
       id: user.id,
@@ -86,10 +96,10 @@ export async function findUserByEmail(email: string) {
       email: user.email,
       role,
       isActive: user.emailVerified !== null,
-      inCatalog: user.status === 'ACTIVE',  // ← по статусу
+      inCatalog: user.status === 'ACTIVE',
       isAdmin: user.isAdmin,
       isManager: user.isManager,
-      // isPsychologist: user.isPsychologist убрали
+      isSupervisor: user.isSupervisor,
     };
   } catch (err) {
     console.error("Error finding user:", err);
@@ -164,12 +174,67 @@ export async function removeRole(userId: string) {
       data: {
         isAdmin: false,
         isManager: false,
+        isSupervisor: false,
       }
     });
 
     return { success: true };
   } catch (err) {
     console.error("Error removing role:", err);
+    throw err;
+  }
+}
+
+// Новый Server Action для обновления всех трёх флагов
+export async function updateUserRoles(
+  userId: string, 
+  roles: { isAdmin: boolean; isManager: boolean; isSupervisor: boolean }
+) {
+  if (!prisma) throw new Error("Database unavailable");
+
+  try {
+    const currentUser = await getCurrentUser();
+    
+    if (!currentUser) {
+      throw new Error("Не авторизован");
+    }
+
+    // Проверяем, является ли текущий пользователь суперадмином
+    const isSuperAdmin = currentUser.email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
+
+    // Запрещаем менять права самого себя (кроме суперадмина)
+    if (currentUser.id === userId && !isSuperAdmin) {
+      throw new Error("Нельзя изменять права самого себя");
+    }
+
+    // Проверяем, не последний ли это админ (если снимаем флаг isAdmin)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { isAdmin: true }
+    });
+
+    if (user?.isAdmin && !roles.isAdmin) {
+      const adminCount = await prisma.user.count({
+        where: { isAdmin: true }
+      });
+
+      if (adminCount <= 1) {
+        throw new Error("Нельзя снять флаг администратора с последнего админа");
+      }
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        isAdmin: roles.isAdmin,
+        isManager: roles.isManager,
+        isSupervisor: roles.isSupervisor,
+      }
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.error("Error updating user roles:", err);
     throw err;
   }
 }

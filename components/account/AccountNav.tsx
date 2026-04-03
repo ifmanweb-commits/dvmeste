@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { User } from '@prisma/client'
 import LogoutButton from '@/components/LogoutButton'
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
 import {
   Home,
   User as UserIcon,
@@ -20,18 +21,40 @@ import {
   Users,
   Eye,
   ShieldCheck,
-  GraduationCap
+  GraduationCap,
+  Wallet
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface AccountNavProps {
-  user: User
+  user: User & { balance?: number }
   isMobile?: boolean
   onNavigate?: () => void
 }
 
 export default function AccountNav({ user, isMobile, onNavigate }: AccountNavProps) {
   const pathname = usePathname()
+  const [balance, setBalance] = useState<number>(user.balance ?? 0)
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        const res = await fetch('/api/account/balance')
+        if (res.ok) {
+          const data = await res.json()
+          setBalance(data.balance)
+        }
+      } catch (err) {
+        console.error('Ошибка получения баланса:', err)
+      }
+    }
+    fetchBalance()
+  }, [])
+
+  const formatBalance = (amount: number): string => {
+    const rubles = Math.round(amount / 100)
+    return rubles.toLocaleString('ru-RU')
+  }
   
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -65,12 +88,6 @@ export default function AccountNav({ user, isMobile, onNavigate }: AccountNavPro
       show: user.status !== 'PENDING' // Только для кандидатов и активных
     },
     {
-      href: '/account/messages',
-      label: 'Служба заботы',
-      icon: MessageCircleIcon,
-      show: user.status !== 'BLOCKED' // Только для кандидатов и активных
-    },
-    {
       href: '/account/certification',
       label: 'Сертификация',
       icon: Award,
@@ -83,6 +100,12 @@ export default function AccountNav({ user, isMobile, onNavigate }: AccountNavPro
       show: user.status === 'ACTIVE' || user.status === 'CANDIDATE'
     },
     {
+      href: '/account/supervision',
+      label: 'Супервизия',
+      icon: ShieldCheck,
+      show: user.isSupervisor === true
+    },
+    {
       href: '/account/notifications',
       label: 'Уведомления',
       icon: Bell,
@@ -93,6 +116,12 @@ export default function AccountNav({ user, isMobile, onNavigate }: AccountNavPro
       label: 'Push-уведомления',
       icon: Radio,
       show: true // Доступ у всех статусов
+    },
+    {
+      href: '/account/messages',
+      label: 'Служба заботы',
+      icon: MessageCircleIcon,
+      show: user.status !== 'BLOCKED' // Только для кандидатов и активных
     }
   ]
   
@@ -165,6 +194,18 @@ export default function AccountNav({ user, isMobile, onNavigate }: AccountNavPro
             </span>
           )}
         </div>
+        
+        {/* Баланс */}
+        <Link
+          href="/account/balance"
+          className="mt-3 flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+        >
+          <div className="flex items-center">
+            <Wallet className="mr-2 h-4 w-4 text-gray-500" />
+            <span>Баланс</span>
+          </div>
+          <span className="text-gray-900">{formatBalance(balance)} ₽</span>
+        </Link>
       </div>
       
       {/* Навигация */}

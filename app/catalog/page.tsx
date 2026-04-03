@@ -1,7 +1,7 @@
 import { getPsychologists } from "@/lib/actions/client-catalog";
 import { CatalogWithModal } from "@/components/catalog/CatalogWithModal";
 import { buildMetadata } from "@/lib/seo";
-import { CATALOG_PAGE_SIZE } from "@/constants/catalog";
+import { CATALOG_PAGE_SIZE } from "@/lib/config";
 import { searchParamsToFilters, searchParamsToPagination } from "@/lib/catalog-params";
 import { MobileFilters } from "@/components/catalog/MobileFilters";
 import { CatalogSidebar } from "@/components/catalog/CatalogSidebar";

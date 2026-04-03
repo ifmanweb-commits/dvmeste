@@ -6,10 +6,10 @@ const ITEMS_PER_PAGE = 20;
 function escapeHtml(str: string | null | undefined): string {
   if (!str) return "";
   return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/&/g, "&")
+    .replace(/</g, "<")
+    .replace(/>/g, ">")
+    .replace(/"/g, "\"")
     .replace(/'/g, "&#039;");
 }
 
@@ -51,7 +51,7 @@ function calculateAge(birthDate: Date | null): number | null {
   return age;
 }
 
-export default async function CandidatesPage({
+export default async function UnverifiedPsychologistsPage({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string }>;
@@ -65,6 +65,7 @@ export default async function CandidatesPage({
     prisma.user.findMany({
       where: {
         status: "CANDIDATE",
+        showCandidate: true,
       },
       select: {
         id: true,
@@ -230,7 +231,7 @@ export default async function CandidatesPage({
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
                   <Link
                     key={pageNum}
-                    href={`/candidates?page=${pageNum}`}
+                    href={`/unverified-psychologists?page=${pageNum}`}
                     className={`
                       px-4 py-2 rounded-lg border transition-colors
                       ${currentPage === pageNum 

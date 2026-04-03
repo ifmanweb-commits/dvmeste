@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createHash } from 'crypto';
-import { requireAdmin } from "@/lib/auth/require";
+import { getCurrentUser } from "@/lib/auth/session";
 
 export async function GET(request: Request) {
   try {
     // Проверяем авторизацию и права админа
-    await requireAdmin();
+    const user = await getCurrentUser();
+
+    if (!user || !user.isAdmin) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
     
     // Получаем email из query параметра
     const { searchParams } = new URL(request.url);
@@ -20,9 +24,11 @@ export async function GET(request: Request) {
     }
 
     // Ищем пользователя по emailHash
-    const emailHash = createHash('sha256').update(email.toLowerCase().trim()).digest('hex')
+    const emailHash = createHash('sha256').update(email.toLowerCase().trim()).digest('hex');
     
-    const user = await prisma.user.findUnique({
+    console.log('[find] Поиск пользователя:', { email, emailHash });
+    
+    const foundUser = await prisma.user.findUnique({
       where: { emailHash },
       select: {
         id: true,
@@ -31,27 +37,31 @@ export async function GET(request: Request) {
         isAdmin: true,
         isManager: true,
         emailVerified: true,
-        status: true
+        status: true,
+        balance: true
       }
     });
 
-    if (!user) {
+    console.log('[find] Результат поиска:', foundUser ? 'найден' : 'не найден');
+    
+    if (!foundUser) {
       return NextResponse.json({ user: null });
     }
 
     // Определяем роль для отображения
     let role: 'ADMIN' | 'MANAGER' | 'USER' = 'USER';
-    if (user.isAdmin) role = 'ADMIN';
-    else if (user.isManager) role = 'MANAGER';
+    if (foundUser.isAdmin) role = 'ADMIN';
+    else if (foundUser.isManager) role = 'MANAGER';
 
     // Форматируем ответ
     const formattedUser = {
-      id: user.id,
-      name: user.fullName || 'Без имени',
-      email: user.email,
+      id: foundUser.id,
+      name: foundUser.fullName || 'Без имени',
+      email: foundUser.email,
       role,
-      isActive: user.emailVerified !== null,
-      inCatalog: user.status === 'ACTIVE'
+      isActive: foundUser.emailVerified !== null,
+      inCatalog: foundUser.status === 'ACTIVE',
+      balance: foundUser.balance
     };
 
     return NextResponse.json({ user: formattedUser });

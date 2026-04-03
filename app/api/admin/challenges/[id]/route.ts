@@ -89,6 +89,11 @@ export async function PUT(
       timeLimit,
       freeAttempts,
       unlockPrice,
+      // Для квалификационной работы
+      instructions,
+      requiredReviews,
+      reviewsToPass,
+      reviewPrice,
     } = body;
 
     // Проверка существования
@@ -135,6 +140,18 @@ export async function PUT(
           timeLimit: timeLimit !== undefined ? timeLimit : existing.test.timeLimit,
           freeAttempts: freeAttempts !== undefined ? freeAttempts : existing.test.freeAttempts,
           unlockPrice: unlockPrice !== undefined ? (unlockPrice * 100) : existing.test.unlockPrice,
+        },
+      };
+    }
+
+    // Обновляем квалификационную работу если она есть
+    if (existing.work) {
+      updateData.work = {
+        update: {
+          instructions: instructions !== undefined ? instructions : existing.work.instructions,
+          requiredReviews: requiredReviews !== undefined ? requiredReviews : existing.work.requiredReviews,
+          reviewsToPass: reviewsToPass !== undefined ? reviewsToPass : existing.work.reviewsToPass,
+          reviewPrice: reviewPrice !== undefined ? (reviewPrice * 100) : existing.work.reviewPrice,
         },
       };
     }

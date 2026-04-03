@@ -71,6 +71,11 @@ export async function POST(request: NextRequest) {
       timeLimit,
       freeAttempts = 2,
       unlockPrice,
+      // Для квалификационной работы
+      instructions,
+      requiredReviews = 1,
+      reviewsToPass = 1,
+      reviewPrice,
     } = body;
 
     // Валидация
@@ -114,6 +119,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (type === 'WORK') {
+      if (requiredReviews < 1) {
+        return NextResponse.json(
+          { error: 'requiredReviews must be at least 1' },
+          { status: 400 }
+        );
+      }
+      if (reviewsToPass < 1) {
+        return NextResponse.json(
+          { error: 'reviewsToPass must be at least 1' },
+          { status: 400 }
+        );
+      }
+      if (reviewsToPass > requiredReviews) {
+        return NextResponse.json(
+          { error: 'reviewsToPass cannot be greater than requiredReviews' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Проверка уникальности slug
     const existing = await prisma.challenge.findUnique({
       where: { slug },
@@ -145,7 +171,12 @@ export async function POST(request: NextRequest) {
           },
         } : undefined,
         work: type === 'WORK' ? {
-          create: {},
+          create: {
+            instructions: instructions || null,
+            requiredReviews,
+            reviewsToPass,
+            reviewPrice: reviewPrice ? reviewPrice * 100 : null, // конвертируем рубли в копейки
+          },
         } : undefined,
       },
       include: {

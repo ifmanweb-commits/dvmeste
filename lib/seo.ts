@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SITE } from "@/config/site";
+import { SITE } from "@/lib/config";
 
 export interface PageMeta {
   title: string;

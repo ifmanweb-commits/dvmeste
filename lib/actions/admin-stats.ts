@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { isDbSyncError } from "@/lib/db-error";
 
 export async function getAdminStats() {
@@ -28,18 +28,18 @@ export async function getAdminStats() {
       newPsychologistsWeek,
       newArticlesWeek,
     ] = await Promise.all([
-      // Общая статистика психологов
-      prisma.psychologist.count(),
-      prisma.psychologist.count({ where: { status: "ACTIVE" } }),
-      prisma.psychologist.count({ where: { status: "CANDIDATE" } }),
-      prisma.psychologist.count({ where: { status: "SUSPENDED" } }),
-      prisma.psychologist.count({ where: { status: "REJECTED" } }),
+      // Общая статистика психологов (пользователи с isPublished: true)
+      prisma.user.count({ where: { isPublished: true } }),
+      prisma.user.count({ where: { isPublished: true, status: "ACTIVE" } }),
+      prisma.user.count({ where: { isPublished: true, status: "CANDIDATE" } }),
+      prisma.user.count({ where: { isPublished: true, status: "PENDING" } }),
+      prisma.user.count({ where: { isPublished: true, status: "REJECTED" } }),
       
       // По уровням сертификации
-      prisma.psychologist.count({ where: { certificationLevel: 1 } }),
-      prisma.psychologist.count({ where: { certificationLevel: 2 } }),
-      prisma.psychologist.count({ where: { certificationLevel: 3 } }),
-      prisma.psychologist.count({ where: { certificationLevel: null } }),
+      prisma.user.count({ where: { isPublished: true, certificationLevel: 1 } }),
+      prisma.user.count({ where: { isPublished: true, certificationLevel: 2 } }),
+      prisma.user.count({ where: { isPublished: true, certificationLevel: 3 } }),
+      prisma.user.count({ where: { isPublished: true, certificationLevel: 0 } }),
       
       // Статьи
       prisma.article.count(),
@@ -47,7 +47,7 @@ export async function getAdminStats() {
       prisma.article.count({ where: { publishedAt: null } }),
       
       // Активность за неделю
-      prisma.psychologist.count({ where: { createdAt: { gte: weekAgo } } }),
+      prisma.user.count({ where: { isPublished: true, createdAt: { gte: weekAgo } } }),
       prisma.article.count({ where: { createdAt: { gte: weekAgo } } }),
     ]);
 

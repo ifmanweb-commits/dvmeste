@@ -32,17 +32,23 @@ export default async function CertificationsPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
       <div className="mx-auto max-w-[1900px]">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="font-display text-xl font-bold text-gray-900 sm:text-2xl">
-            Сертификации
-          </h1>
-          <div className="flex gap-3">
-            <Link
-              href="/admin/challenges"
-              className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
-            >
-              Испытания
-            </Link>
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link
+                href="/admin/certifications"
+                className="text-lg font-bold text-[#5858E2] sm:text-xl"
+              >
+                Сертификации
+              </Link>
+              <span className="h-6 w-px bg-gray-300"></span>
+              <Link
+                href="/admin/challenges"
+                className="text-lg font-medium text-gray-500 transition-colors hover:text-gray-700 sm:text-xl"
+              >
+                Испытания
+              </Link>
+            </div>
             <Link
               href="/admin/certifications/new"
               className="rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
@@ -67,8 +73,11 @@ export default async function CertificationsPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 w-[200px]">
                     Название
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Испытания
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                     Slug
@@ -94,10 +103,16 @@ export default async function CertificationsPage() {
                       <div className="text-sm font-medium text-gray-900">
                         {certification.title}
                       </div>
-                      {certification.description && (
-                        <div className="mt-1 text-xs text-gray-500 line-clamp-1">
-                          {certification.description}
-                        </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {certification.requirements.length === 0 ? (
+                        <span className="text-gray-400">—</span>
+                      ) : (
+                        <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                          {certification.requirements.map((req) => req.challenge?.title).filter(Boolean).map((title, i) => (
+                            <li key={i}>{title}</li>
+                          ))}
+                        </ul>
                       )}
                     </td>
                     <td className="px-6 py-4">

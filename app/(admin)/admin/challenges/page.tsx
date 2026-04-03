@@ -22,17 +22,23 @@ export default async function ChallengesPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
       <div className="mx-auto max-w-[1900px]">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="font-display text-xl font-bold text-gray-900 sm:text-2xl">
-            Испытания и сертификация
-          </h1>
-          <div className="flex gap-3">
-            <Link
-              href="/admin/certifications"
-              className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
-            >
-              Сертификации
-            </Link>
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link
+                href="/admin/certifications"
+                className="text-lg font-medium text-gray-500 transition-colors hover:text-gray-700 sm:text-xl"
+              >
+                Сертификации
+              </Link>
+              <span className="h-6 w-px bg-gray-300"></span>
+              <Link
+                href="/admin/challenges"
+                className="text-lg font-bold text-[#5858E2] sm:text-xl"
+              >
+                Испытания
+              </Link>
+            </div>
             <Link
               href="/admin/challenges/new"
               className="rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"

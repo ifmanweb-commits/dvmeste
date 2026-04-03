@@ -39,6 +39,7 @@ model User {
   avatarUrl             String?
   freeSession           Int                @default(0)
   sortOrder             Int                @default(0)
+  showCandidate         Boolean            @default(false)
   moderatedArticles     Article[]          @relation("ModeratedArticles")
   articles              Article[]          @relation("AuthorArticles")
   articleCredits        ArticleCredit[]
@@ -62,6 +63,10 @@ model User {
   certificationAwards CertificationAward[] @relation(name: "CertificationAwards")
   challengeAttempts ChallengeAttempt[] @relation(name: "UserChallengeAttempts")
   challengeStates ChallengeUserState[] @relation(name: "UserChallengeStates")
+
+  // Биллинг
+  balance Int @default(0)
+  transactions Transaction[]
 
   @@index([email])
   @@index([status])
@@ -563,9 +568,10 @@ model TestChallenge {
 model WorkChallenge {
   id              String    @id @default(cuid())
   challengeId     String    @unique
+  instructions    String?   @db.Text  // инструкция для супервизора
   requiredReviews Int       @default(1)
   reviewsToPass   Int       @default(1)
-  reviewPrice     Int?
+  reviewPrice     Int?      // цена проверки (в копейках)
 
   challenge       Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
 
@@ -654,4 +660,32 @@ model CertificationAward {
   @@unique([certificationId, userId])
   @@index([userId])
   @@index([certificationId])
+}
+
+// ==================== БИЛЛИНГ ====================
+
+enum TransactionType {
+  DEPOSIT      // пополнение счёта (внешняя оплата или ручное зачисление)
+  WITHDRAWAL   // вывод средств (заявка на вывод)
+  PURCHASE     // списание за услугу (разблокировка теста, проверка работы)
+  EARNING      // начисление супервизору за проверку
+  ADJUSTMENT   // корректировка админом
+}
+
+model Transaction {
+  id           String          @id @default(cuid())
+  userId       String
+  type         TransactionType
+  amount       Int             // сумма в копейках (положительная для DEPOSIT/EARNING, отрицательная для PURCHASE/WITHDRAWAL)
+  balanceAfter Int             // баланс ПОСЛЕ операции
+  description  String
+  paymentId    String?         @unique  // для защиты от дублей (идемпотентность)
+  metadata     Json            @default("{}")  // дополнительная информация (serviceId, paymentId, adminId и т.д.)
+  createdAt    DateTime        @default(now())
+
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([type])
 }
