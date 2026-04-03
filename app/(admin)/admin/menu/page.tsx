@@ -12,15 +12,19 @@ export default async function AdminMenuPage({
   const [menuItems, pageOptions] = await Promise.all([getSiteMenuItems(), getSiteMenuPageOptions()]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
+    <div className="">
       <div className="mx-auto max-w-[1900px]">
 
 
-        <div className="rounded-xl border-2 border-[#5858E2]/20 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-6 lg:p-8">
-          <h1 className="font-display text-xl font-bold text-gray-900 sm:text-2xl">Управление меню сайта</h1>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Управление меню сайта</h1>
+          <p className="text-gray-500 mt-1">Настройка навигации по сайту</p>
+        </div>
+
+        
 
           <SiteMenuManager scope="admin" initialItems={menuItems} pageOptions={pageOptions} />
-        </div>
+        
       </div>
     </div>
   );

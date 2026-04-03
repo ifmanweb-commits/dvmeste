@@ -52,7 +52,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
         >
           ← Назад к списку
         </Link>
-        <h1 className="text-2xl font-semibold mt-2">Карточка клиента</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Карточка клиента</h1>
       </div>
 
       {/* Основная информация о клиенте */}

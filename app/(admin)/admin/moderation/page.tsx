@@ -31,7 +31,10 @@ function ModerationCard({ href, title, description, icon }: ModerationCardProps)
 export default function ModerationPage() {
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Модерация</h1>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Модерация</h1>
+        <p className="text-gray-500 mt-1">Проверка контента и профилей</p>
+      </div>
       
       <div className="grid gap-4 sm:grid-cols-2">
         <ModerationCard

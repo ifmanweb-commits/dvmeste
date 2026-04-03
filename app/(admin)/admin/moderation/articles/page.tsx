@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { ChevronLeft } from "lucide-react";
 
 export default async function ModerationArticlesPage() {
   const user = await getCurrentUser();
@@ -36,10 +37,23 @@ export default async function ModerationArticlesPage() {
   });
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">
-        Модерация статей
-      </h1>
+    <div className="p-3 sm:p-4 md:p-6">
+      <div className="">
+        {/* Ссылка назад */}
+        <div className="mb-4">
+          <Link
+            href="/admin/moderation"
+            className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Назад к модерации
+          </Link>
+        </div>
+
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Модерация статей</h1>
+          <p className="text-gray-500 mt-1">Статьи, ожидающие проверки</p>
+        </div>
 
       {articles.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
@@ -108,6 +122,7 @@ export default async function ModerationArticlesPage() {
           </table>
         </div>
       )}
+      </div>
     </div>
   );
 }

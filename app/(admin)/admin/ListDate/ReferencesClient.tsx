@@ -189,15 +189,11 @@ export default function ReferencesClient({ initialData }: ReferencesClientProps)
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold text-gray-900">
-            Управление списками данных
-          </h1>
-          <p className="mt-2 text-gray-600">
-            Редактирование допустимых значений для форм. Перетаскивайте элементы для изменения порядка.
-          </p>
+    <div className="">
+      <div className="">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Управление списками данных</h1>
+          <p className="text-gray-500 mt-1">Редактирование допустимых значений для форм. Перетаскивайте элементы для изменения порядка.</p>
         </div>
 
         {             }

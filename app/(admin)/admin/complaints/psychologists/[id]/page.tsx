@@ -33,18 +33,17 @@ export default async function PsychologistComplaintsPage({
   const { psychologist, complaints, stats, pagination } = result.data;
 
   return (
-    <div className="space-y-6">
+    <div className="p-3 sm:p-4 md:p-6">
       {/* Заголовок и навигация */}
-      <div className="flex justify-between items-center">
-        <div>
-          <Link
-            href="/admin/complaints/psychologists"
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            ← Назад к списку
-          </Link>
-          <h1 className="text-2xl font-semibold mt-2">Жалобы на психолога</h1>
-        </div>
+      <div className="mb-6">
+        <Link
+          href="/admin/complaints/psychologists"
+          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          ← Назад к списку
+        </Link>
+        <h1 className="text-3xl font-bold text-gray-900 mt-2">Жалобы на психолога</h1>
+        <p className="text-gray-500 mt-1">Детальная информация и история жалоб</p>
       </div>
 
       {/* Информация о психологе */}

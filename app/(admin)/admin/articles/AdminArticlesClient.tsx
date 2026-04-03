@@ -96,9 +96,12 @@ export default function AdminArticlesClient({
   }, [initialArticles, search, tagFilter, authorFilter]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Статьи</h1>
+    <div className="">
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Статьи</h1>
+          <p className="text-gray-500 mt-1">Управление статьями и модерация</p>
+        </div>
         <Link href="/admin/articles/new">
           <Button className="flex items-center gap-2">
             <Plus className="w-5 h-5" />
@@ -173,7 +176,9 @@ export default function AdminArticlesClient({
       </div>
 
       {/* Таблица */}
-      <ArticlesTable articles={articles} />
+      <div className="mt-6">
+        <ArticlesTable articles={articles} />
+      </div>
 
       {/* Пагинация */}
       <Pagination

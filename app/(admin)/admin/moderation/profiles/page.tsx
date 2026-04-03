@@ -200,23 +200,28 @@ export default function ModerationProfilesPage() {
   }
 
   return (
-    <div className="min-h-screen ">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="p-3 sm:p-4 md:p-6">
+      <div>
         
+        {/* Ссылка назад */}
+        <div className="mb-4">
+          <Link
+            href="/admin/moderation"
+            className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Назад к модерации
+          </Link>
+        </div>
+
         {/* Заголовок */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Модерация профилей
-            </h1>
-            <p className="text-gray-500 mt-1">
-              Заявки на изменение профиля от психологов
-            </p>
-          </div>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Модерация профилей</h1>
+          <p className="text-gray-500 mt-1">Заявки на изменение профиля от психологов</p>
         </div>
 
         {/* Поиск */}
-        <div className="bg-white p-0">
+        <div className="bg-white p-0 mb-6">
           <input
             type="text"
             placeholder="Поиск по имени или email..."
@@ -227,7 +232,9 @@ export default function ModerationProfilesPage() {
         </div>
 
         {/* Фильтры-переключатели */}
-        <FilterTabs activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+        <div className="mb-6">
+          <FilterTabs activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+        </div>
 
         {/* Список профилей */}
         {filteredProfiles.length === 0 ? (

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Loader2, FileText } from 'lucide-react'
+import Link from 'next/link'
+import { Loader2, FileText, ChevronLeft } from 'lucide-react'
 import { getDocumentsForModeration, type UserWithDocuments } from '@/lib/actions/moderation-documents'
 import { UserDocumentGroup } from './components/UserDocumentGroup'
 import { DocumentType } from '@prisma/client'
@@ -54,11 +55,22 @@ export default function DocumentsModerationPage() {
 
   if (userGroups.length === 0) {
     return (
-      <div className="space-y-6">
+      <div className="p-3 sm:p-4 md:p-6">
+        {/* Ссылка назад */}
+        <div className="mb-4">
+          <Link
+            href="/admin/moderation"
+            className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Назад к модерации
+          </Link>
+        </div>
+
         {/* Заголовок и фильтры */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Модерация документов</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Модерация документов</h1>
             <p className="text-gray-500 mt-1">
               Непроверенные документы психологов
             </p>
@@ -93,11 +105,22 @@ export default function DocumentsModerationPage() {
   const totalDocs = userGroups.reduce((sum, group) => sum + group.documents.length, 0)
 
   return (
-    <div className="space-y-6">
+    <div className="p-3 sm:p-4 md:p-6">
+      {/* Ссылка назад */}
+      <div className="mb-4">
+        <Link
+          href="/admin/moderation"
+          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Назад к модерации
+        </Link>
+      </div>
+
       {/* Заголовок и фильтры */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Модерация документов</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Модерация документов</h1>
           <p className="text-gray-500 mt-1">
             Непроверенные документы ({userGroups.length} пользователей, {totalDocs} {getDocCountLabel(totalDocs)})
           </p>

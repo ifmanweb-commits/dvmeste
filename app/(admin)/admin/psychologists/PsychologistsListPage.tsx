@@ -315,19 +315,16 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
         </div>
       )}
       
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-        <div>
-          <h1 className="font-display text-xl font-bold text-foreground sm:text-2xl">
-            Психологи
-          </h1>
-          <div className="mt-1 text-sm text-gray-600">
-            Всего: {totalCount} {unpublishedCount > 0 && `(${unpublishedCount} неопубликованных)`}
-            {psychologistsWithCertification.length > 0 && (
-              <span className="ml-2 text-green-600">
-                ({psychologistsWithCertification.length} с указанным уровнем)
-              </span>
-            )}
-          </div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Психологи</h1>
+        <p className="text-gray-500 mt-1">Управление анкетами психологов</p>
+        <div className="mt-2 text-sm text-gray-600">
+          Всего: {totalCount} {unpublishedCount > 0 && `(${unpublishedCount} неопубликованных)`}
+          {psychologistsWithCertification.length > 0 && (
+            <span className="ml-2 text-green-600">
+              ({psychologistsWithCertification.length} с указанным уровнем)
+            </span>
+          )}
         </div>
       </div>
 

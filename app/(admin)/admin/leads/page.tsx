@@ -55,7 +55,7 @@ export default async function AdminLeadsPage({ searchParams }: PageProps) {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Заявки клиентов</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Заявки клиентов</h1>
         <p className="text-gray-500 mt-1">Управление и модерация заявок</p>
       </div>
 

@@ -49,22 +49,27 @@ export default async function ClientsPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Клиенты</h1>
+    <div>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Клиенты</h1>
+          <p className="text-gray-500 mt-1">Управление клиентами и жалобами</p>
+        </div>
         <div className="text-sm text-gray-500">
           Всего: {result.data!.pagination.total}
         </div>
       </div>
 
       {/* Фильтры */}
-      <ClientsFilters
-        currentSearch={search}
-        currentComplaintCountFrom={complaintCountFrom}
-        currentIsShadowBanned={isShadowBanned}
-        currentSortBy={sortBy}
-        currentSortOrder={sortOrder}
-      />
+      <div className="mb-6">
+        <ClientsFilters
+          currentSearch={search}
+          currentComplaintCountFrom={complaintCountFrom}
+          currentIsShadowBanned={isShadowBanned}
+          currentSortBy={sortBy}
+          currentSortOrder={sortOrder}
+        />
+      </div>
 
       {/* Таблица */}
       <ClientsTable

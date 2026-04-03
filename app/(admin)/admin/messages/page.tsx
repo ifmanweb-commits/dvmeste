@@ -23,9 +23,12 @@ export default async function AdminMessagesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Сообщения психологов</h1>
+    <div>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Сообщения психологов</h1>
+          <p className="text-gray-500 mt-1">Модерация диалогов с клиентами</p>
+        </div>
         <div className="text-sm text-gray-500">
           Требуют ответа: {result.data!.active.length}
         </div>

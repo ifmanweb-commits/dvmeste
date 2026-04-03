@@ -46,32 +46,39 @@ export default async function ComplaintsClientsPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Жалобы</h1>
-        <div className="text-sm text-gray-500">
-          Всего: {result.data!.pagination.total}
+    <div>
+      <div className="mb-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Жалобы</h1>
+            <p className="text-gray-500 mt-1">Модерация жалоб клиентов</p>
+          </div>
+          <div className="text-sm text-gray-500">
+            Всего: {result.data!.pagination.total}
+          </div>
+        </div>
+
+        {/* Вкладки */}
+        <div className="flex gap-2 border-b border-gray-200 mt-4">
+          <Link
+            href="/admin/complaints/clients"
+            className="px-4 py-2 text-sm font-medium text-[#5858E2] border-b-2 border-[#5858E2] hover:text-[#4a4ac7]"
+          >
+            На клиентов
+          </Link>
+          <Link
+            href="/admin/complaints/psychologists"
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
+          >
+            На психологов
+          </Link>
         </div>
       </div>
 
-      {/* Вкладки */}
-      <div className="flex gap-2 border-b border-gray-200">
-        <Link
-          href="/admin/complaints/clients"
-          className="px-4 py-2 text-sm font-medium text-[#5858E2] border-b-2 border-[#5858E2] hover:text-[#4a4ac7]"
-        >
-          На клиентов
-        </Link>
-        <Link
-          href="/admin/complaints/psychologists"
-          className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
-        >
-          На психологов
-        </Link>
-      </div>
-
       {/* Поиск */}
-      <ComplaintsSearch type="client" />
+      <div className="mb-6">
+        <ComplaintsSearch type="client" />
+      </div>
 
       {/* Таблица */}
       <ComplaintsTable

@@ -25,16 +25,21 @@ export default async function CandidatesPage({
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Кандидаты</h1>
+    <div>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Кандидаты</h1>
+          <p className="text-gray-500 mt-1">Управление кандидатами на обучение</p>
+        </div>
         <div className="text-sm text-gray-500">
           Всего: {total}
         </div>
       </div>
 
       {/* Поиск */}
-      <SearchForm initialSearch={search} />
+      <div className="mb-6">
+        <SearchForm initialSearch={search}/>
+      </div>
 
       {/* Таблица */}
       <CandidatesTable 

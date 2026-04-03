@@ -6,10 +6,13 @@ export default async function CoursesPage() {
   const courses = await getAllCourses();
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
-      <div className="mx-auto max-w-[1900px]">
+    <div className="">
+      <div className="mb-6">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="font-display text-xl font-bold text-gray-900 sm:text-2xl">Курсы</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Курсы</h1>
+            <p className="text-gray-500 mt-1">Управление курсами и промокодами</p>
+          </div>
           <Link
             href="/admin/courses/new"
             className="rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"

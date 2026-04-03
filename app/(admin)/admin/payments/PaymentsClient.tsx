@@ -183,11 +183,11 @@ export function PaymentsClient({ user }: PaymentsClientProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="">
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Платежи</h1>
-          <p className="text-sm text-gray-500 mt-1">Управление транзакциями и балансами пользователей</p>
+          <h1 className="text-3xl font-bold text-gray-900">Платежи</h1>
+          <p className="text-gray-500 mt-1">Управление транзакциями и балансами пользователей</p>
         </div>
         <Wallet className="h-8 w-8 text-blue-600" />
       </div>
@@ -361,7 +361,7 @@ export function PaymentsClient({ user }: PaymentsClientProps) {
       )}
 
       {/* Таблица транзакций */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      <div className="mt-6 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         <div className="border-b border-gray-200 px-6 py-4">
           <h2 className="text-lg font-semibold text-gray-900">
             Все транзакции ({total})

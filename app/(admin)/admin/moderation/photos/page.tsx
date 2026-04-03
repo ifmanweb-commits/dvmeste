@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Loader2, ImageOff } from 'lucide-react'
+import Link from 'next/link'
+import { Loader2, ImageOff, ChevronLeft } from 'lucide-react'
 import { getPhotosForModeration, type UserWithPhotos } from '@/lib/actions/moderation-photos'
 import { UserPhotoGroup } from './components/UserPhotoGroup'
 
@@ -51,10 +52,21 @@ export default function PhotosModerationPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-3 sm:p-4 md:p-6">
+      {/* Ссылка назад */}
+      <div className="mb-4">
+        <Link
+          href="/admin/moderation"
+          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Назад к модерации
+        </Link>
+      </div>
+
       {/* Заголовок */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Модерация фотографий</h1>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Модерация фотографий</h1>
         <p className="text-gray-500 mt-1">
           Непроверенные фотографии психологов ({userGroups.length} пользователей)
         </p>

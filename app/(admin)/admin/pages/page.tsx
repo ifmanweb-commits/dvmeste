@@ -16,9 +16,10 @@ export default async function AdminPagesPage() {
   }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Управление страницами</h1>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Управление страницами</h1>
+        <p className="text-gray-500 mt-1">Настройка системных страниц</p>
       </div>
 
       <PagesTable pages={pages} />

@@ -20,7 +20,7 @@ export default async function ChallengesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
+    <div className="p-3 sm:p-4 md:p-6">
       <div className="mx-auto max-w-[1900px]">
         <div className="mb-6">
           <div className="flex items-center justify-between">

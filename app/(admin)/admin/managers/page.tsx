@@ -15,14 +15,17 @@ export default async function ManagersPage() {
   const managers = await getManagersList();
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Управление менеджерами</h1>
+    <div className="">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Управление менеджерами</h1>
+        <p className="text-gray-500 mt-1">Добавление и настройка менеджеров</p>
       </div>
 
       <ManagerSearchForm />
       
-      <ManagersTable managers={managers} currentUserId={user.id} isSuperAdmin={user.isSuperAdmin} />
+      <div className="mt-6">
+        <ManagersTable managers={managers} currentUserId={user.id} isSuperAdmin={user.isSuperAdmin} />
+      </div>
     </div>
   );
 }

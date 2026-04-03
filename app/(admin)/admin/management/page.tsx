@@ -31,7 +31,10 @@ export default function ManagementPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Управление</h1>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Управление</h1>
+        <p className="text-gray-500 mt-1">Настройки и утилиты</p>
+      </div>
 
       <div className="max-w-xl">
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">

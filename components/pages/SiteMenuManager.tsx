@@ -167,7 +167,7 @@ export function SiteMenuManager({
   };
 
   return (
-    <section className="mt-6 rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+    <section className="">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Пункты главного меню</h2>

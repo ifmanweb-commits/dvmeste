@@ -10,9 +10,10 @@ export default async function BlocksPage() {
   const blocks = await getBlocks();
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Управление блоками</h1>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Управление блоками</h1>
+        <p className="text-gray-500 mt-1">Редактирование контента сайта</p>
       </div>
 
       <div className="bg-white rounded-lg shadow p-6">
