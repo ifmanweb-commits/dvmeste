@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Lock, CheckCircle, XCircle, Clock, Upload, X } from "lucide-react";
+import { Lock, LockOpen, CheckCircle, XCircle, Clock, Upload, X, AlertCircle, Video, FileText, MessageSquare } from "lucide-react";
 
 interface Review {
   id: string;
@@ -44,8 +44,13 @@ export default function WorkSubmissionClient({
   isUnlocked,
   userBalance,
 }: WorkSubmissionClientProps) {
-  const [videoUrl, setVideoUrl] = useState("");
-  const [transcriptUrl, setTranscriptUrl] = useState("");
+  // Находим последнюю отправку в статусе SUBMITTED или REVIEWING
+  const pendingSubmission = submissions.find(
+    (s) => s.status === "SUBMITTED" || s.status === "REVIEWING"
+  );
+
+  const [videoUrl, setVideoUrl] = useState(pendingSubmission?.videoUrl || "");
+  const [transcriptUrl, setTranscriptUrl] = useState(pendingSubmission?.transcriptUrl || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
 
@@ -54,7 +59,14 @@ export default function WorkSubmissionClient({
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [unlockSuccess, setUnlockSuccess] = useState<string | null>(null);
 
-  // Отправка работы
+  // Состояние режима редактирования
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Состояние модалки комментария
+  const [commentModalOpen, setCommentModalOpen] = useState(false);
+  const [selectedComment, setSelectedComment] = useState<{ text: string; submissionId: string } | null>(null);
+
+  // Отправка работы (новая или редактирование)
   const submitWork = async () => {
     setIsSubmitting(true);
     setSubmitMessage(null);
@@ -63,7 +75,11 @@ export default function WorkSubmissionClient({
       const res = await fetch(`/api/challenge/${work.id}/work/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ videoUrl, transcriptUrl }),
+        body: JSON.stringify({ 
+          videoUrl, 
+          transcriptUrl,
+          submissionId: pendingSubmission?.id, // Если есть - это редактирование
+        }),
       });
       const data = await res.json();
 
@@ -71,9 +87,10 @@ export default function WorkSubmissionClient({
         throw new Error(data.error || "Ошибка при отправке");
       }
 
-      setSubmitMessage("Работа отправлена на проверку!");
+      setSubmitMessage(pendingSubmission ? "Ссылки обновлены!" : "Работа отправлена на проверку!");
       setVideoUrl("");
       setTranscriptUrl("");
+      setIsEditing(false);
       
       // Перезагрузка страницы через 1.5 секунды
       setTimeout(() => {
@@ -163,10 +180,143 @@ export default function WorkSubmissionClient({
     });
   };
 
+  // Отмена редактирования
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setVideoUrl("");
+    setTranscriptUrl("");
+    setSubmitMessage(null);
+  };
+
+  // Открытие модалки комментария
+  const openCommentModal = (comment: string, submissionId: string) => {
+    setSelectedComment({ text: comment, submissionId });
+    setCommentModalOpen(true);
+  };
+
+  // Закрытие модалки комментария
+  const closeCommentModal = () => {
+    setCommentModalOpen(false);
+    setSelectedComment(null);
+  };
+
   return (
     <div className="space-y-6">
       {/* Форма отправки или плашка блокировки */}
-      {isUnlocked ? (
+      {pendingSubmission ? (
+        // Есть отправленная работа на проверке
+        isEditing ? (
+          // Режим редактирования
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Исправить ссылки
+            </h2>
+
+            {submitMessage && (
+              <div
+                className={`mb-4 rounded-lg p-4 ${
+                  submitMessage.includes("ошибка") ||
+                  submitMessage.includes("Failed") ||
+                  submitMessage.includes("Ошибка")
+                    ? "bg-red-50 text-red-800"
+                    : "bg-green-50 text-green-800"
+                }`}
+              >
+                {submitMessage}
+              </div>
+            )}
+
+            <div className="mb-4">
+              <label
+                htmlFor="videoUrl"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                Ссылка на видео
+              </label>
+              <input
+                id="videoUrl"
+                type="url"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-[#5858E2] focus:ring-2 focus:ring-[#5858E2]/20"
+                placeholder="https://..."
+              />
+            </div>
+
+            <div className="mb-4">
+              <label
+                htmlFor="transcriptUrl"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                Ссылка на расшифровку
+              </label>
+              <input
+                id="transcriptUrl"
+                type="url"
+                value={transcriptUrl}
+                onChange={(e) => setTranscriptUrl(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-[#5858E2] focus:ring-2 focus:ring-[#5858E2]/20"
+                placeholder="https://..."
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={submitWork}
+                disabled={
+                  isSubmitting || !videoUrl.trim() || !transcriptUrl.trim()
+                }
+                className="inline-flex items-center rounded-lg bg-[#5858E2] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSubmitting ? "Сохранение..." : "Сохранить изменения"}
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                disabled={isSubmitting}
+                className="inline-flex items-center rounded-lg bg-gray-100 px-6 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
+        ) : (
+          // Плашка "Повторная отправка недоступна"
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-8 shadow-sm">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200">
+                <AlertCircle className="h-6 w-6 text-gray-500" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Повторная отправка работы недоступна
+                </h3>
+                <p className="mt-2 text-gray-600">
+                  Вы уже отправили работу на проверку. Дождитесь результатов.
+                </p>
+                <p className="mt-1 text-gray-600">
+                  Когда супервизоры проверят вашу работу - вы получите уведомление.
+                </p>
+                <p className="mt-1 text-gray-600">
+                  Если вы считаете, что послали неправильные ссылки - можете исправить их.
+                </p>
+
+                <button
+                  onClick={() => {
+                    setVideoUrl(pendingSubmission.videoUrl);
+                    setTranscriptUrl(pendingSubmission.transcriptUrl);
+                    setIsEditing(true);
+                  }}
+                  className="mt-4 inline-flex items-center rounded-lg bg-[#5858E2] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
+                >
+                  <LockOpen className="mr-2 h-4 w-4" />
+                  Исправить ссылки
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      ) : isUnlocked ? (
+        // Нет отправленной работы и разблокирована - показываем форму
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold text-gray-900">
             Сдать работу
@@ -231,6 +381,7 @@ export default function WorkSubmissionClient({
           </button>
         </div>
       ) : (
+        // Заблокирована - плашка с оплатой
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-8 shadow-sm">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200">
@@ -238,7 +389,7 @@ export default function WorkSubmissionClient({
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-gray-900">
-                Работа заблокирована
+                Проверка работы недоступна
               </h3>
               <p className="mt-2 text-gray-600">
                 Чтобы отправить работу, нужно оплатить её проверку супервизорами.
@@ -249,12 +400,15 @@ export default function WorkSubmissionClient({
                   {formatPrice(work.price || 0)} ₽
                 </span>
               </p>
+              <p className="mt-1 text-gray-600">
+                После оплаты вы сможете отправить работу на проверку.
+              </p>
 
               <button
                 onClick={() => setUnlockModalOpen(true)}
                 className="mt-4 inline-flex items-center rounded-lg bg-green-500 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-600"
               >
-                <Lock className="mr-2 h-4 w-4" />
+                <LockOpen className="mr-2 h-4 w-4" />
                 Оплатить проверку
               </button>
             </div>
@@ -272,16 +426,19 @@ export default function WorkSubmissionClient({
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="py-3 text-left text-sm font-medium text-gray-500">
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
                     №
                   </th>
-                  <th className="py-3 text-left text-sm font-medium text-gray-500">
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
                     Дата и время
                   </th>
-                  <th className="py-3 text-left text-sm font-medium text-gray-500">
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
                     Статус
                   </th>
-                  <th className="py-3 text-left text-sm font-medium text-gray-500">
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
+                    Ссылки
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
                     Комментарий
                   </th>
                 </tr>
@@ -297,20 +454,46 @@ export default function WorkSubmissionClient({
                       key={submission.id}
                       className="border-b border-gray-100 last:border-b-0"
                     >
-                      <td className="py-3 text-sm text-gray-900">
+                      <td className="px-4 py-3 text-sm text-gray-900">
                         {submissions.length - index}
                       </td>
-                      <td className="py-3 text-sm text-gray-600">
+                      <td className="px-4 py-3 text-sm text-gray-600">
                         {formatDateTime(submission.submittedAt)}
                       </td>
-                      <td className="py-3">
+                      <td className="px-4 py-3">
                         {getStatusBadge(submission.status)}
                       </td>
-                      <td className="py-3 text-sm text-gray-600">
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2">
+                          <a
+                            href={submission.videoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center rounded-lg bg-blue-50 p-2 text-blue-600 hover:bg-blue-100 transition-colors"
+                            title="Видео"
+                          >
+                            <Video className="h-4 w-4" />
+                          </a>
+                          <a
+                            href={submission.transcriptUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center rounded-lg bg-green-50 p-2 text-green-600 hover:bg-green-100 transition-colors"
+                            title="Текст"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </a>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
                         {isRejected && comment ? (
-                          <div className="rounded-lg bg-red-50 p-2 text-red-800">
-                            {comment}
-                          </div>
+                          <button
+                            onClick={() => openCommentModal(comment, submission.id)}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                            Комментарий супервизора
+                          </button>
                         ) : (
                           <span className="text-gray-400">—</span>
                         )}
@@ -320,6 +503,43 @@ export default function WorkSubmissionClient({
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Модалка комментария */}
+      {commentModalOpen && selectedComment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            {/* Заголовок */}
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Комментарий супервизора
+              </h3>
+              <button
+                onClick={closeCommentModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Текст комментария с прокруткой */}
+            <div className="max-h-96 overflow-y-auto rounded-lg bg-gray-50 p-4">
+              <p className="whitespace-pre-wrap text-gray-800">
+                {selectedComment.text}
+              </p>
+            </div>
+
+            {/* Кнопка закрытия */}
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={closeCommentModal}
+                className="rounded-lg bg-[#5858E2] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
+              >
+                Закрыть
+              </button>
+            </div>
           </div>
         </div>
       )}

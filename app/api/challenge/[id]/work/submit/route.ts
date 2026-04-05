@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
 
-// POST /api/challenge/:id/work/submit - отправить работу на проверку
+// POST /api/challenge/:id/work/submit - отправить работу на проверку или обновить ссылки
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -14,7 +14,7 @@ export async function POST(
     }
 
     const { id: challengeId } = await params;
-    const { videoUrl, transcriptUrl } = await request.json();
+    const { videoUrl, transcriptUrl, submissionId } = await request.json();
 
     if (!videoUrl || !videoUrl.trim()) {
       return NextResponse.json(
@@ -28,6 +28,45 @@ export async function POST(
         { error: 'Transcript URL is required' },
         { status: 400 }
       );
+    }
+
+    // Если передан submissionId - это редактирование существующей отправки
+    if (submissionId) {
+      // Проверяем, что отправка существует и принадлежит пользователю
+      const existingSubmission = await prisma.workSubmission.findFirst({
+        where: {
+          id: submissionId,
+          challengeId,
+          userId: user.id,
+          status: {
+            in: ['SUBMITTED', 'REVIEWING'],
+          },
+        },
+      });
+
+      if (!existingSubmission) {
+        return NextResponse.json(
+          { error: 'Отправка не найдена или уже проверена' },
+          { status: 404 }
+        );
+      }
+
+      // Обновляем ссылки
+      await prisma.workSubmission.update({
+        where: {
+          id: submissionId,
+        },
+        data: {
+          videoUrl,
+          transcriptUrl,
+        },
+      });
+
+      return NextResponse.json({
+        status: 'UPDATED',
+        message: 'Ссылки обновлены',
+        submissionId: existingSubmission.id,
+      });
     }
 
     // Проверяем, нет ли уже отправленной работы на проверке
