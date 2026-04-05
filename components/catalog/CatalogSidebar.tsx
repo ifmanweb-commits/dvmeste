@@ -99,7 +99,7 @@ export function CatalogSidebar({ initialParams, onFormSubmit, totalCount }: Prop
       levels: level ? [level] : [],
       ageMin,
       ageMax,
-      sortBy: sortBy || "createdAt",
+      sortBy: sortBy || "activity",
       sortOrder: sortOrder || "desc",
       cursor: "",
     });
@@ -107,7 +107,7 @@ export function CatalogSidebar({ initialParams, onFormSubmit, totalCount }: Prop
 
   const selectedParadigm = get("paradigms") || get("paradigm");
   const selectedLevel = get("levels") || get("level");
-  const sortBy = get("sortBy") || "sortOrder";
+  const sortBy = get("sortBy") || "activity";
   const sortOrder = get("sortOrder") || "desc";
   const sortValue = `${sortBy}-${sortOrder}`;
 
@@ -255,12 +255,10 @@ export function CatalogSidebar({ initialParams, onFormSubmit, totalCount }: Prop
                 defaultValue={sortValue}
                 className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
               >
-                <option value="sortOrder-asc">Случайная</option>
+                <option value="activity-desc">По активности</option>
                 <option value="price-asc">Дешевле</option>
                 <option value="price-desc">Дороже</option>
                 <option value="certificationLevel-desc">По уровню (высший)</option>
-                <option value="age-asc">Моложе</option>
-                <option value="age-desc">Старше</option>
               </select>
             </div>
 

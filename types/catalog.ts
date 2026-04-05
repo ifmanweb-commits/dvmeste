@@ -9,7 +9,7 @@ export interface CatalogFilters {
     city?: string;
     gender?: string;
     workFormat?: string;
-    sortBy?: 'price' | 'certificationLevel' | 'createdAt' | 'age';
+    sortBy?: 'price' | 'certificationLevel' | 'createdAt' | 'activity';
     sortOrder?: 'asc' | 'desc';
 }
 
@@ -22,8 +22,10 @@ export interface CatalogPagination {
                                  
 export interface CatalogResult {
   items: PsychologistCatalogItem[];
-  nextCursor: string | null;
-  hasMore: boolean;
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
                                     

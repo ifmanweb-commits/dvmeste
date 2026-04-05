@@ -120,7 +120,7 @@ export default async function PsyListPage({ searchParams }: PageProps) {
     }
   }
 
-  const [{ items, nextCursor, hasMore }, catalogPage] = await Promise.all([
+  const [{ items, page, totalPages, total }, catalogPage] = await Promise.all([
     getPsychologists(filters, {
       ...pagination,
       limit: CATALOG_PAGE_SIZE,
@@ -144,20 +144,20 @@ export default async function PsyListPage({ searchParams }: PageProps) {
       <div className="relative">
         <div className="mx-auto w-full max-w-[1640px] px-4 py-8 sm:px-6 xl:px-8">
           <div className="relative">
-            <MobileFilters initialParams={params} totalCount={items.length} />
+            <MobileFilters initialParams={params} totalCount={total} />
             
             <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
               <div className="hidden lg:block w-[300px] shrink-0">
                 <div id="list" className="sticky top-6">
-                  <CatalogSidebar initialParams={params} totalCount={items.length} />
+                  <CatalogSidebar initialParams={params} totalCount={total} />
                 </div>
               </div>
               
       <div className="flex-1">
         <CatalogWithModal
           items={items}
-          nextCursor={nextCursor}
-          hasMore={hasMore ?? false}
+          page={page}
+          totalPages={totalPages}
           searchParams={params}
           currentUserProfile={currentUserProfile}
         />

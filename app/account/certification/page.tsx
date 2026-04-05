@@ -96,7 +96,7 @@ export default async function CertificationPage() {
                 return (
                   <Link
                     key={cert.id}
-                    href={`/account/certification/${cert.slug}`}
+                    href={`/account/certification/${cert.id}`}
                     className="group relative overflow-hidden rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm transition-all hover:shadow-md hover:border-[#5858E2]/40"
                   >
                     {/* Бейдж с иконкой */}
@@ -205,7 +205,7 @@ export default async function CertificationPage() {
                     
                     {/* Кнопка действия */}
                     <Link
-                      href={`/account/certification/${cert.slug}`}
+                      href={`/account/certification/${cert.id}`}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#5858E2] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
                     >
                       Перейти к сертификации

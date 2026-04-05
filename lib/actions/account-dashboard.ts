@@ -17,10 +17,8 @@ export interface DashboardData {
     daysSinceAccept: number;
   }>;
   articleBalance: {
-    lastCreditedMonth: number | null;
-    lastCreditedYear: number | null;
-    isCurrentMonth: boolean;
-    unpaidArticlesCount?: number;
+    totalBonus: number;
+    approvedArticlesCount: number;
   };
   unreadNotificationsCount: number;
   unreadMessagesCount: number;
@@ -88,39 +86,19 @@ export async function getDashboardData(psychologistId: string): Promise<{ succes
       };
     });
 
-    // 3. Баланс статей
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1; // getMonth() возвращает 0-11
-    const currentYear = now.getFullYear();
-
-    const lastCredit = await prisma.articleCredit.findFirst({
+    // 3. Баланс статей - получаем все одобренные статьи и суммируем их баллы
+    const approvedArticles = await prisma.article.findMany({
       where: {
         userId: psychologistId,
+        moderationStatus: "APPROVED",
       },
-      orderBy: {
-        creditedAt: "desc",
+      select: {
+        bonusPoints: true,
       },
     });
 
-    const lastCreditedMonth = lastCredit?.month ?? null;
-    const lastCreditedYear = lastCredit?.year ?? null;
-
-    // Проверяем, оплачен ли текущий месяц
-    const isCurrentMonthPaid = lastCredit !== null &&
-      lastCredit.month === currentMonth && 
-      lastCredit.year === currentYear;
-
-    // Если не оплачен - считаем количество неоплаченных статей
-    let unpaidArticlesCount: number | undefined;
-    if (!isCurrentMonthPaid) {
-      unpaidArticlesCount = await prisma.article.count({
-        where: {
-          userId: psychologistId,
-          moderationStatus: "APPROVED",
-          isPublished: true,
-        },
-      });
-    }
+    const totalBonus = approvedArticles.reduce((sum, article) => sum + (article.bonusPoints ?? 0), 0);
+    const approvedArticlesCount = approvedArticles.length;
 
     // 4. Количество непрочитанных уведомлений
     const unreadNotificationsCount = await prisma.notification.count({
@@ -157,10 +135,8 @@ export async function getDashboardData(psychologistId: string): Promise<{ succes
         acceptedLeadsCount,
         oldAcceptedLeads: formattedOldLeads,
         articleBalance: {
-          lastCreditedMonth,
-          lastCreditedYear,
-          isCurrentMonth: isCurrentMonthPaid,
-          unpaidArticlesCount,
+          totalBonus,
+          approvedArticlesCount,
         },
         unreadNotificationsCount,
         unreadMessagesCount,

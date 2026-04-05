@@ -32,18 +32,6 @@ export default function DashboardClient({
     hasActiveDialog,
   } = data;
 
-  const now = new Date();
-  const currentMonth = now.getMonth(); // 0-11
-  const currentYear = now.getFullYear();
-
-  // Вычисляем разницу в месяцах для баланса статей
-  let monthsDiff = 0;
-  if (articleBalance.lastCreditedMonth !== null && articleBalance.lastCreditedYear !== null) {
-    monthsDiff = (articleBalance.lastCreditedYear - currentYear) * 12 + 
-                 (articleBalance.lastCreditedMonth - 1 - currentMonth);
-  } else {
-    monthsDiff = -1;
-  }
 
   return (
     <div className="space-y-6">
@@ -114,43 +102,23 @@ export default function DashboardClient({
 
         {/* Баланс статей */}
         <Link href="/account/articles">
-          <div className={`p-5 rounded-xl border shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
-            articleBalance.isCurrentMonth 
-              ? "bg-emerald-50 border-emerald-100" 
-              : "bg-amber-50 border-amber-100"
-          }`}>
+          <div className="p-5 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500 mb-1">Баланс статей</p>
-                {articleBalance.isCurrentMonth ? (
-                  <p className="text-2xl font-bold text-emerald-700">
-                    Оплачено
-                  </p>
-                ) : (
-                  <p className="text-2xl font-bold text-amber-700">
-                    {articleBalance.unpaidArticlesCount ?? 0} статей
-                  </p>
-                )}
+                <p className="text-2xl font-bold text-gray-900">
+                  {articleBalance.totalBonus} балл{articleBalance.totalBonus === 1 ? '' : articleBalance.totalBonus >= 2 && articleBalance.totalBonus <= 4 ? 'а' : 'ов'}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {articleBalance.approvedArticlesCount} одобренных статей
+                </p>
               </div>
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                articleBalance.isCurrentMonth 
-                  ? "bg-emerald-100" 
-                  : "bg-amber-100"
-              }`}>
-                <svg className={`w-6 h-6 ${
-                  articleBalance.isCurrentMonth 
-                    ? "text-emerald-600" 
-                    : "text-amber-600"
-                }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             </div>
-            {!articleBalance.isCurrentMonth && articleBalance.lastCreditedMonth && (
-              <p className="text-xs text-amber-600 mt-2">
-                Последний оплаченный: {monthNames[articleBalance.lastCreditedMonth - 1]}
-              </p>
-            )}
           </div>
         </Link>
 

@@ -151,13 +151,21 @@ export async function POST(
       const certifications = await prisma.certification.findMany({
         where: { isActive: true },
         include: {
-          requirements: {
-            where: { challengeId: attempt.challengeId },
-          },
+          requirements: true,  // Получаем ВСЕ требования, а не только текущее
         },
       });
 
       for (const cert of certifications) {
+        // Проверяем, есть ли текущее испытание в требованиях этой сертификации
+        const hasCurrentChallenge = cert.requirements.some(
+          (req) => req.challengeId === attempt.challengeId
+        );
+
+        // Если этого испытания нет в требованиях - пропускаем
+        if (!hasCurrentChallenge) {
+          continue;
+        }
+
         // Проверяем, все ли требования выполнены
         const allRequirementsCompleted = await Promise.all(
           cert.requirements.map(async (req) => {

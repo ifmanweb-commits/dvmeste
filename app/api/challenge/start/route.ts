@@ -11,18 +11,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { slug } = body;
+    const { challengeId, slug } = body;
 
-    if (!slug) {
+    if (!challengeId && !slug) {
       return NextResponse.json(
-        { error: 'Challenge slug is required' },
+        { error: 'Challenge id or slug is required' },
         { status: 400 }
       );
     }
 
     // Получаем испытание
     const challenge = await prisma.challenge.findUnique({
-      where: { slug },
+      where: challengeId ? { id: challengeId } : { slug },
       include: {
         test: true,
       },

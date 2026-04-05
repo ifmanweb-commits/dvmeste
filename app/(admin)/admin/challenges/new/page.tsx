@@ -17,14 +17,12 @@ interface TestSettings {
   passingScore: number;
   timeLimit: number;
   freeAttempts: number;
-  unlockPrice: number;
 }
 
 interface WorkSettings {
   instructions: string;
   requiredReviews: number;
   reviewsToPass: number;
-  reviewPrice: number;
 }
 
 export default function NewChallengePage() {
@@ -46,7 +44,6 @@ export default function NewChallengePage() {
     passingScore: 7,
     timeLimit: 0,
     freeAttempts: 2,
-    unlockPrice: 0,
   });
 
   // Настройки квалификационной работы
@@ -54,8 +51,10 @@ export default function NewChallengePage() {
     instructions: '',
     requiredReviews: 1,
     reviewsToPass: 1,
-    reviewPrice: 0,
   });
+
+  // Цена испытания (общая для всех типов)
+  const [challengePrice, setChallengePrice] = useState(0);
 
   // Вопросы
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -231,19 +230,18 @@ export default function NewChallengePage() {
           description,
           type: challengeType,
           isActive,
+          price: challengePrice,
           ...(challengeType === 'TEST' && {
             questionsPool: questions,
             questionsCount: testSettings.questionsCount,
             passingScore: testSettings.passingScore,
             timeLimit: testSettings.timeLimit || null,
             freeAttempts: testSettings.freeAttempts,
-            unlockPrice: testSettings.unlockPrice,
           }),
           ...(challengeType === 'WORK' && {
             instructions: workSettings.instructions || null,
             requiredReviews: workSettings.requiredReviews,
             reviewsToPass: workSettings.reviewsToPass,
-            reviewPrice: workSettings.reviewPrice,
           }),
         }),
       });
@@ -370,6 +368,20 @@ export default function NewChallengePage() {
                   </label>
                 </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Цена разблокировки (₽)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={challengePrice}
+                  onChange={(e) => setChallengePrice(parseInt(e.target.value) || 0)}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                />
+                <p className="mt-1 text-xs text-gray-500">0 = бесплатно</p>
+              </div>
             </div>
           </div>
 
@@ -453,25 +465,6 @@ export default function NewChallengePage() {
                       }
                       className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Цена разблокировки (₽)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={testSettings.unlockPrice}
-                      onChange={(e) =>
-                        setTestSettings({
-                          ...testSettings,
-                          unlockPrice: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">0 = бесплатно</p>
                   </div>
                 </div>
               </div>
@@ -711,25 +704,6 @@ export default function NewChallengePage() {
                       }
                       className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Цена испытания (₽)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={workSettings.reviewPrice}
-                      onChange={(e) =>
-                        setWorkSettings({
-                          ...workSettings,
-                          reviewPrice: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">0 = бесплатно</p>
                   </div>
                 </div>
               </div>

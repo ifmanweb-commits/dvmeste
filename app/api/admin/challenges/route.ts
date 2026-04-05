@@ -64,18 +64,17 @@ export async function POST(request: NextRequest) {
       description,
       type,
       isActive = true,
+      price,
       // Для теста
       questionsPool = [],
       questionsCount,
       passingScore,
       timeLimit,
       freeAttempts = 2,
-      unlockPrice,
       // Для квалификационной работы
       instructions,
       requiredReviews = 1,
       reviewsToPass = 1,
-      reviewPrice,
     } = body;
 
     // Валидация
@@ -160,6 +159,7 @@ export async function POST(request: NextRequest) {
         description,
         type,
         isActive,
+        price: price ? price * 100 : 0, // конвертируем рубли в копейки
         test: type === 'TEST' ? {
           create: {
             questionsPool,
@@ -167,7 +167,6 @@ export async function POST(request: NextRequest) {
             passingScore,
             timeLimit: timeLimit || null,
             freeAttempts,
-            unlockPrice: unlockPrice ? unlockPrice * 100 : null, // конвертируем рубли в копейки
           },
         } : undefined,
         work: type === 'WORK' ? {
@@ -175,7 +174,6 @@ export async function POST(request: NextRequest) {
             instructions: instructions || null,
             requiredReviews,
             reviewsToPass,
-            reviewPrice: reviewPrice ? reviewPrice * 100 : null, // конвертируем рубли в копейки
           },
         } : undefined,
       },

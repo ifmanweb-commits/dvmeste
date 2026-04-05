@@ -9,13 +9,6 @@ import {
 } from "@/lib/seo";
 import "./globals.css";
 
-// Инициализация cron-задач (только на сервере)
-if (typeof window === "undefined") {
-  import("@/lib/cron/shuffle-catalog").then(({ startShuffleCatalogCron }) => {
-    startShuffleCatalogCron();
-  });
-}
-
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin", "cyrillic"],

@@ -46,14 +46,12 @@ interface TestSettings {
   passingScore: number;
   timeLimit: number;
   freeAttempts: number;
-  unlockPrice: number;
 }
 
 interface WorkSettings {
   instructions: string;
   requiredReviews: number;
   reviewsToPass: number;
-  reviewPrice: number;
 }
 
 export default function EditChallengePage() {
@@ -79,7 +77,6 @@ export default function EditChallengePage() {
     passingScore: 7,
     timeLimit: 0,
     freeAttempts: 2,
-    unlockPrice: 0,
   });
 
   // Настройки квалификационной работы
@@ -87,8 +84,10 @@ export default function EditChallengePage() {
     instructions: '',
     requiredReviews: 1,
     reviewsToPass: 1,
-    reviewPrice: 0,
   });
+
+  // Цена испытания (общая для всех типов)
+  const [challengePrice, setChallengePrice] = useState(0);
 
   // Вопросы
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -111,6 +110,7 @@ export default function EditChallengePage() {
         setDescription(data.description || '');
         setChallengeType(data.type);
         setIsActive(data.isActive);
+        setChallengePrice((data as any).price ? Math.round((data as any).price / 100) : 0);
 
         if (data.type === 'TEST' && data.test) {
           setTestSettings({
@@ -118,7 +118,6 @@ export default function EditChallengePage() {
             passingScore: data.test.passingScore,
             timeLimit: data.test.timeLimit || 0,
             freeAttempts: data.test.freeAttempts,
-            unlockPrice: data.test.unlockPrice ? Math.round(data.test.unlockPrice / 100) : 0,
           });
           setQuestions(Array.isArray(data.test.questionsPool) ? data.test.questionsPool : []);
         }
@@ -128,7 +127,6 @@ export default function EditChallengePage() {
             instructions: data.work.instructions || '',
             requiredReviews: data.work.requiredReviews,
             reviewsToPass: data.work.reviewsToPass,
-            reviewPrice: data.work.reviewPrice ? Math.round(data.work.reviewPrice / 100) : 0,
           });
         }
 
@@ -277,19 +275,18 @@ export default function EditChallengePage() {
           title,
           description,
           isActive,
+          price: challengePrice,
           ...(challengeType === 'TEST' && {
             questionsPool: questions,
             questionsCount: testSettings.questionsCount,
             passingScore: testSettings.passingScore,
             timeLimit: testSettings.timeLimit || null,
             freeAttempts: testSettings.freeAttempts,
-            unlockPrice: testSettings.unlockPrice,
           }),
           ...(challengeType === 'WORK' && {
             instructions: workSettings.instructions || null,
             requiredReviews: workSettings.requiredReviews,
             reviewsToPass: workSettings.reviewsToPass,
-            reviewPrice: workSettings.reviewPrice,
           }),
         }),
       });
@@ -411,6 +408,20 @@ export default function EditChallengePage() {
                   </label>
                 </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Цена разблокировки (₽)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={challengePrice}
+                  onChange={(e) => setChallengePrice(parseInt(e.target.value) || 0)}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                />
+                <p className="mt-1 text-xs text-gray-500">0 = бесплатно</p>
+              </div>
             </div>
           </div>
 
@@ -494,25 +505,6 @@ export default function EditChallengePage() {
                       }
                       className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Цена разблокировки (₽)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={testSettings.unlockPrice}
-                      onChange={(e) =>
-                        setTestSettings({
-                          ...testSettings,
-                          unlockPrice: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">0 = бесплатно</p>
                   </div>
                 </div>
               </div>
@@ -752,25 +744,6 @@ export default function EditChallengePage() {
                       }
                       className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Цена испытания (₽)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={workSettings.reviewPrice}
-                      onChange={(e) =>
-                        setWorkSettings({
-                          ...workSettings,
-                          reviewPrice: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">0 = бесплатно</p>
                   </div>
                 </div>
               </div>

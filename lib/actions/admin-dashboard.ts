@@ -16,9 +16,31 @@ export interface DashboardStats {
     noResponseOver2Days: number;
     noProgressOver10Days: number;
   };
-  articleDebts: {
-    overdue: Array<{ id: string; fullName: string | null; email: string; lastArticleDate: Date | null }>;
-    atRisk: Array<{ id: string; fullName: string | null; email: string; lastArticleDate: Date | null }>;
+  psychologists: {
+    total: number;
+    notVerified: number;
+    verified: number;
+    inCatalog: number;
+    level1: number;
+    level2: number;
+    level3: number;
+  };
+  students: {
+    enrolled: number;
+    graduated: number;
+  };
+  statistics: {
+    newPsychologists: {
+      thisMonth: number;
+      thisWeek: number;
+      today: number;
+    };
+    clients: {
+      total: number;
+      thisMonth: number;
+      thisWeek: number;
+      today: number;
+    };
   };
 }
 
@@ -28,8 +50,6 @@ export interface DashboardStats {
 export async function getDashboardStats(): Promise<{ success: boolean; stats?: DashboardStats; error?: string }> {
   try {
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1; // 1-12
 
     // ==================== МОДЕРАЦИЯ ====================
 
@@ -143,72 +163,145 @@ export async function getDashboardStats(): Promise<{ success: boolean; stats?: D
       },
     });
 
-    // ==================== ДОЛГИ ПО СТАТЬЯМ ====================
+    // ==================== ПСИХОЛОГИ ====================
 
-    // Получаем всех активных психологов (не CANDIDATE)
-    const psychologists = await prisma.user.findMany({
+    // Общее количество: статус CANDIDATE или ACTIVE
+    const totalPsychologists = await prisma.user.count({
       where: {
         status: {
-          not: PsychologistStatus.CANDIDATE,
-        },
-      },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        articleCredits: {
-          where: {
-            approvedAt: {
-              lte: now,
-            },
-          },
-          orderBy: {
-            approvedAt: "desc",
-          },
-          take: 1,
+          in: [PsychologistStatus.CANDIDATE, PsychologistStatus.ACTIVE],
         },
       },
     });
 
-    const overdue: Array<{ id: string; fullName: string | null; email: string; lastArticleDate: Date | null }> = [];
-    const atRisk: Array<{ id: string; fullName: string | null; email: string; lastArticleDate: Date | null }> = [];
+    // Не проверено: статус CANDIDATE
+    const notVerified = await prisma.user.count({
+      where: {
+        status: PsychologistStatus.CANDIDATE,
+      },
+    });
 
-    // Определяем границы текущего месяца
-    const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1);
-    const lastDayOfMonth = new Date(currentYear, currentMonth, 0); // последний день месяца
-    const today = new Date();
+    // Проверено: статус ACTIVE
+    const verified = await prisma.user.count({
+      where: {
+        status: PsychologistStatus.ACTIVE,
+      },
+    });
 
-    // Считаем дней до конца месяца
-    const daysUntilEndOfMonth = Math.ceil(
-      (lastDayOfMonth.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    // В каталоге: isPublished = true и статус CANDIDATE или ACTIVE
+    const inCatalog = await prisma.user.count({
+      where: {
+        isPublished: true,
+        status: {
+          in: [PsychologistStatus.CANDIDATE, PsychologistStatus.ACTIVE],
+        },
+      },
+    });
 
-    for (const psychologist of psychologists) {
-      const lastCredit = psychologist.articleCredits[0];
-      const lastArticleDate = lastCredit?.approvedAt || null;
+    // По уровням сертификации (только для CANDIDATE и ACTIVE)
+    const level1 = await prisma.user.count({
+      where: {
+        certificationLevel: 1,
+        status: {
+          in: [PsychologistStatus.CANDIDATE, PsychologistStatus.ACTIVE],
+        },
+      },
+    });
 
-      if (!lastArticleDate || lastArticleDate < firstDayOfMonth) {
-        // Нет статьи за текущий месяц — просроченные
-        overdue.push({
-          id: psychologist.id,
-          fullName: psychologist.fullName,
-          email: psychologist.email,
-          lastArticleDate,
-        });
-      } else if (lastArticleDate >= firstDayOfMonth) {
-        // Есть статья за текущий месяц — проверяем, мало ли времени осталось
-        // Показываем только если до конца месяца <= 5 дней
-        if (daysUntilEndOfMonth <= 5) {
-          atRisk.push({
-            id: psychologist.id,
-            fullName: psychologist.fullName,
-            email: psychologist.email,
-            lastArticleDate,
-          });
-        }
-      }
-    }
+    const level2 = await prisma.user.count({
+      where: {
+        certificationLevel: 2,
+        status: {
+          in: [PsychologistStatus.CANDIDATE, PsychologistStatus.ACTIVE],
+        },
+      },
+    });
 
+    const level3 = await prisma.user.count({
+      where: {
+        certificationLevel: 3,
+        status: {
+          in: [PsychologistStatus.CANDIDATE, PsychologistStatus.ACTIVE],
+        },
+      },
+    });
+
+    // ==================== УЧЕНИКИ ====================
+
+    // Ученики: status = "enrolled" в UserCourse
+    const enrolled = await prisma.userCourse.count({
+      where: {
+        status: "enrolled",
+      },
+    });
+
+    // Выпускники: status = "graduated" в UserCourse
+    const graduated = await prisma.userCourse.count({
+      where: {
+        status: "graduated",
+      },
+    });
+
+    // ==================== СТАТИСТИКА ====================
+
+    // Определяем границы периодов
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Начало недели (понедельник)
+    const dayOfWeek = now.getDay(); // 0 = воскресенье, 1 = понедельник, ...
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - mondayOffset);
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    // Начало сегодня
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    // Новых регистраций психологов (статус CANDIDATE или ACTIVE)
+    const newPsychologistsThisMonth = await prisma.user.count({
+      where: {
+        status: { in: [PsychologistStatus.CANDIDATE, PsychologistStatus.ACTIVE] },
+        createdAt: { gte: startOfMonth },
+      },
+    });
+
+    const newPsychologistsThisWeek = await prisma.user.count({
+      where: {
+        status: { in: [PsychologistStatus.CANDIDATE, PsychologistStatus.ACTIVE] },
+        createdAt: { gte: startOfWeek },
+      },
+    });
+
+    const newPsychologistsToday = await prisma.user.count({
+      where: {
+        status: { in: [PsychologistStatus.CANDIDATE, PsychologistStatus.ACTIVE] },
+        createdAt: { gte: startOfDay },
+      },
+    });
+
+    // Заявки клиентов (Lead)
+    const totalLeads = await prisma.lead.count();
+
+    const leadsThisMonth = await prisma.lead.count({
+      where: {
+        createdAt: { gte: startOfMonth },
+      },
+    });
+
+    const leadsThisWeek = await prisma.lead.count({
+      where: {
+        createdAt: { gte: startOfWeek },
+      },
+    });
+
+    const leadsToday = await prisma.lead.count({
+      where: {
+        createdAt: { gte: startOfDay },
+      },
+    });
+
+    // ==================== ПРОБЛЕМНЫЕ ЗАЯВКИ (старый код удалён, перенесён выше) ====================
     return {
       success: true,
       stats: {
@@ -217,16 +310,38 @@ export async function getDashboardStats(): Promise<{ success: boolean; stats?: D
           documents: documentsCount,
           photos: photosCount,
           articles: articlesCount,
-          unreadMessages: dialogsRequiringAnswer, // Теперь это количество диалогов, требующих ответа
+          unreadMessages: dialogsRequiringAnswer,
           psychologistComplaints,
         },
         problematicLeads: {
           noResponseOver2Days,
           noProgressOver10Days,
         },
-        articleDebts: {
-          overdue,
-          atRisk,
+        psychologists: {
+          total: totalPsychologists,
+          notVerified,
+          verified,
+          inCatalog,
+          level1,
+          level2,
+          level3,
+        },
+        students: {
+          enrolled,
+          graduated,
+        },
+        statistics: {
+          newPsychologists: {
+            thisMonth: newPsychologistsThisMonth,
+            thisWeek: newPsychologistsThisWeek,
+            today: newPsychologistsToday,
+          },
+          clients: {
+            total: totalLeads,
+            thisMonth: leadsThisMonth,
+            thisWeek: leadsThisWeek,
+            today: leadsToday,
+          },
         },
       },
     };

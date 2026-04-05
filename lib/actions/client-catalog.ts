@@ -20,10 +20,10 @@ function computeAge(birthDate: Date | null): number | null {
 
 export async function getPsychologists(
   filters: CatalogFilters = {},
-  pagination: CatalogPagination = { limit: CATALOG_PAGE_SIZE },
+  pagination: CatalogPagination & { page?: number } = { limit: CATALOG_PAGE_SIZE },
   excludeUserId?: string // Исключить текущего пользователя из списка
 ): Promise<CatalogResult> {
-  if (!prisma) return { items: [], nextCursor: null, hasMore: false };
+  if (!prisma) return { items: [], page: 1, limit: CATALOG_PAGE_SIZE, total: 0, totalPages: 0 };
 
   const {
     priceMin,
@@ -34,12 +34,13 @@ export async function getPsychologists(
     certificationLevels,
     city,
     gender,
-    sortBy = "createdAt",
+    sortBy = "activity",
     sortOrder = "desc",
   } = filters;
 
-  const { limit, cursor } = pagination;
+  const { limit, page: currentPage = 1 } = pagination;
   const take = Math.min(Math.max(limit, 1), CATALOG_PAGE_SIZE_MAX);
+  const skip = (currentPage - 1) * take;
 
   // 1. Базовые фильтры по пользователям
   const where: any = {
@@ -70,17 +71,23 @@ export async function getPsychologists(
   }
 
   // 2. Сортировка
-  const orderBy: Record<string, string> = {};
-  if (sortBy === "price") {
-    orderBy.price = sortOrder;
+  // По умолчанию (activity) или явно указано - сортируем по totalBonus DESC, затем sortOrder ASC
+  let orderBy: any;
+  if (sortBy === "activity" || !sortBy) {
+    // Сортировка по активности: сначала по баллам (убывание), затем случайно
+    orderBy = [
+      { totalBonus: 'desc' },
+      { sortOrder: 'asc' },
+    ];
+  } else if (sortBy === "price") {
+    orderBy = { price: sortOrder };
   } else if (sortBy === "certificationLevel") {
-    orderBy.certificationLevel = sortOrder;
-  } else if (sortBy === "age") {
-    // Сортировка по возрасту будет позже, после фильтрации
-    orderBy.birthDate = sortOrder === "asc" ? "desc" : "asc"; // моложе = больше дата
+    orderBy = { certificationLevel: sortOrder };
+  } else if (sortBy === "createdAt") {
+    orderBy = { createdAt: sortOrder };
   } else {
-    // Сортировка по умолчанию - по sortOrder (случайный порядок)
-    orderBy.sortOrder = "asc";
+    // Fallback - случайный порядок
+    orderBy = { sortOrder: "asc" };
   }
 
   // Исключаем текущего пользователя, если передан
@@ -88,7 +95,10 @@ export async function getPsychologists(
     where.id = { not: excludeUserId };
   }
 
-  // 3. Получаем пользователей
+  // 3. Получаем общее количество пользователей (для пагинации)
+  const total = await prisma.user.count({ where });
+
+  // 4. Получаем пользователей с offset-based пагинацией
   const users = await prisma.user.findMany({
     where,
     select: {
@@ -108,47 +118,37 @@ export async function getPsychologists(
       createdAt: true,
     },
     orderBy,
-    take: take + 1,
-    skip: cursor ? 1 : 0,
-    cursor: cursor ? { id: cursor } : undefined,
+    take,
+    skip,
   });
 
   if (users.length === 0) {
-    return { items: [], nextCursor: null, hasMore: false };
-  }
-
-  // 4. Определяем следующий курсор
-  let nextCursor: string | null = null;
-  let resultUsers = users;
-  if (users.length > take) {
-    const last = users.pop();
-    if (last) nextCursor = last.id;
-    resultUsers = users;
+    return { items: [], page: currentPage, limit: take, total, totalPages: Math.ceil(total / take) };
   }
 
   // 5. Фильтрация по возрасту (если нужна)
-  let filteredUsers = resultUsers;
+  let filteredUsers = users;
   if (ageMin != null || ageMax != null) {
-    filteredUsers = resultUsers.filter((user) => {
+    filteredUsers = users.filter((user) => {
       const age = computeAge(user.birthDate);
       if (age === null) return false;
       if (ageMin != null && age < ageMin) return false;
       if (ageMax != null && age > ageMax) return false;
       return true;
     });
-
-    // Если после фильтрации осталось меньше элементов, сбрасываем курсор
-    if (filteredUsers.length < take) {
-      nextCursor = null;
-    }
   }
 
   if (filteredUsers.length === 0) {
-    return { items: [], nextCursor: null, hasMore: false };
+    return { items: [], page: currentPage, limit: take, total, totalPages: Math.ceil(total / take) };
   }
 
   // 6. Получаем проверенные фото для всех пользователей
   const userIds = filteredUsers.map(u => u.id);
+  
+  // Если после фильтрации по возрасту никого не осталось
+  if (userIds.length === 0) {
+    return { items: [], page: currentPage, limit: take, total, totalPages: Math.ceil(total / take) };
+  }
   const photos = await prisma.document.findMany({
     where: {
       userId: { in: userIds },
@@ -230,9 +230,13 @@ export async function getPsychologists(
     };
   });
 
+  const totalPages = Math.ceil(total / take);
+  
   return {
     items,
-    nextCursor,
-    hasMore: nextCursor != null,
+    page: currentPage,
+    limit: take,
+    total,
+    totalPages,
   };
 }

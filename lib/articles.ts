@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { ModerationStatus } from "@prisma/client";
+import { rename } from "fs/promises";
+import path from "path";
 
 const ARTICLE_TAGS_SLUG = "article-tags";
 // Единый объект для include автора
@@ -103,12 +105,37 @@ export async function getArticleBySlug(slug: string) {
 }
 
                                      
-export async function getArticles({ tag, authorId, publishedOnly, search }: {
+export async function getArticles({ 
+  tag, 
+  authorId, 
+  publishedOnly, 
+  search,
+  page,
+  limit 
+}: {
   tag?: string;
   authorId?: string;
   publishedOnly?: boolean;
   search?: string;
-} = {}) {
+  page?: number;
+  limit?: number;
+} = {}): Promise<
+  | { articles: any[]; total: number; totalPages: number; page: number }
+  | any[]
+> {
+  // Если переданы параметры пагинации — используем серверную пагинацию
+  if (page !== undefined && limit !== undefined) {
+    return getArticlesWithPagination({
+      tag: tag ?? null,
+      authorId: authorId ?? null,
+      publishedOnly: Boolean(publishedOnly),
+      search: search?.trim() || null,
+      page,
+      limit,
+    });
+  }
+  
+  // Иначе возвращаем все статьи (старое поведение)
   return getArticlesCached(
     tag ?? null,
     authorId ?? null,
@@ -148,6 +175,8 @@ export interface CreateArticleInput {
   tags: string[];
   authorId?: string | null;
   isPublished?: boolean;
+  draftFilesKey?: string; // Ключ draft-папки для перемещения файлов
+  moderationStatus?: string; // Статус модерации (по умолчанию DRAFT, для админки - APPROVED)
 }
 
 function revalidateArticleViews(slugs: Array<string | null | undefined> = []) {
@@ -172,6 +201,57 @@ function revalidateArticleViews(slugs: Array<string | null | undefined> = []) {
   for (const slug of uniqSlugs) {
     revalidatePath(`/lib/articles/${slug}`);
   }
+}
+
+// Функция для перемещения файлов из draft-папки в папку статьи
+async function moveDraftFilesToArticle(draftKey: string, articleId: string): Promise<{ url: string; storagePath: string }[]> {
+  const draftDir = path.join(process.cwd(), "public", "files", "articles", draftKey);
+  const articleDir = path.join(process.cwd(), "public", "files", "articles", articleId);
+  
+  const movedImages: { url: string; storagePath: string }[] = [];
+  
+  try {
+    // Проверяем существование draft-папки
+    const fs = require('fs').promises;
+    await fs.access(draftDir);
+    
+    // Создаём папку статьи, если её нет
+    await fs.mkdir(articleDir, { recursive: true });
+    
+    // Читаем файлы из draft-папки
+    const files = await fs.readdir(draftDir);
+    
+    for (const file of files) {
+      const srcPath = path.join(draftDir, file);
+      const destPath = path.join(articleDir, file);
+      
+      // Проверяем, что это файл
+      const stat = await fs.stat(srcPath);
+      if (!stat.isFile()) continue;
+      
+      // Перемещаем файл
+      await fs.rename(srcPath, destPath);
+      
+      // Если это изображение — добавляем в список для БД
+      const publicUrl = `/files/articles/${articleId}/${file}`;
+      if (file.match(/\.(jpg|jpeg|png|gif|webp|avif)$/i)) {
+        movedImages.push({
+          url: publicUrl,
+          storagePath: destPath
+        });
+      }
+    }
+    
+    // Удаляем пустую draft-папку
+    await fs.rmdir(draftDir);
+    
+    console.log(`[createArticle] Перемещено ${movedImages.length} изображений из ${draftKey} в ${articleId}`);
+  } catch (error) {
+    console.error(`[createArticle] Ошибка перемещения файлов из ${draftKey}:`, error);
+    // Не выбрасываем ошибку, чтобы не прерывать создание статьи
+  }
+  
+  return movedImages;
 }
 
 export async function createArticle(data: CreateArticleInput) {
@@ -200,6 +280,7 @@ export async function createArticle(data: CreateArticleInput) {
       content: data.content,
       tags: safeTags,
       publishedAt: data.isPublished ? new Date() : null,
+      moderationStatus: data.moderationStatus ? data.moderationStatus as ModerationStatus : ModerationStatus.DRAFT,
     };
     
                                             
@@ -211,6 +292,24 @@ export async function createArticle(data: CreateArticleInput) {
     
     const article = await model.create({ data: createData });
     console.log("[createArticle] created:", article);
+    
+    // Если есть draftFilesKey — перемещаем файлы
+    if (data.draftFilesKey) {
+      const movedImages = await moveDraftFilesToArticle(data.draftFilesKey, article.id);
+      
+      // Создаём записи в БД для изображений
+      if (movedImages.length > 0) {
+        await prisma.articleImage.createMany({
+          data: movedImages.map(img => ({
+            articleId: article.id,
+            url: img.url,
+            storagePath: img.storagePath
+          }))
+        });
+        console.log(`[createArticle] Создано ${movedImages.length} записей ArticleImage`);
+      }
+    }
+    
     revalidateArticleViews([article.slug, data.slug]);
     return article;
   } catch (e) {
@@ -303,10 +402,40 @@ export async function updateArticle(id: string, data: {
 export async function deleteArticle(id: string) {
   try {
     const model = checkPrismaModel();
+    
     const current = await model.findUnique({
       where: { id },
       select: { slug: true },
     });
+
+    // Получаем все изображения статьи перед удалением
+    const images = await prisma.articleImage.findMany({
+      where: { articleId: id },
+      select: { storagePath: true }
+    });
+
+    // Удаляем файлы с диска
+    const fs = require('fs').promises;
+    for (const image of images) {
+      try {
+        if (image.storagePath) {
+          await fs.unlink(image.storagePath);
+        }
+      } catch (err) {
+        console.warn(`[deleteArticle] Не удалось удалить файл ${image.storagePath}:`, err);
+      }
+    }
+
+    // Также удаляем папку статьи, если она пуста
+    try {
+      const articleDir = path.join(process.cwd(), "public", "files", "articles", id);
+      await fs.rmdir(articleDir);
+    } catch (err) {
+      // Папка может не существовать или не быть пустой — это нормально
+      console.log(`[deleteArticle] Не удалось удалить папку статьи:`, err);
+    }
+
+    // Удаляем статью (каскадом удалятся ArticleImage)
     const deleted = await model.delete({ where: { id } });
     revalidateArticleViews([current?.slug, deleted.slug]);
     return deleted;
@@ -338,6 +467,73 @@ const getArticleBySlugCached = unstable_cache(
   ["articles-by-slug"],
   { revalidate: 30, tags: ["articles"] }
 );
+
+/**
+ * Получение статей с пагинацией
+ */
+async function getArticlesWithPagination({
+  tag,
+  authorId,
+  publishedOnly,
+  search,
+  page,
+  limit,
+}: {
+  tag: string | null;
+  authorId: string | null;
+  publishedOnly: boolean;
+  search: string | null;
+  page: number;
+  limit: number;
+}) {
+  try {
+    const model = checkPrismaModel();
+    
+    // Условия для поиска по названию и excerpt
+    const searchCondition = search
+      ? {
+          OR: [
+            { title: { contains: search, mode: 'insensitive' as const } },
+            { excerpt: { contains: search, mode: 'insensitive' as const } },
+          ]
+        }
+      : {};
+    
+    const where = {
+      ...(tag ? { tags: { has: tag } } : {}),
+      ...(authorId ? { userId: authorId } : {}),
+      ...(publishedOnly ? { isPublished: true } : {}),
+      ...searchCondition,
+    };
+    
+    // Получаем общее количество статей
+    const total = await model.count({ where });
+    
+    // Получаем статьи с пагинацией
+    const articles = await model.findMany({
+      where,
+      orderBy: { publishedAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: articleInclude,
+    });
+    
+    return {
+      articles,
+      total,
+      totalPages: Math.ceil(total / limit),
+      page,
+    };
+  } catch (error) {
+    console.error("[getArticlesWithPagination] Error:", error);
+    return {
+      articles: [],
+      total: 0,
+      totalPages: 0,
+      page,
+    };
+  }
+}
 
 const getArticlesCached = unstable_cache(
   async (

@@ -42,18 +42,18 @@ export function searchParamsToFilters(
         city: parseStr(params.city),
         gender: parseStr(params.gender),
         workFormat: parseStr(params.workFormat), // Добавили формат работы
-        sortBy: sortBy === "price" || sortBy === "certificationLevel" || sortBy === "createdAt" ? sortBy : undefined,
+        sortBy: sortBy === "price" || sortBy === "certificationLevel" || sortBy === "createdAt" || sortBy === "activity" ? sortBy : undefined,
         sortOrder: sortOrder === "asc" || sortOrder === "desc" ? sortOrder : undefined,
     };
 }
 
 export function searchParamsToPagination(
     params: Record<string, string | string[] | undefined>
-): CatalogPagination {
+): CatalogPagination & { page?: number } {
     const limit = parseNum(params.limit) ?? CATALOG_PAGE_SIZE;
-    const cursor = parseStr(params.cursor);
+    const page = parseNum(params.page);
     return { 
-        limit: Math.min(Math.max(limit, 1), CATALOG_PAGE_SIZE_MAX), 
-        cursor 
+        limit: Math.min(Math.max(limit, 1), CATALOG_PAGE_SIZE_MAX),
+        page: page && page > 0 ? page : undefined
     };
 }

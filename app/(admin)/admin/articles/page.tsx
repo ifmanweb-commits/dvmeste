@@ -10,6 +10,7 @@ interface Article {
   tags: string[];
   moderationStatus: string;
   publishedAt: string | null;
+  moderatedAt: string | null;
   isPublished: boolean;
   moderator: {
     id: string;
@@ -41,6 +42,7 @@ export default async function ArticlesPage({ searchParams }: { searchParams: Pro
     tags: article.tags || [],
     moderationStatus: article.moderationStatus,
     publishedAt: article.publishedAt as string | null,
+    moderatedAt: article.moderatedAt as string | null,
     isPublished: article.isPublished,
     moderator: article.moderator ? {
       id: article.moderator.id,

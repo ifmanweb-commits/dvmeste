@@ -1,4 +1,3 @@
-"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { ArticleContentEditor, type ArticleContentEditorApi } from "@/components/articles/ArticleContentEditor";
@@ -10,16 +9,29 @@ function FormInput({ label, ...props }: any) {
   return (
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-        <input {...props} className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#5858E2] focus:ring-2 focus:ring-[#5858E2]/20" />
+        <input {...props} className="w-full rounded-none border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#5858E2] focus:ring-2 focus:ring-[#5858E2]/20" />
       </div>
   );
 }
 
-function FormTextarea({ label, ...props }: any) {
+function FormTextarea({ label, maxLength, value, onChange, ...props }: any) {
+  const remaining = maxLength ? maxLength - (value?.length || 0) : null;
+  
   return (
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-        <textarea {...props} className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#5858E2] focus:ring-2 focus:ring-[#5858E2]/20" />
+        <textarea 
+          {...props} 
+          value={value}
+          onChange={onChange}
+          maxLength={maxLength}
+          className="w-full rounded-none border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#5858E2] focus:ring-2 focus:ring-[#5858E2]/20" 
+        />
+        {remaining !== null && (
+          <p className="text-xs text-gray-500 mt-1">
+            Осталось {remaining} знак{remaining === 1 ? '' : remaining >= 2 && remaining <= 4 ? 'а' : 'ов'}
+          </p>
+        )}
       </div>
   );
 }
@@ -78,8 +90,9 @@ export default function ArticleForm({
   const articleId = typeof initialData.id === "string" ? initialData.id : "";
   const [draftFilesKey] = useState(() => `article-draft-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
   const [title, setTitle] = useState(initialTitle);
-  const [slug, setSlug] = useState(() => initialSlug || generateRandomArticleSlug());
+  const [slug, setSlug] = useState(initialSlug || "");
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(initialSlugLooksManual);
+  const [hasGeneratedSlug, setHasGeneratedSlug] = useState(false);
   const [shortText, setShortText] = useState(initialData.excerpt  || "");
   const [content, setContent] = useState(initialData.content || "");
   const [tags, setTags] = useState<string[]>(initialData.tags || []);
@@ -118,6 +131,14 @@ export default function ArticleForm({
       })
       .catch((err) => console.error("Error loading data:", err));
   }, []);
+  // Генерируем случайный slug только на клиенте при первом рендере
+  useEffect(() => {
+    if (!initialSlug && !hasGeneratedSlug) {
+      setSlug(generateRandomArticleSlug());
+      setHasGeneratedSlug(true);
+    }
+  }, [initialSlug, hasGeneratedSlug]);
+
   useEffect(() => {
     if (initialData.user?.fullName) {
       setAuthorName(initialData.user.fullName);
@@ -360,6 +381,8 @@ export default function ArticleForm({
         //catalogSlug: catalogSlug?.trim() || null,
         isPublished: Boolean(isPublished),
         images: articleImages,
+        draftFilesKey: articleId ? undefined : draftFilesKey, // Передаём только для новых статей
+        moderationStatus: 'APPROVED', // Статьи из админки сразу одобряются
       };
 
       console.log("🚀 Submitting article data:", formData);
@@ -425,18 +448,18 @@ export default function ArticleForm({
       <form onSubmit={handleSubmit} noValidate className="space-y-8">
         <div className="">
           {error && (
-              <div className="mb-4 rounded-xl border-2 border-amber-300 bg-amber-50 p-4 text-amber-800">
+              <div className="mb-4 rounded-none border-2 border-amber-300 bg-amber-50 p-4 text-amber-800">
                 <p className="font-medium">{error}</p>
               </div>
           )}
 
           {success && (
-              <div className="mb-4 rounded-xl border-2 border-green-300 bg-green-50 p-4 text-green-800">
+              <div className="mb-4 rounded-none border-2 border-green-300 bg-green-50 p-4 text-green-800">
                 <p className="font-medium">{success}</p>
               </div>
           )}
 
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2 mb-6">
             <FormInput
                 label="Заголовок *"
                 value={title}
@@ -480,15 +503,27 @@ export default function ArticleForm({
             </div>
           </div>
 
-          <FormTextarea
-              label="Короткий текст *"
-              value={shortText}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setShortText(e.target.value)}
-              rows={4}
-              maxLength={500}
-              required
-              disabled={isSubmitting}
-          />
+          <div className="grid gap-6 md:grid-cols-2 mb-6">
+            <FormTextarea
+                label="Короткий текст *"
+                value={shortText}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setShortText(e.target.value)}
+                rows={12}
+                maxLength={500}
+                required
+                disabled={isSubmitting}
+            />
+
+            <div>
+              <ArticleTagsSelector
+                label="Тэги статьи"
+                availableTags={allTags}
+                value={tags}
+                onChange={setTags}
+                disabled={isSubmitting}
+              />
+            </div>
+          </div>
 
           <ArticleContentEditor
               label="Длинный текст"
@@ -501,25 +536,19 @@ export default function ArticleForm({
               editorApiRef={contentEditorApiRef}
           />
 
-          <ArticleTagsSelector
-            label="Тэги статьи"
-            availableTags={allTags}
-            value={tags}
-            onChange={setTags}
-            disabled={isSubmitting}
-          />
-
-          <FileManager
-            scope="articles"
-            entityKey={articleFilesEntityKey}
-            mode="db"
-            title="Файлы статьи"
-            hint="Перетащите файлы или выберите их с устройства. Файлы сохраняются в папке статьи."
-            onFilesChange={setArticleImages}
-          />
+          <div className="mb-6">
+            <FileManager
+              scope="articles"
+              entityKey={articleFilesEntityKey}
+              mode="db"
+              title="Файлы статьи"
+              hint="Перетащите файлы или выберите их с устройства. Файлы сохраняются в папке статьи."
+              onFilesChange={setArticleImages}
+            />
+          </div>
 
 
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative max-w-md mb-6" ref={dropdownRef}>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Автор <span className="text-xs text-gray-500">(начните вводить фамилию)</span>
             </label>
@@ -544,11 +573,11 @@ export default function ArticleForm({
                   }
                 }}
                 onFocus={() => setShowDropdown(true)}
-                placeholder="Выберите психолога, либо статья будет без автора"
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#5858E2] focus:ring-2 focus:ring-[#5858E2]/20"
-                disabled={isSubmitting}
-                autoComplete="off"
-            />
+                 placeholder="Выберите психолога, либо статья будет без автора"
+                 className="w-full rounded-none border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#5858E2] focus:ring-2 focus:ring-[#5858E2]/20"
+                 disabled={isSubmitting}
+                 autoComplete="off"
+             />
 
             {                    }
             {authorId && (
@@ -562,8 +591,8 @@ export default function ArticleForm({
             )}
 
             {                                      }
-            {showDropdown && (authorSearch || filteredAuthors.length > 0) && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+             {showDropdown && (authorSearch || filteredAuthors.length > 0) && (
+                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-none shadow-lg max-h-60 overflow-y-auto">
                   {filteredAuthors.length > 0 ? (
                       filteredAuthors.map((author: any) => (
                           <div
@@ -601,27 +630,29 @@ export default function ArticleForm({
             )}
           </div>
 
-          <div className="flex items-center gap-3 mt-2">
-            <input
-                type="checkbox"
-                checked={isPublished}
-                onChange={e => setIsPublished(e.target.checked)}
-                id="isPublished"
-                className="h-4 w-4 rounded border-gray-300 text-[#5858E2] focus:ring-[#5858E2]"
-                disabled={isSubmitting}
-            />
-            <label htmlFor="isPublished" className="font-medium text-gray-700">Опубликовать</label>
+          <div className="mb-6">
+            <label className="inline-flex items-center gap-3 cursor-pointer">
+              <input
+                  type="checkbox"
+                  checked={isPublished}
+                  onChange={e => setIsPublished(e.target.checked)}
+                  id="isPublished"
+                  className="h-5 w-5 rounded-none border-2 border-gray-300 text-[#5858E2] focus:ring-[#5858E2] focus:ring-2"
+                  disabled={isSubmitting}
+              />
+              <span className="text-base font-semibold text-gray-900">Показывать на сайте</span>
+            </label>
           </div>
 
-          <div className="flex justify-end pt-6">
-            <button
-                type="submit"
-                className="rounded-xl bg-[#5858E2] px-8 py-3 font-medium text-white hover:bg-[#4848d0] shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSubmitting}
-            >
-              {isSubmitting ? "Сохранение..." : "Сохранить"}
-            </button>
-          </div>
+           <div className="">
+             <button
+                 type="submit"
+                 className="cursor-pointer rounded-none bg-[#5858E2] px-8 py-3 font-medium text-white hover:bg-[#4848d0] shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                 disabled={isSubmitting}
+             >
+               {isSubmitting ? "Сохранение..." : "Сохранить"}
+             </button>
+           </div>
         </div>
       </form>
   );

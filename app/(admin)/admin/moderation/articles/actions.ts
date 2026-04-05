@@ -79,28 +79,23 @@ export async function approveArticle(articleId: string, htmlContent: string) {
     const { month, year } = calculateArticleCreditPeriod(article.userId!);
     const now = new Date();
 
-    // Обновляем статью (credited поля больше не заполняем)
+    // Обновляем статью и начисляем бонусы
     await prisma.article.update({
       where: { id: articleId },
       data: {
         moderationStatus: "APPROVED",
         content: htmlContent,
         moderatedAt: now,
-        moderatedBy: moderator.id
-        // creditedMonth/year больше не трогаем
+        moderatedBy: moderator.id,
+        bonusPoints: 6
       }
     });
 
-    // Создаём запись в новой таблице
-    await prisma.articleCredit.create({
+    // Обновляем totalBonus у пользователя
+    await prisma.user.update({
+      where: { id: article.userId! },
       data: {
-        userId: article.userId!,
-        articleId: article.id,
-        articleTitle: article.title || 'Без названия',
-        month,
-        year,
-        approvedAt: now,
-        moderatedBy: moderator.id,
+        totalBonus: { increment: 6 }
       }
     });
 

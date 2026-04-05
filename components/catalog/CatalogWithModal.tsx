@@ -6,30 +6,20 @@ import { Badge } from "@/components/ui";
 import { normalizeImageSrc, isExternalImageSrc } from "@/lib/image-src";
 import type { PsychologistCatalogItem } from "@/types/catalog";
 import LeadFormModal from "@/components/lead/LeadFormModal";
+import { Pagination } from "@/components/catalog/Pagination";
 
 type Props = {
   items: PsychologistCatalogItem[];
-  nextCursor: string | null;
-  hasMore: boolean;
+  page: number;
+  totalPages: number;
   searchParams: Record<string, string | string[] | undefined>;
   currentUserProfile: PsychologistCatalogItem | null;
 };
 
-export function CatalogWithModal({ items, nextCursor, hasMore, searchParams, currentUserProfile }: Props) {
-  const buildNextUrl = () => {
-    const params = new URLSearchParams();
-    Object.entries(searchParams).forEach(([key, value]) => {
-      if (value !== undefined && value !== "" && key !== "cursor") {
-        if (Array.isArray(value)) {
-          value.forEach(v => params.append(key, v));
-        } else {
-          params.set(key, value);
-        }
-      }
-    });
-    if (nextCursor) params.set("cursor", nextCursor);
-    return `/catalog?${params.toString()}`;
-  };
+export function CatalogWithModal({ items, page, totalPages, searchParams, currentUserProfile }: Props) {
+
+  // Параметры для сохранения в пагинации
+  const preserveParams = ["priceMin", "priceMax", "city", "gender", "paradigms", "levels", "sortBy", "sortOrder", "ageMin", "ageMax"];
 
   return (
     <div className="min-h-[60vh]">
@@ -54,16 +44,11 @@ export function CatalogWithModal({ items, nextCursor, hasMore, searchParams, cur
               <PsychologistCard key={p.id} psychologist={p} />
             ))}
           </div>
-          {hasMore && nextCursor && (
-            <div className="mt-6 flex justify-center sm:mt-10">
-              <Link
-                href={buildNextUrl()}
-                className="inline-block rounded-xl bg-[#5858E2] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#4848d0] sm:px-8 sm:py-3 sm:text-base"
-              >
-                Показать ещё
-              </Link>
-            </div>
-          )}
+          <Pagination 
+            currentPage={page}
+            totalPages={totalPages}
+            preserveParams={preserveParams}
+          />
         </>
       )}
     </div>

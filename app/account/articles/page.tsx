@@ -48,6 +48,7 @@ export default async function MyArticlesPage() {
       updatedAt: true,
       moderatorComment: true,
       slug: true,
+      bonusPoints: true,
     }
   });
   //console.log('Any articles count:', articles.length);
@@ -65,27 +66,10 @@ export default async function MyArticlesPage() {
   // Считаем черновики
   const draftCount = formattedArticles.filter(a => a.moderationStatus === "DRAFT").length;
 
-  // Находим последнюю принятую статью для биллинга
-  /*const lastApproved = formattedArticles
-    .filter(a => a.moderationStatus === "APPROVED" && a.creditedMonth && a.creditedYear)
-    .sort((a, b) => {
-      const dateA = new Date(a.creditedYear!, a.creditedMonth! - 1);
-      const dateB = new Date(b.creditedYear!, b.creditedMonth! - 1);
-      return dateB.getTime() - dateA.getTime();
-    })[0];*/
-  // Вместо фильтрации статей
-  const lastCredit = await prisma.articleCredit.findFirst({
-    where: { userId: user.id },
-    orderBy: [{ year: 'desc' }, { month: 'desc' }]
-  });
-  const credits = await prisma.articleCredit.findMany({
-    where: { userId: user.id },
-    orderBy: [{ year: 'desc' }, { month: 'desc' }],
-    include: {
-      article: {
-        select: { slug: true }
-      }
-    }
+  // Получаем общую сумму бонусов пользователя
+  const userData = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { totalBonus: true }
   });
 
   // Разделяем статьи для разных секций
@@ -108,21 +92,20 @@ export default async function MyArticlesPage() {
         </div>
 
         <ArticlesStats 
-          lastCreditedMonth={lastCredit?.month}
-          lastCreditedYear={lastCredit?.year} 
+          totalBonus={userData?.totalBonus ?? 0}
           draftCount={draftCount} 
         />
 
         {workArticles.length > 0 && (
           <div className="mt-16">
-            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-6 pl-1">
+            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-6 pl-1">
               Статьи в работе
             </h2>
             <ArticleTable articles={workArticles} />
           </div>
         )}
 
-        <AcApprovedArticles credits={credits as any}/>
+        <AcApprovedArticles articles={approvedArticles} />
       </div>
     </div>
   );

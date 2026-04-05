@@ -82,18 +82,17 @@ export async function PUT(
       title,
       description,
       isActive,
+      price,
       // Для теста
       questionsPool,
       questionsCount,
       passingScore,
       timeLimit,
       freeAttempts,
-      unlockPrice,
       // Для квалификационной работы
       instructions,
       requiredReviews,
       reviewsToPass,
-      reviewPrice,
     } = body;
 
     // Проверка существования
@@ -128,6 +127,7 @@ export async function PUT(
       title: title || existing.title,
       description: description !== undefined ? description : existing.description,
       isActive: isActive !== undefined ? isActive : existing.isActive,
+      price: price !== undefined ? (price * 100) : existing.price,
     };
 
     // Обновляем тест если он есть
@@ -139,7 +139,6 @@ export async function PUT(
           passingScore: passingScore !== undefined ? passingScore : existing.test.passingScore,
           timeLimit: timeLimit !== undefined ? timeLimit : existing.test.timeLimit,
           freeAttempts: freeAttempts !== undefined ? freeAttempts : existing.test.freeAttempts,
-          unlockPrice: unlockPrice !== undefined ? (unlockPrice * 100) : existing.test.unlockPrice,
         },
       };
     }
@@ -151,7 +150,6 @@ export async function PUT(
           instructions: instructions !== undefined ? instructions : existing.work.instructions,
           requiredReviews: requiredReviews !== undefined ? requiredReviews : existing.work.requiredReviews,
           reviewsToPass: reviewsToPass !== undefined ? reviewsToPass : existing.work.reviewsToPass,
-          reviewPrice: reviewPrice !== undefined ? (reviewPrice * 100) : existing.work.reviewPrice,
         },
       };
     }

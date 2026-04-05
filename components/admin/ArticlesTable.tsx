@@ -9,6 +9,7 @@ interface Article {
   title: string;
   slug: string;
   publishedAt: string | null;
+  moderatedAt: string | null;
   isPublished: boolean;
   moderationStatus: string;
   tags: string[];
@@ -65,7 +66,7 @@ export function ArticlesTable({ articles }: ArticlesTableProps) {
               Заголовок
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Дата
+              Дата модерации
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Автор
@@ -99,7 +100,7 @@ export function ArticlesTable({ articles }: ArticlesTableProps) {
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {formatDate(article.publishedAt)}
+                {formatDate(article.moderatedAt)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {article.author?.fullName ||

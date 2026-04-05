@@ -45,26 +45,24 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
   const tag = typeof params?.tag === "string" ? params.tag : undefined;
   const search = typeof params?.search === "string" ? params.search : undefined;
 
-  // Получаем все статьи (без пагинации)
-  const allArticles = await getArticles({ 
+  const limit = 9;
+
+  // Получаем статьи с серверной пагинацией
+  const result = await getArticles({ 
     ...(tag && { tag }), 
     ...(search && { search }),
-    publishedOnly: true 
+    publishedOnly: true,
+    page,
+    limit,
   });
+  
+  // result - это объект { articles, total, totalPages, page }
+  const { articles, total, totalPages } = result as { articles: any[]; total: number; totalPages: number };
   
   const tags = await getArticleTags();
 
-  // Временная пагинация на клиенте
-  const limit = 9;
-  const start = (page - 1) * limit;
-  const end = start + limit;
-  
-  const paginatedArticles = allArticles.slice(start, end);
-  const total = allArticles.length;
-  const totalPages = Math.ceil(total / limit);
-
-  const featuredArticle = paginatedArticles[0] ?? null;
-  const articleGrid = paginatedArticles.slice(1);
+  const featuredArticle = articles[0] ?? null;
+  const articleGrid = articles.slice(1);
 
   // Функция для построения URL с сохранением параметров
   const buildUrl = (newParams: { tag?: string | null; search?: string | null; page?: number }) => {
@@ -174,7 +172,7 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
           </span>
         </div>
 
-        {allArticles.length === 0 ? (
+        {articles.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
               <Tag className="h-6 w-6 text-gray-400" />
@@ -202,7 +200,7 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
           <>
             {/* Сетка статей */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {paginatedArticles.map((article) => (
+              {articles.map((article) => (
                 <article
                   key={article.id}
                   className="group bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-all hover:-translate-y-1 hover:border-[#5858E2]/30"
@@ -242,7 +240,7 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
                     {/* Теги */}
                     {article.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-4">
-                        {article.tags.slice(0, 3).map((t) => (
+                        {article.tags.slice(0, 3).map((t: string) => (
                           <span
                             key={t}
                             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${

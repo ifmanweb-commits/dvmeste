@@ -80,10 +80,10 @@ export default function AcArticleTable({ articles }: { articles: Article[] }) {
 
       <table className="w-full text-left border-collapse bg-white">
         <thead>
-          <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase text-[10px] font-black tracking-widest">
-            <th className="px-4 sm:px-6 py-4">Статус / Дата</th>
-            <th className="px-4 sm:px-6 py-4">Название</th>
-            <th className="hidden sm:table-cell px-6 py-4 text-right">Управление</th>
+          <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[11px] font-semibold tracking-wide">
+            <th className="px-4 sm:px-6 py-3">Статус / Дата</th>
+            <th className="px-4 sm:px-6 py-3">Название</th>
+            <th className="hidden sm:table-cell px-6 py-3 text-right">Управление</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -113,7 +113,7 @@ export default function AcArticleTable({ articles }: { articles: Article[] }) {
                     Замечание: {article.moderatorComment}
                   </div>
                 )}
-                <p className="text-[11px] text-slate-400 mt-2 uppercase font-bold tracking-tight">
+                <p className="text-[11px] text-slate-500 mt-2 font-medium">
                   Доступ: {article.moderationStatus === 'PENDING' ? 'Только чтение' : 'Полный'}
                 </p>
               </td>

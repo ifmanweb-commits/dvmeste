@@ -63,24 +63,21 @@ export default async function EditArticlePage({ params }: { params: { id: string
         <header className="mb-10">
           <Link 
             href="/account/articles" 
-            className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-blue-600 transition-colors mb-4"
+            className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors mb-4"
           >
-            <ChevronLeft size={14} /> Назад к списку
+            <ChevronLeft size={16} /> Назад к списку
           </Link>
           
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <h1 className="text-sm font-black uppercase tracking-[0.3em] text-slate-400 mb-1">
-                Личный кабинет / Редактор
+              <h1 className="text-xl font-bold text-slate-800">
+                {article.title ? "Редактирование статьи" : "Новая статья"}
               </h1>
-              <p className="text-2xl font-black text-slate-900 uppercase tracking-tight">
-                {article.title ? "Правка публикации" : "Подготовка новой статьи"}
-              </p>
             </div>
             
             <div className="text-left md:text-right border-l md:border-l-0 md:border-r border-slate-200 pl-4 md:pl-0 md:pr-4">
-              <span className="text-[10px] font-black text-slate-400 uppercase block mb-1">ID Документа</span>
-              <span className="text-xs font-mono font-bold text-slate-500">{article.id}</span>
+              <span className="text-xs font-medium text-slate-500 block mb-1">ID документа</span>
+              <span className="text-sm font-mono text-slate-700">{article.id}</span>
             </div>
           </div>
         </header>

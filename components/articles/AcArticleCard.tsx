@@ -1,5 +1,5 @@
 // components/articles/ArticleCard.tsx
-import { Edit3, Trash2, Calendar, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { Edit3, Trash2, Calendar, AlertCircle, CheckCircle2, Clock, Award } from "lucide-react";
 
 interface ArticleCardProps {
   article: {
@@ -8,8 +8,7 @@ interface ArticleCardProps {
     moderationStatus: 'DRAFT' | 'PENDING' | 'APPROVED' | 'REVISION';
     updatedAt: string;
     moderatorComment?: string | null;
-    creditedMonth?: number | null;
-    creditedYear?: number | null;
+    bonusPoints?: number | null;
   };
 }
 
@@ -43,12 +42,12 @@ export default function ArticleCard({ article }: ArticleCardProps) {
         {article.title || "Без названия"}
       </h3>
 
-      {/* Блок для Одобренной статьи (Биллинг) */}
-      {article.moderationStatus === 'APPROVED' && article.creditedMonth && (
+      {/* Блок для Одобренной статьи (Баллы) */}
+      {article.moderationStatus === 'APPROVED' && (
         <div className="flex items-center gap-2 mb-4 text-emerald-700 bg-emerald-50/50 p-2 rounded-lg border border-emerald-100/50">
-          <Calendar className="w-4 h-4" />
+          <Award className="w-4 h-4" />
           <span className="text-sm font-semibold">
-            Зачтено за: {new Intl.DateTimeFormat('ru', { month: 'long', year: 'numeric' }).format(new Date(article.creditedYear!, article.creditedMonth! - 1))}
+            {article.bonusPoints ? `${article.bonusPoints} балл${article.bonusPoints === 1 ? '' : article.bonusPoints >= 2 && article.bonusPoints <= 4 ? 'а' : 'ов'}` : '0 баллов'}
           </span>
         </div>
       )}

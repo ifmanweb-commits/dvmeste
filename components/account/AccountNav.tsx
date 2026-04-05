@@ -159,6 +159,18 @@ export default function AccountNav({ user, isMobile, onNavigate }: AccountNavPro
           </div>
         </div>
         
+        {/* Баланс */}
+        <Link
+          href="/account/balance"
+          className="mt-3 flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+        >
+          <div className="flex items-center">
+            <Wallet className="mr-2 h-4 w-4 text-gray-500" />
+            <span>Баланс</span>
+          </div>
+          <span className="text-gray-900">{formatBalance(balance)} ₽</span>
+        </Link>
+        
         {/* Статус пользователя */}
         <div className="mt-3 flex flex-wrap gap-2">
           {/* Бейдж статуса аккаунта */}
@@ -194,18 +206,6 @@ export default function AccountNav({ user, isMobile, onNavigate }: AccountNavPro
             </span>
           )}
         </div>
-        
-        {/* Баланс */}
-        <Link
-          href="/account/balance"
-          className="mt-3 flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
-        >
-          <div className="flex items-center">
-            <Wallet className="mr-2 h-4 w-4 text-gray-500" />
-            <span>Баланс</span>
-          </div>
-          <span className="text-gray-900">{formatBalance(balance)} ₽</span>
-        </Link>
       </div>
       
       {/* Навигация */}

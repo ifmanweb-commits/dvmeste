@@ -6,14 +6,12 @@ import { useState } from "react";
 import { createDraftArticle } from "@/lib/actions/article-create";
 
 interface ArticlesStatsProps {
-  lastCreditedMonth?: number;
-  lastCreditedYear?: number;
+  totalBonus?: number;
   draftCount: number;
 }
 
 export default function ArticlesStats({ 
-  lastCreditedMonth, 
-  lastCreditedYear, 
+  totalBonus = 0,
   draftCount 
 }: ArticlesStatsProps) {
   const router = useRouter();
@@ -33,42 +31,23 @@ export default function ArticlesStats({
     }
   };
 
-  const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
-
-  let diff = 0;
-  if (lastCreditedMonth && lastCreditedYear) {
-    diff = (lastCreditedYear - currentYear) * 12 + (lastCreditedMonth - currentMonth);
-  } else {
-    diff = -1;
-  }
-
-  // Функция для получения названия месяца
-  const getMonthName = (month: number): string => {
-    const monthNames = [
-      'январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
-      'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'
-    ];
-    return monthNames[month - 1] || '';
-  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-      {/* Карточка статуса Баланса */}
-      <div className={`p-5 rounded-2xl border shadow-sm ${diff >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
-        <p className="text-sm font-medium text-slate-500 mb-1">Статус расчетов</p>
+      {/* Карточка статуса Бонусов */}
+      <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm">
+        <p className="text-sm font-medium text-slate-500 mb-1">Бонусы за статьи</p>
         <div className="flex items-baseline gap-2">
-          <span className={`text-3xl font-bold ${diff >= 0 ? 'text-emerald-700' : 'text-amber-700'}`}>
-            {diff >= 0 ? `+${diff + 1}` : 'Долг'}
+          <span className="text-3xl font-bold text-slate-900">
+            {totalBonus}
           </span>
           <span className="text-sm text-slate-600">
-            {diff >= 0 ? 'мес. в запасе' : 'за текущий период'}
+            {totalBonus === 1 ? 'балл' : totalBonus >= 2 && totalBonus <= 4 ? 'балла' : 'баллов'}
           </span>
         </div>
         <p className="text-xs mt-2 text-slate-500">
-          {lastCreditedMonth && lastCreditedYear 
-            ? `Последний оплаченный месяц - ${getMonthName(lastCreditedMonth)} ${lastCreditedYear}` 
+          {totalBonus > 0 
+            ? 'Накоплено за активные статьи' 
             : 'Нет одобренных статей'}
         </p>
       </div>

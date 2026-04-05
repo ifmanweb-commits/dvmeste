@@ -17,6 +17,7 @@ interface Article {
   tags: string[];
   moderationStatus: string;
   publishedAt: string | null;
+  moderatedAt: string | null;
   isPublished: boolean;
   moderator: {
     id: string;
