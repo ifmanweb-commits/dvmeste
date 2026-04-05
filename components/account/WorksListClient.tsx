@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle, Play, Lock, X, Loader2, FileText, Award, ChevronDown, Upload } from "lucide-react";
+import { CheckCircle, Play, Lock, X, FileText, Award, ChevronDown, ArrowRight, Clock } from "lucide-react";
 
 interface Certification {
   id: string;
@@ -243,9 +243,9 @@ export default function WorksListClient({ works, certifications, userBalance }: 
               }`}
             >
               <div className="p-6">
-                <div className="grid grid-cols-12 gap-4 items-center">
-                  {/* Колонка 1: Номер */}
-                  <div className="col-span-1">
+                <div className="grid grid-cols-12 gap-4 items-start">
+                  {/* Колонка 1: Номер и бейдж */}
+                  <div className="col-span-2 flex flex-col items-center gap-2 pt-2">
                     <div
                       className={`flex h-10 w-10 items-center justify-center rounded-full font-semibold ${
                         work.isCompleted
@@ -255,17 +255,29 @@ export default function WorksListClient({ works, certifications, userBalance }: 
                     >
                       {index + 1}
                     </div>
+                    {work.isCompleted ? (
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                        <CheckCircle className="mr-1 h-3 w-3" />
+                        Сдано
+                      </span>
+                    ) : work.submissionStatus === "SUBMITTED" || work.submissionStatus === "REVIEWING" ? (
+                      <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                        <Clock className="mr-1 h-3 w-3" />
+                        {getSubmissionStatusText(work.submissionStatus)}
+                      </span>
+                    ) : null}
                   </div>
 
                   {/* Колонка 2: Название и описание */}
-                  <div className="col-span-5">
-                    <h3
-                      className={`text-lg font-medium ${
+                  <div className="col-span-7">
+                    <Link
+                      href={`/account/certification/works/${work.id}`}
+                      className={`text-lg font-medium hover:underline ${
                         work.isCompleted ? "text-green-900" : "text-gray-900"
                       }`}
                     >
                       {work.title}
-                    </h3>
+                    </Link>
                     {work.description && (
                       <p
                         className={`mt-1 text-sm ${
@@ -275,74 +287,43 @@ export default function WorksListClient({ works, certifications, userBalance }: 
                         {work.description}
                       </p>
                     )}
-                    {work.workChallenge?.instructions && (
-                      <p className="mt-2 text-xs text-gray-500 line-clamp-2">
-                        {work.workChallenge.instructions}
-                      </p>
-                    )}
-                    
                     {/* Сертификации */}
                     {work.certifications && work.certifications.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {work.certifications.map((cert) => (
-                          <Link
-                            key={cert.id}
-                            href={`/account/certification/${cert.id}`}
-                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                              work.isCompleted
-                                ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                            }`}
-                          >
-                            <Award className="mr-1 h-3 w-3" />
-                            {cert.title}
-                          </Link>
-                        ))}
+                      <div className="mt-3">
+                        <p className="text-xs font-medium text-gray-500 mb-2">Нужно для:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {work.certifications.map((cert) => (
+                            <Link
+                              key={cert.id}
+                              href={`/account/certification/${cert.id}`}
+                              className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                                work.isCompleted
+                                  ? "bg-green-100 text-green-700 hover:bg-green-200"
+                                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                              }`}
+                            >
+                              <Award className="mr-1 h-3 w-3" />
+                              {cert.title}
+                            </Link>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Колонка 3: Статус */}
-                  <div className="col-span-3">
-                    {work.isCompleted ? (
-                      <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
-                        <CheckCircle className="mr-1 h-4 w-4" />
-                        Сдано
-                      </span>
-                    ) : work.submissionStatus === "SUBMITTED" || work.submissionStatus === "REVIEWING" ? (
-                      <span className="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-800">
-                        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                        {getSubmissionStatusText(work.submissionStatus)}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  {/* Колонка 4: Кнопка */}
-                  <div className="col-span-3 flex justify-end">
+                  {/* Колонка 3: Кнопка */}
+                  <div className="col-span-3 flex items-center justify-end">
                     {work.isCompleted ? (
                       <span className="inline-flex items-center rounded-full bg-green-200 px-4 py-2 text-sm font-medium text-green-800">
                         <CheckCircle className="mr-1 h-4 w-4" />
                         Пройдено
                       </span>
-                    ) : work.submissionStatus === "SUBMITTED" || work.submissionStatus === "REVIEWING" ? (
-                      <span className="inline-flex items-center rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500">
-                        <Lock className="mr-1 h-4 w-4" />
-                        Ожидание проверки
-                      </span>
-                    ) : work.hasInProgress ? (
-                      <Link
-                        href={`/account/challenge/${work.id}?attempt=${work.inProgressAttemptId}`}
-                        className="inline-flex items-center rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600"
-                      >
-                        <Upload className="mr-1 h-4 w-4" />
-                        Продолжить
-                      </Link>
                     ) : (
                       <Link
                         href={`/account/certification/works/${work.id}`}
                         className="inline-flex items-center rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
                       >
-                        <Upload className="mr-1 h-4 w-4" />
+                        <ArrowRight className="mr-1 h-4 w-4" />
                         Перейти
                       </Link>
                     )}
