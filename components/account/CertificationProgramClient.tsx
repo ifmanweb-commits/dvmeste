@@ -176,13 +176,25 @@ export default function CertificationProgramClient({
 
                 {/* Колонка 2: Название и описание */}
                 <div className="col-span-5">
-                  <h3
-                    className={`text-lg font-medium ${
-                      req.isCompleted ? "text-green-900" : "text-gray-900"
-                    }`}
-                  >
-                    {req.challenge.title}
-                  </h3>
+                  {req.challenge.type === "TEST" ? (
+                    <Link
+                      href={`/account/certification/tests?certification=${certification.id}`}
+                      className={`text-lg font-medium hover:text-[#5858E2] hover:underline ${
+                        req.isCompleted ? "text-green-900" : "text-gray-900"
+                      }`}
+                    >
+                      {req.challenge.title}
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/account/certification/works?certification=${certification.id}`}
+                      className={`text-lg font-medium hover:text-[#5858E2] hover:underline ${
+                        req.isCompleted ? "text-green-900" : "text-gray-900"
+                      }`}
+                    >
+                      {req.challenge.title}
+                    </Link>
+                  )}
                   {req.challenge.description && (
                     <p
                       className={`mt-1 text-sm ${

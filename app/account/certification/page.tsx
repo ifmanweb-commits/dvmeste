@@ -2,7 +2,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Award, CheckCircle, ChevronRight, Lock, Play } from 'lucide-react';
+import { Award, CheckCircle, BookOpen, FileText } from 'lucide-react';
 import Image from 'next/image';
 
 export default async function CertificationPage() {
@@ -83,6 +83,39 @@ export default async function CertificationPage() {
           </h1>
         </div>
 
+        {/* Навигационная панель */}
+        <nav className="mb-8 border-b border-gray-200">
+          <ul className="flex gap-6">
+            <li>
+              <Link
+                href="/account/certification"
+                className="inline-flex items-center gap-2 border-b-2 border-[#5858E2] pb-3 text-sm font-medium text-[#5858E2]"
+              >
+                <Award className="h-4 w-4" />
+                Сертификации
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/account/certification/tests"
+                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+              >
+                <BookOpen className="h-4 w-4" />
+                Тесты
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/account/certification/works"
+                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+              >
+                <FileText className="h-4 w-4" />
+                Работы
+              </Link>
+            </li>
+          </ul>
+        </nav>
+
         {/* РАЗДЕЛ 1 — Полученные сертификаты */}
         {awardedCertifications.length > 0 && (
           <section className="mb-10">
@@ -159,8 +192,8 @@ export default async function CertificationPage() {
                     )}
                   </div>
                   
-                  {/* КОЛОНКА 3 — Список испытаний */}
-                  <div className="sm:col-span-4">
+                    {/* КОЛОНКА 3 — Список испытаний */}
+                  <div className="sm:col-span-7">
                     <h4 className="text-sm font-semibold text-gray-700 mb-2">
                       Испытания
                     </h4>
@@ -177,40 +210,28 @@ export default async function CertificationPage() {
                           ) : (
                             <span className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-gray-300" />
                           )}
-                          <span className={req.isCompleted ? 'font-medium' : ''}>
-                            {req.challenge.title}
-                          </span>
+                          {req.challenge.type === 'TEST' ? (
+                            <Link
+                              href={`/account/certification/tests?certification=${cert.id}`}
+                              className={`hover:text-[#5858E2] hover:underline ${
+                                req.isCompleted ? 'font-medium' : ''
+                              }`}
+                            >
+                              {req.challenge.title}
+                            </Link>
+                          ) : (
+                            <Link
+                              href={`/account/certification/works?certification=${cert.id}`}
+                              className={`hover:text-[#5858E2] hover:underline ${
+                                req.isCompleted ? 'font-medium' : ''
+                              }`}
+                            >
+                              {req.challenge.title}
+                            </Link>
+                          )}
                         </li>
                       ))}
                     </ul>
-                  </div>
-                  
-                  {/* КОЛОНКА 4 — Прогресс и кнопка */}
-                  <div className="flex flex-col justify-center gap-3 sm:col-span-3">
-                    {/* Прогресс бар */}
-                    <div className="w-full">
-                      <div className="flex items-center justify-between text-xs text-gray-600">
-                        <span>Прогресс</span>
-                        <span className="font-medium">
-                          {cert.completedCount}/{cert.totalCount}
-                        </span>
-                      </div>
-                      <div className="mt-1.5 h-2 w-full rounded-full bg-gray-100">
-                        <div
-                          className="h-2 rounded-full bg-gradient-to-r from-[#5858E2] to-[#4a4ac9] transition-all"
-                          style={{ width: `${Math.round(cert.progress)}%` }}
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Кнопка действия */}
-                    <Link
-                      href={`/account/certification/${cert.id}`}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#5858E2] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
-                    >
-                      Перейти к сертификации
-                      <ChevronRight className="h-4 w-4" />
-                    </Link>
                   </div>
                 </div>
               ))}
