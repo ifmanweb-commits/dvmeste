@@ -39,16 +39,6 @@ export default async function CertificationWorksPage() {
   // Для каждой работы получаем статус пользователя и список сертификаций
   const worksWithStatus = await Promise.all(
     workChallenges.map(async (challenge) => {
-      // Последняя успешная попытка
-      const successfulAttempt = await prisma.challengeAttempt.findFirst({
-        where: {
-          userId: user.id,
-          challengeId: challenge.id,
-          passed: true,
-        },
-        orderBy: { finishedAt: 'desc' },
-      });
-
       // Последняя попытка в процессе
       const inProgressAttempt = await prisma.challengeAttempt.findFirst({
         where: {
@@ -87,7 +77,8 @@ export default async function CertificationWorksPage() {
         orderBy: { submittedAt: 'desc' },
       });
 
-      const isCompleted = !!successfulAttempt;
+      // Для WORK проверяем наличие одобренной submission
+      const isCompleted = lastSubmission?.status === 'APPROVED';
       const hasInProgress = !!inProgressAttempt;
       const baseAttempts = 1; // Для работ обычно 1 попытка
       const attemptsLeft = userState?.attemptsLeft ?? baseAttempts;

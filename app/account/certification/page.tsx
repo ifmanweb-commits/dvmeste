@@ -40,15 +40,30 @@ export default async function CertificationPage() {
       const requirementsWithStatus = [];
       
       for (const req of cert.requirements) {
-        const successfulAttempt = await prisma.challengeAttempt.findFirst({
-          where: {
-            userId: user.id,
-            challengeId: req.challengeId,
-            passed: true,
-          },
-        });
+        // Для TEST проверяем challengeAttempt, для WORK - workSubmission
+        let isCompleted = false;
         
-        const isCompleted = !!successfulAttempt;
+        if (req.challenge.type === 'TEST') {
+          const successfulAttempt = await prisma.challengeAttempt.findFirst({
+            where: {
+              userId: user.id,
+              challengeId: req.challengeId,
+              passed: true,
+            },
+          });
+          isCompleted = !!successfulAttempt;
+        } else if (req.challenge.type === 'WORK') {
+          // Для работы проверяем, есть ли одобренная submission
+          const approvedSubmission = await prisma.workSubmission.findFirst({
+            where: {
+              userId: user.id,
+              challengeId: req.challengeId,
+              status: 'APPROVED',
+            },
+          });
+          isCompleted = !!approvedSubmission;
+        }
+        
         if (isCompleted) {
           completedChallengeIds.add(req.challengeId);
         }

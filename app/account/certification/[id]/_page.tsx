@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import { redirect, notFound } from 'next/navigation';
-import CertificationProgramClient from '@/components/account/CertificationProgramClient';
+//import CertificationProgramClient from '@/components/account/CertificationProgramClient';
 
 interface PageProps {
   params: Promise<{ id: string }>;
