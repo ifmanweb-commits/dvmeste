@@ -1,8 +1,14 @@
 import { getCurrentUser } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
-import { ShieldCheck, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import SupervisionClient, { type Submission } from "@/components/account/SupervisionClient";
 
-export default async function SupervisionPage() {
+type PageProps = {
+  searchParams: Promise<{ tab?: string }>;
+};
+
+export default async function SupervisionPage({ searchParams }: PageProps) {
   const user = await getCurrentUser();
   
   // Проверка прав супервизора
@@ -30,41 +36,78 @@ export default async function SupervisionPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <ShieldCheck className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Супервизия
-              </h1>
-              <p className="text-gray-600 text-sm">
-                Панель супервизора
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+  // Загружаем данные для первых двух вкладок сразу на сервере
+  const [availableSubmissions, reviewingSubmissions] = await Promise.all([
+    // Доступные работы: status = SUBMITTED, reviewerId = null, нет review от текущего
+    prisma.workSubmission.findMany({
+      where: {
+        status: 'SUBMITTED',
+        reviewerId: null,
+        NOT: {
+          reviews: {
+            some: {
+              supervisorId: user.id,
+            },
+          },
+        },
+      },
+      include: {
+        challenge: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            price: true,
+            work: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        submittedAt: 'asc',
+      },
+    }),
+    // На проверке: status = REVIEWING, reviewerId = текущий
+    prisma.workSubmission.findMany({
+      where: {
+        status: 'REVIEWING',
+        reviewerId: user.id,
+      },
+      include: {
+        challenge: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            price: true,
+            work: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        submittedAt: 'asc',
+      },
+    }),
+  ]);
 
-      {/* Content */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <ShieldCheck className="w-8 h-8 text-amber-600" />
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Раздел в разработке
-          </h2>
-          <p className="text-gray-600 max-w-md mx-auto">
-            Функционал супервизии находится в разработке. В этом разделе вы сможете управлять процессами модерации и проверять работу психологов.
-          </p>
-        </div>
-      </div>
-    </div>
+  return (
+    <SupervisionClient
+      searchParams={searchParams}
+      availableSubmissions={availableSubmissions}
+      reviewingSubmissions={reviewingSubmissions}
+    />
   );
 }
