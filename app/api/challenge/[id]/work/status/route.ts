@@ -13,56 +13,47 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: attemptId } = await params;
+    const { id: challengeId } = await params;
 
-    // Получаем попытку
-    const attempt = await prisma.challengeAttempt.findUnique({
-      where: { id: attemptId },
-      include: {
-        challenge: {
-          include: {
-            work: true,
-          },
+    // Проверяем наличие доступа (оплачено ли)
+    const userState = await prisma.challengeUserState.findUnique({
+      where: {
+        challengeId_userId: {
+          challengeId,
+          userId: user.id,
         },
       },
     });
 
-    if (!attempt) {
-      return NextResponse.json(
-        { error: 'Attempt not found' },
-        { status: 404 }
-      );
-    }
+    const hasAccess = (userState?.attemptsLeft ?? 0) > 0;
 
-    if (attempt.userId !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    const workChallenge = attempt.challenge.work;
-    if (!workChallenge) {
-      return NextResponse.json(
-        { error: 'Work configuration not found' },
-        { status: 404 }
-      );
-    }
-
-    // Если попытка завершена - возвращаем результат
-    if (attempt.status === 'COMPLETED') {
+    // Если нет доступа - возвращаем false
+    if (!hasAccess) {
       return NextResponse.json({
-        status: 'COMPLETED',
-        passed: attempt.passed,
-        score: attempt.score,
-        requiredReviews: workChallenge.reviewsToPass,
+        hasAccess: false,
       });
     }
 
-    // Получаем текст работы из answers.workText
-    const workText = (attempt.answers as any)?.workText || '';
+    // Получаем последнюю попытку пользователя
+    const attempt = await prisma.challengeAttempt.findFirst({
+      where: {
+        challengeId,
+        userId: user.id,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
 
     return NextResponse.json({
-      status: attempt.status,
-      workText,
-      requiredReviews: workChallenge.reviewsToPass,
+      hasAccess: true,
+      attempt: attempt ? {
+        id: attempt.id,
+        status: attempt.status,
+        passed: attempt.passed,
+        workText: (attempt.answers as any)?.workText,
+        submittedAt: attempt.finishedAt,
+      } : null,
     });
   } catch (error) {
     console.error('Error getting work status:', error);

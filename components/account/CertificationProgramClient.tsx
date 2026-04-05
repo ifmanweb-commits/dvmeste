@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Award, CheckCircle, Circle, Lock, Play, X } from "lucide-react";
+import { Award, CheckCircle, Circle, Lock, Play, X, Loader2 } from "lucide-react";
 
 interface ChallengeData {
   id: string;
@@ -27,6 +27,7 @@ interface Requirement {
   hasInProgress: boolean;
   inProgressAttemptId: string | null;
   attemptsLeft: number;
+  workStatus?: 'SUBMITTED' | 'REVIEWING' | null;
 }
 
 interface CertificationProgramClientProps {
@@ -210,7 +211,12 @@ export default function CertificationProgramClient({
 
                 {/* Колонка 3: Бейдж с попытками */}
                 <div className="col-span-3">
-                  {req.attemptsLeft > 0 ? (
+                  {req.isCompleted ? null : req.workStatus === 'SUBMITTED' || req.workStatus === 'REVIEWING' ? (
+                    <span className="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-800">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      На проверке
+                    </span>
+                  ) : req.attemptsLeft > 0 ? (
                     <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
                       Попыток осталось: {req.attemptsLeft}
                     </span>
@@ -227,6 +233,11 @@ export default function CertificationProgramClient({
                     <span className="inline-flex items-center rounded-full bg-green-200 px-4 py-2 text-sm font-medium text-green-800">
                       <CheckCircle className="mr-1 h-4 w-4" />
                       Пройдено
+                    </span>
+                  ) : req.workStatus === 'SUBMITTED' || req.workStatus === 'REVIEWING' ? (
+                    <span className="inline-flex items-center rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-500">
+                      <Lock className="mr-1 h-4 w-4" />
+                      Ожидание проверки
                     </span>
                   ) : req.hasInProgress ? (
                     <Link

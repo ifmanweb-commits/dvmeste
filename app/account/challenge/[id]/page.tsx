@@ -69,7 +69,7 @@ export default function ChallengePage() {
   }
 
   if (challengeType === 'WORK') {
-    return <WorkChallengePage challengeId={id} attemptId={attemptId} />;
+    return <WorkChallengePage challengeId={id} />;
   }
 
   return (

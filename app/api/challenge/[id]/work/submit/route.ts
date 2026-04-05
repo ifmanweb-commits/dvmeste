@@ -13,65 +13,89 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: attemptId } = await params;
-    const { workText } = await request.json();
+    const { id: challengeId } = await params;
+    const { videoUrl, transcriptUrl } = await request.json();
 
-    // Получаем попытку
-    const attempt = await prisma.challengeAttempt.findUnique({
-      where: { id: attemptId },
-      include: {
-        challenge: {
-          include: {
-            work: true,
-          },
-        },
-      },
-    });
-
-    if (!attempt) {
+    if (!videoUrl || !videoUrl.trim()) {
       return NextResponse.json(
-        { error: 'Attempt not found' },
-        { status: 404 }
-      );
-    }
-
-    if (attempt.userId !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    if (attempt.status !== 'IN_PROGRESS') {
-      return NextResponse.json(
-        { error: 'Attempt is not in progress' },
+        { error: 'Video URL is required' },
         { status: 400 }
       );
     }
 
-    const workChallenge = attempt.challenge.work;
-    if (!workChallenge) {
+    if (!transcriptUrl || !transcriptUrl.trim()) {
       return NextResponse.json(
-        { error: 'Work configuration not found' },
-        { status: 404 }
+        { error: 'Transcript URL is required' },
+        { status: 400 }
       );
     }
 
-    // Сохраняем текст работы в answers.workText
-    await prisma.challengeAttempt.update({
-      where: { id: attemptId },
-      data: {
-        answers: {
-          ...((attempt.answers as object) || {}),
-          workText,
+    // Проверяем, нет ли уже отправленной работы на проверке
+    const existingSubmission = await prisma.workSubmission.findFirst({
+      where: {
+        challengeId,
+        userId: user.id,
+        status: {
+          in: ['SUBMITTED', 'REVIEWING'],
         },
       },
     });
 
-    // Обновляем статус на SUBMITTED (пока нет такого статуса, используем IN_PROGRESS с флагом)
-    // Для простоты оставляем IN_PROGRESS, но можно добавить статус SUBMITTED
+    if (existingSubmission) {
+      return NextResponse.json(
+        { error: 'У вас уже есть работа на проверке' },
+        { status: 400 }
+      );
+    }
+
+    // Создаём новую работу
+    const submission = await prisma.workSubmission.create({
+      data: {
+        challengeId,
+        userId: user.id,
+        videoUrl,
+        transcriptUrl,
+        status: 'SUBMITTED',
+      },
+    });
+
+    // Списываем попытку из ChallengeUserState
+    const userState = await prisma.challengeUserState.findUnique({
+      where: {
+        challengeId_userId: {
+          challengeId,
+          userId: user.id,
+        },
+      },
+    });
+
+    if (userState) {
+      await prisma.challengeUserState.update({
+        where: {
+          challengeId_userId: {
+            challengeId,
+            userId: user.id,
+          },
+        },
+        data: {
+          attemptsLeft: { decrement: 1 },
+        },
+      });
+    } else {
+      // Если нет записи, создаём с attemptsLeft = 0 (попыток не осталось)
+      await prisma.challengeUserState.create({
+        data: {
+          challengeId,
+          userId: user.id,
+          attemptsLeft: 0,
+        },
+      });
+    }
 
     return NextResponse.json({
       status: 'SUBMITTED',
       message: 'Работа отправлена на проверку',
-      requiredReviews: workChallenge.reviewsToPass,
+      submissionId: submission.id,
     });
   } catch (error) {
     console.error('Error submitting work:', error);

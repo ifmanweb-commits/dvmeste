@@ -64,6 +64,8 @@ model User {
   certificationAwards CertificationAward[] @relation(name: "CertificationAwards")
   challengeAttempts ChallengeAttempt[] @relation(name: "UserChallengeAttempts")
   challengeStates ChallengeUserState[] @relation(name: "UserChallengeStates")
+  workSubmissions WorkSubmission[] @relation(name: "UserWorkSubmissions")
+  reviewedSubmissions WorkSubmission[] @relation(name: "ReviewerWorkSubmissions")
 
   // Биллинг
   balance Int @default(0)
@@ -512,6 +514,13 @@ enum AttemptStatus {
   COMPLETED
 }
 
+enum WorkStatus {
+  SUBMITTED
+  REVIEWING
+  APPROVED
+  REJECTED
+}
+
 model Challenge {
   id           String             @id @default(cuid())
   slug         String             @unique
@@ -529,6 +538,7 @@ model Challenge {
   attempts     ChallengeAttempt[]
   userStates   ChallengeUserState[]
   courseAccess CourseChallengeAccess[]
+  workSubmissions WorkSubmission[]
 
   @@index([slug])
   @@index([type])
@@ -598,6 +608,29 @@ model ChallengeUserState {
 
   @@unique([challengeId, userId])
   @@index([userId])
+}
+
+model WorkSubmission {
+  id            String     @id @default(cuid())
+  challengeId   String
+  userId        String
+  videoUrl      String     // ссылка на видео
+  transcriptUrl String     // ссылка на расшифровку
+  status        WorkStatus @default(SUBMITTED)
+  reviewCount   Int        @default(0)  // сколько проверок пройдено
+  submittedAt   DateTime   @default(now())
+  reviewedAt    DateTime?
+  reviewerId    String?
+  comment       String?    @db.Text  // комментарий супервизора
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserWorkSubmissions")
+  reviewer    User?     @relation(fields: [reviewerId], references: [id], name: "ReviewerWorkSubmissions")
+
+  @@index([challengeId])
+  @@index([userId])
+  @@index([status])
+  @@index([submittedAt])
 }
 
 model Certification {

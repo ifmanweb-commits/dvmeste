@@ -81,8 +81,23 @@ export default async function CertificationProgramPage({ params }: PageProps) {
         },
       });
 
+      // Проверяем, есть ли работа на проверке (для WORK испытаний)
+      const workSubmission = await prisma.workSubmission.findFirst({
+        where: {
+          challengeId: req.challengeId,
+          userId: user.id,
+          status: {
+            in: ['SUBMITTED', 'REVIEWING'],
+          },
+        },
+        select: {
+          status: true,
+        },
+      });
+
       const isCompleted = !!successfulAttempt;
       const hasInProgress = !!inProgressAttempt;
+      const workStatus = workSubmission?.status as 'SUBMITTED' | 'REVIEWING' | null;
       
       // Для тестов берем freeAttempts, для работ - всегда 0 (платная разблокировка)
       const baseAttempts = req.challenge.type === 'TEST' 
@@ -96,6 +111,7 @@ export default async function CertificationProgramPage({ params }: PageProps) {
         hasInProgress,
         inProgressAttemptId: inProgressAttempt?.id,
         attemptsLeft,
+        workStatus,
         challenge: {
           ...req.challenge,
           price: (req.challenge as any).price as number | null,
