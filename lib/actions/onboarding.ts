@@ -246,6 +246,41 @@ export async function dismissTip(tipId: string) {
 }
 
 /**
+ * Получить историю подсказок пользователя (для страницы /account/tips)
+ */
+export async function getUserTipsHistory() {
+  try {
+    const user = await getCurrentUser()
+
+    if (!user) {
+      return { success: false, error: "Пользователь не авторизован", data: [] }
+    }
+
+    const dismissals = await prisma.userTipDismissal.findMany({
+      where: { userId: user.id },
+      include: { tip: true },
+      orderBy: { dismissedAt: 'desc' },
+    })
+
+    // Преобразуем в удобный формат
+    const tips = dismissals.map((dismissal) => ({
+      id: dismissal.tip.id,
+      title: dismissal.tip.title,
+      message: dismissal.tip.message,
+      type: dismissal.tip.type,
+      pageUrl: dismissal.tip.pageUrl,
+      delaySeconds: dismissal.tip.delaySeconds,
+      dismissedAt: dismissal.dismissedAt,
+    }))
+
+    return { success: true, data: tips }
+  } catch (error) {
+    console.error("Error getting user tips history:", error)
+    return { success: false, error: "Ошибка при получении истории подсказок", data: [] }
+  }
+}
+
+/**
  * Получить активные подсказки для текущей страницы (для API)
  */
 export async function getActiveTipsForPage(pageUrl: string) {

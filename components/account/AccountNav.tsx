@@ -22,7 +22,8 @@ import {
   Eye,
   ShieldCheck,
   GraduationCap,
-  Wallet
+  Wallet,
+  BookOpen
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -109,6 +110,12 @@ export default function AccountNav({ user, isMobile, onNavigate }: AccountNavPro
       href: '/account/notifications',
       label: 'Уведомления',
       icon: Bell,
+      show: true // Доступ у всех статусов
+    },
+    {
+      href: '/account/tips',
+      label: 'Подсказки',
+      icon: BookOpen,
       show: true // Доступ у всех статусов
     },
     {
