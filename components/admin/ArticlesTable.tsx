@@ -63,19 +63,19 @@ export function ArticlesTable({ articles }: ArticlesTableProps) {
         <thead className="bg-gray-50">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Заголовок
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Дата модерации
+              Название
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Автор
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Тэги
+              Кто принял
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Кто принял
+              Дата модерации
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Теги
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Публикация
@@ -95,23 +95,20 @@ export function ArticlesTable({ articles }: ArticlesTableProps) {
                 >
                   {article.title}
                 </Link>
-                <div className="text-xs text-gray-500">
-                  /articles/{article.slug}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {formatDate(article.moderatedAt)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {article.author?.fullName ||
                   <span className="text-gray-400">Без автора</span>
                 }
               </td>
-              <td className="px-6 py-4 text-sm text-gray-500">
-                {getTagsDisplay(article.tags)}
-              </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {article.moderator?.fullName || '—'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {formatDate(article.moderatedAt)}
+              </td>
+              <td className="px-6 py-4 text-sm text-gray-500">
+                {getTagsDisplay(article.tags)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 {getPublishBadge(article.isPublished, article.publishedAt)}

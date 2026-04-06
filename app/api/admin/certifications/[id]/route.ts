@@ -73,6 +73,7 @@ export async function PUT(
       description,
       isActive,
       level,
+      order,
       requirements = [], // массив { challengeId, order }
     } = body;
 
@@ -110,6 +111,7 @@ export async function PUT(
         description: description !== undefined ? description : existing.description,
         isActive: isActive !== undefined ? isActive : existing.isActive,
         level: level !== undefined ? (level === null ? null : parseInt(level)) : existing.level,
+        order: order !== undefined ? parseInt(order) : existing.order,
         requirements: {
           deleteMany: {},
           create: requirements.map((req: { challengeId: string; order: number }) => ({

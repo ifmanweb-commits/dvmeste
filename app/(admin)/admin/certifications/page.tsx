@@ -25,7 +25,7 @@ export default async function CertificationsPage() {
       },
     },
     orderBy: {
-      createdAt: 'desc',
+      order: 'asc',
     },
   });
 
@@ -104,9 +104,12 @@ export default async function CertificationsPage() {
                 {certifications.map((certification) => (
                   <tr key={certification.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">
+                      <Link
+                        href={`/admin/certifications/${certification.id}/edit`}
+                        className="text-sm font-medium text-gray-900 hover:text-blue-600"
+                      >
                         {certification.title}
-                      </div>
+                      </Link>
                     </td>
                     <td className="px-6 py-4">
                       {certification.requirements.length === 0 ? (

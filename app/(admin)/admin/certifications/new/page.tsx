@@ -31,6 +31,7 @@ export default function NewCertificationPage() {
   const [description, setDescription] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [level, setLevel] = useState<number | ''>('');
+  const [order, setOrder] = useState(0);
 
   // Требования
   const [requirements, setRequirements] = useState<Requirement[]>([]);
@@ -161,6 +162,7 @@ export default function NewCertificationPage() {
           description,
           isActive,
           level: level === '' ? null : level,
+          order,
           requirements: requirements.filter(r => r.challengeId),
         }),
       });
@@ -260,6 +262,19 @@ export default function NewCertificationPage() {
                   <p className="mt-1 text-xs text-gray-500">
                     Оставьте пустым, если не повышает уровень
                   </p>
+                </div>
+
+                <div className="w-32">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Порядок
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={order}
+                    onChange={(e) => setOrder(parseInt(e.target.value) || 0)}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                  />
                 </div>
 
                 <div className="flex items-end">

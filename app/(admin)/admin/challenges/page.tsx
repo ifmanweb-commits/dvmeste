@@ -148,9 +148,12 @@ export default async function ChallengesPage({
                 return (
                   <tr key={challenge.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">
+                      <Link
+                        href={`/admin/challenges/${challenge.id}/edit`}
+                        className="text-sm font-medium text-gray-900 hover:text-blue-600"
+                      >
                         {challenge.title}
-                      </div>
+                      </Link>
                       {challenge.description && (
                         <div className="mt-1 text-xs text-gray-500 line-clamp-1">
                           {challenge.description}
