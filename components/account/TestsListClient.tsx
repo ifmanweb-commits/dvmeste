@@ -262,7 +262,7 @@ export default function TestsListClient({ tests, certifications, userBalance }: 
                   </h3>
                   {test.description && (
                     <p
-                      className={`mt-1 text-sm ${
+                      className={`mt-1 text-sm whitespace-pre-wrap ${
                         test.isCompleted ? "text-green-700" : "text-gray-600"
                       }`}
                     >

@@ -176,11 +176,11 @@ export default async function CertificationPage() {
           </section>
         )}
 
-        {/* РАЗДЕЛ 2 — Доступные сертификаты */}
+        {/* РАЗДЕЛ 2 — Доступные сертификации */}
         {availableCertsWithProgress.length > 0 && (
           <section>
             <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              Доступные сертификаты
+              Доступные сертификации
             </h2>
             <div className="space-y-4">
               {availableCertsWithProgress.map((cert) => (
@@ -197,9 +197,12 @@ export default async function CertificationPage() {
                   
                   {/* КОЛОНКА 2 — Название и описание */}
                   <div className="sm:col-span-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <Link
+                      href={`/account/certification/${cert.id}`}
+                      className="text-lg font-semibold text-gray-900 hover:text-[#5858E2] hover:underline"
+                    >
                       {cert.title}
-                    </h3>
+                    </Link>
                     {cert.description && (
                       <p className="mt-2 text-sm text-gray-600">
                         {cert.description}

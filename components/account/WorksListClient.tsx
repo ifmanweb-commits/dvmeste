@@ -280,7 +280,7 @@ export default function WorksListClient({ works, certifications, userBalance }: 
                     </Link>
                     {work.description && (
                       <p
-                        className={`mt-1 text-sm ${
+                        className={`mt-1 text-sm whitespace-pre-wrap ${
                           work.isCompleted ? "text-green-700" : "text-gray-600"
                         }`}
                       >
@@ -306,6 +306,20 @@ export default function WorksListClient({ works, certifications, userBalance }: 
                               {cert.title}
                             </Link>
                           ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Детали проверки работы */}
+                    {work.workChallenge && (
+                      <div className="mt-3 flex flex-wrap gap-3">
+                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                          <span className="font-medium">Супервизоров проверит работу:</span>
+                          <span className="font-semibold">{work.workChallenge.requiredReviews}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                          <span className="font-medium">Нужно положительных решений:</span>
+                          <span className="font-semibold text-green-600">{work.workChallenge.reviewsToPass}</span>
                         </div>
                       </div>
                     )}

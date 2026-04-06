@@ -116,7 +116,7 @@ export default async function WorkSubmissionPage({ params }: PageProps) {
             {work.title}
           </h1>
           {work.description && (
-            <p className="mt-2 text-gray-600">
+            <p className="mt-2 text-gray-600 whitespace-pre-wrap">
               {work.description}
             </p>
           )}
