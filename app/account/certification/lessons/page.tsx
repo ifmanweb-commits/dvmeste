@@ -1,25 +1,25 @@
 import { getCurrentUser } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, Award, FileText, Play } from 'lucide-react';
+import { BookOpen, Award, FileText } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
-import WorksListClient from '@/components/account/WorksListClient';
+import LessonsListClient from '@/components/account/LessonsListClient';
 
-export default async function CertificationWorksPage() {
+export default async function CertificationLessonsPage() {
   const user = await getCurrentUser();
   
   if (!user) {
     redirect('/auth/login');
   }
 
-  // Получаем все активные работы (Challenge type=WORK)
-  const workChallenges = await prisma.challenge.findMany({
+  // Получаем все активные уроки (Challenge type=LESSON)
+  const lessonChallenges = await prisma.challenge.findMany({
     where: {
-      type: 'WORK',
+      type: 'LESSON',
       isActive: true,
     },
     include: {
-      work: true,
+      lesson: true,
     },
     orderBy: {
       createdAt: 'asc',
@@ -36,21 +36,11 @@ export default async function CertificationWorksPage() {
     },
   });
 
-  // Для каждой работы получаем статус пользователя и список сертификаций
-  const worksWithStatus = await Promise.all(
-    workChallenges.map(async (challenge) => {
-      // Последняя попытка в процессе
-      const inProgressAttempt = await prisma.challengeAttempt.findFirst({
-        where: {
-          userId: user.id,
-          challengeId: challenge.id,
-          status: 'IN_PROGRESS',
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      // Состояние пользователя (остаток попыток)
-      const userState = await prisma.challengeUserState.findUnique({
+  // Для каждого урока получаем статус пользователя и список сертификаций
+  const lessonsWithStatus = await Promise.all(
+    lessonChallenges.map(async (challenge) => {
+      // Проверяем, есть ли запись о просмотре (урок пройден)
+      const completion = await prisma.lessonCompletion.findUnique({
         where: {
           challengeId_userId: {
             challengeId: challenge.id,
@@ -59,7 +49,7 @@ export default async function CertificationWorksPage() {
         },
       });
 
-      // Находим все сертификации, в которых используется эта работа
+      // Находим все сертификации, в которых используется этот урок
       const requirements = await prisma.certificationRequirement.findMany({
         where: { challengeId: challenge.id },
         include: {
@@ -68,35 +58,17 @@ export default async function CertificationWorksPage() {
       });
       const certs = requirements.map(r => r.certification);
 
-      // Проверяем статус отправки работы
-      const lastSubmission = await prisma.workSubmission.findFirst({
-        where: {
-          challengeId: challenge.id,
-          userId: user.id,
-        },
-        orderBy: { submittedAt: 'desc' },
-      });
-
-      // Для WORK проверяем наличие одобренной submission
-      const isCompleted = lastSubmission?.status === 'APPROVED';
-      const hasInProgress = !!inProgressAttempt;
-      const baseAttempts = 1; // Для работ обычно 1 попытка
-      const attemptsLeft = userState?.attemptsLeft ?? baseAttempts;
+      const isCompleted = !!completion;
+      const firstViewedAt = completion?.firstViewedAt;
 
       return {
         ...challenge,
         isCompleted,
-        hasInProgress,
-        inProgressAttemptId: inProgressAttempt?.id,
-        attemptsLeft,
-        workChallenge: challenge.work ? {
-          instructions: challenge.work.instructions,
-          requiredReviews: challenge.work.requiredReviews,
-          reviewsToPass: challenge.work.reviewsToPass,
-          reviewPrice: null,
+        firstViewedAt,
+        lesson: challenge.lesson ? {
+          content: challenge.lesson.content,
         } : null,
         certifications: certs,
-        submissionStatus: lastSubmission?.status || null,
       };
     })
   );
@@ -113,7 +85,7 @@ export default async function CertificationWorksPage() {
         {/* Заголовок страницы */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
-            Работы
+            Уроки
           </h1>
         </div>
 
@@ -141,7 +113,7 @@ export default async function CertificationWorksPage() {
             <li>
               <Link
                 href="/account/certification/works"
-                className="inline-flex items-center gap-2 border-b-2 border-[#5858E2] pb-3 text-sm font-medium text-[#5858E2]"
+                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
               >
                 <FileText className="h-4 w-4" />
                 Работы
@@ -150,18 +122,18 @@ export default async function CertificationWorksPage() {
             <li>
               <Link
                 href="/account/certification/lessons"
-                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+                className="inline-flex items-center gap-2 border-b-2 border-[#5858E2] pb-3 text-sm font-medium text-[#5858E2]"
               >
-                <Play className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
                 Уроки
               </Link>
             </li>
           </ul>
         </nav>
 
-        {/* Список работ */}
-        <WorksListClient
-          works={worksWithStatus as any}
+        {/* Список уроков */}
+        <LessonsListClient
+          lessons={lessonsWithStatus as any}
           certifications={certifications}
           userBalance={currentUser?.balance ?? 0}
         />

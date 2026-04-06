@@ -75,6 +75,8 @@ export async function POST(request: NextRequest) {
       instructions,
       requiredReviews = 1,
       reviewsToPass = 1,
+      // Для урока
+      content,
     } = body;
 
     // Валидация
@@ -139,6 +141,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (type === 'LESSON') {
+      if (!content || content.trim() === '') {
+        return NextResponse.json(
+          { error: 'content is required for LESSON type' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Проверка уникальности slug
     const existing = await prisma.challenge.findUnique({
       where: { slug },
@@ -176,10 +187,16 @@ export async function POST(request: NextRequest) {
             reviewsToPass,
           },
         } : undefined,
+        lesson: type === 'LESSON' ? {
+          create: {
+            content,
+          },
+        } : undefined,
       },
       include: {
         test: true,
         work: true,
+        lesson: true,
       },
     });
 

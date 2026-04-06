@@ -19,6 +19,7 @@ export async function GET(
       include: {
         test: true,
         work: true,
+        lesson: true,
         requirements: {
           include: {
             certification: true,
@@ -93,12 +94,14 @@ export async function PUT(
       instructions,
       requiredReviews,
       reviewsToPass,
+      // Для урока
+      content,
     } = body;
 
     // Проверка существования
     const existing = await prisma.challenge.findUnique({
       where: { id },
-      include: { test: true, work: true },
+      include: { test: true, work: true, lesson: true },
     });
 
     if (!existing) {
@@ -154,12 +157,22 @@ export async function PUT(
       };
     }
 
+    // Обновляем урок если он есть
+    if (existing.lesson) {
+      updateData.lesson = {
+        update: {
+          content: content !== undefined ? content : existing.lesson.content,
+        },
+      };
+    }
+
     const challenge = await prisma.challenge.update({
       where: { id },
       data: updateData,
       include: {
         test: true,
         work: true,
+        lesson: true,
       },
     });
 

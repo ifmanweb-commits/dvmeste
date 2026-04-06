@@ -25,6 +25,10 @@ interface WorkSettings {
   reviewsToPass: number;
 }
 
+interface LessonSettings {
+  content: string;
+}
+
 export default function NewChallengePage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,7 +39,7 @@ export default function NewChallengePage() {
   const [slug, setSlug] = useState('');
   const [isSlugEdited, setIsSlugEdited] = useState(false);
   const [description, setDescription] = useState('');
-  const [challengeType, setChallengeType] = useState<'TEST' | 'WORK'>('TEST');
+  const [challengeType, setChallengeType] = useState<'TEST' | 'WORK' | 'LESSON'>('TEST');
   const [isActive, setIsActive] = useState(true);
 
   // Настройки теста
@@ -51,6 +55,11 @@ export default function NewChallengePage() {
     instructions: '',
     requiredReviews: 1,
     reviewsToPass: 1,
+  });
+
+  // Настройки урока
+  const [lessonSettings, setLessonSettings] = useState<LessonSettings>({
+    content: '',
   });
 
   // Цена испытания (общая для всех типов)
@@ -243,6 +252,9 @@ export default function NewChallengePage() {
             requiredReviews: workSettings.requiredReviews,
             reviewsToPass: workSettings.reviewsToPass,
           }),
+          ...(challengeType === 'LESSON' && {
+            content: lessonSettings.content || '',
+          }),
         }),
       });
 
@@ -352,6 +364,17 @@ export default function NewChallengePage() {
                         className="mr-2"
                       />
                       <span className="text-sm">Квалификационная работа</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="type"
+                        value="LESSON"
+                        checked={challengeType === 'LESSON'}
+                        onChange={() => setChallengeType('LESSON')}
+                        className="mr-2"
+                      />
+                      <span className="text-sm">Урок</span>
                     </label>
                   </div>
                 </div>
@@ -705,6 +728,38 @@ export default function NewChallengePage() {
                       className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Настройки урока */}
+          {challengeType === 'LESSON' && (
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">
+                Настройки урока
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Контент урока (HTML)
+                  </label>
+                  <textarea
+                    value={lessonSettings.content}
+                    onChange={(e) =>
+                      setLessonSettings({
+                        ...lessonSettings,
+                        content: e.target.value,
+                      })
+                    }
+                    rows={12}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                    placeholder="<h2>Заголовок урока</h2><p>Текст урока...</p>"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Поддерживается HTML: заголовки, параграфы, списки, ссылки, видео (YouTube/Vimeo embed)
+                  </p>
                 </div>
               </div>
             </div>

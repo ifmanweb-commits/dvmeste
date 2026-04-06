@@ -56,16 +56,22 @@ model User {
   leads                 Lead[]
   
 
-  // Курсы
+  // РљСѓСЂСЃС‹
   courses      UserCourse[]
   courseKeys   CourseKeyUse[]
 
-  // Сертификация
+  // РЎРµСЂС‚РёС„РёРєР°С†РёСЏ
   certificationAwards CertificationAward[] @relation(name: "CertificationAwards")
   challengeAttempts ChallengeAttempt[] @relation(name: "UserChallengeAttempts")
   challengeStates ChallengeUserState[] @relation(name: "UserChallengeStates")
+  workSubmissions WorkSubmission[] @relation(name: "UserWorkSubmissions")
+  reviewedSubmissions WorkSubmission[] @relation(name: "ReviewerWorkSubmissions")
+  workReviews WorkReview[] @relation(name: "SupervisorWorkReviews")
 
-  // Биллинг
+  // РћР±СѓС‡Р°СЋС‰РёРµ РїРѕРґСЃРєР°Р·РєРё
+  tipDismissals UserTipDismissal[]
+
+  // Р‘РёР»Р»РёРЅРі
   balance Int @default(0)
   transactions Transaction[]
 
@@ -183,14 +189,14 @@ model ModerationRecord {
 }
 
 enum DialogStatus {
-  ACTIVE // требует ответа модератора
-  WAITING // ждем ответа пользователя
-  ARCHIVED // закрыт/архив
+  ACTIVE // С‚СЂРµР±СѓРµС‚ РѕС‚РІРµС‚Р° РјРѕРґРµСЂР°С‚РѕСЂР°
+  WAITING // Р¶РґРµРј РѕС‚РІРµС‚Р° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
+  ARCHIVED // Р·Р°РєСЂС‹С‚/Р°СЂС…РёРІ
 }
 
 model Dialog {
   id            String       @id @default(cuid())
-  userId        String       @unique // один диалог на пользователя
+  userId        String       @unique // РѕРґРёРЅ РґРёР°Р»РѕРі РЅР° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
   status        DialogStatus @default(ACTIVE)
   lastMessageAt DateTime     @default(now())
   createdAt     DateTime     @default(now())
@@ -202,8 +208,8 @@ model Dialog {
 
 model Message {
   id        String   @id @default(cuid())
-  dialogId  String // связь с диалогом
-  direction String // 'to_moder' или 'to_user'
+  dialogId  String // СЃРІСЏР·СЊ СЃ РґРёР°Р»РѕРіРѕРј
+  direction String // 'to_moder' РёР»Рё 'to_user'
   text      String   @db.Text
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
@@ -271,14 +277,14 @@ enum DocumentType {
 }
 
 enum NotificationType {
-  LEAD // заявка от клиента
-  ARTICLE_APPROVED // статья одобрена
-  ARTICLE_REVISION // статья на доработку
-  PROFILE_APPROVED // профиль одобрен
-  PROFILE_REJECTED // профиль отклонен
-  DOCUMENT_VERIFIED // документ проверен
-  REMINDER // напоминание о статье
-  INFO // новости проекта
+  LEAD // Р·Р°СЏРІРєР° РѕС‚ РєР»РёРµРЅС‚Р°
+  ARTICLE_APPROVED // СЃС‚Р°С‚СЊСЏ РѕРґРѕР±СЂРµРЅР°
+  ARTICLE_REVISION // СЃС‚Р°С‚СЊСЏ РЅР° РґРѕСЂР°Р±РѕС‚РєСѓ
+  PROFILE_APPROVED // РїСЂРѕС„РёР»СЊ РѕРґРѕР±СЂРµРЅ
+  PROFILE_REJECTED // РїСЂРѕС„РёР»СЊ РѕС‚РєР»РѕРЅРµРЅ
+  DOCUMENT_VERIFIED // РґРѕРєСѓРјРµРЅС‚ РїСЂРѕРІРµСЂРµРЅ
+  REMINDER // РЅР°РїРѕРјРёРЅР°РЅРёРµ Рѕ СЃС‚Р°С‚СЊРµ
+  INFO // РЅРѕРІРѕСЃС‚Рё РїСЂРѕРµРєС‚Р°
 }
 
 model Notification {
@@ -311,7 +317,7 @@ model PushSubscription {
   deviceType String?  // 'desktop', 'mobile', 'tablet'
   deviceOs   String?  // 'windows', 'macos', 'ios', 'android', 'linux'
   browser    String?  // 'chrome', 'safari', 'firefox', 'edge', 'other'
-  userAgent  String?  // исходный User-Agent
+  userAgent  String?  // РёСЃС…РѕРґРЅС‹Р№ User-Agent
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -319,7 +325,7 @@ model PushSubscription {
   @@index([userId])
 }
 
-// ==================== МОДЕЛИ СИСТЕМЫ ЗАЯВОК ====================
+// ==================== РњРћР”Р•Р›Р РЎРРЎРўР•РњР« Р—РђРЇР’РћРљ ====================
 
 model Client {
   id              String   @id @default(cuid())
@@ -332,7 +338,7 @@ model Client {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  // Репутация (невидимая для клиента)
+  // Р РµРїСѓС‚Р°С†РёСЏ (РЅРµРІРёРґРёРјР°СЏ РґР»СЏ РєР»РёРµРЅС‚Р°)
   complaintCount  Int      @default(0)
   isShadowBanned  Boolean  @default(false)
 
@@ -355,11 +361,11 @@ model Lead {
   createdAt        DateTime       @default(now())
   viewedAt         DateTime?
 
-  // Для подозрительных клиентов
+  // Р”Р»СЏ РїРѕРґРѕР·СЂРёС‚РµР»СЊРЅС‹С… РєР»РёРµРЅС‚РѕРІ
   isSuspicious     Boolean        @default(false)
   suspiciousReason String?
 
-  // IP адрес для ограничения заявок
+  // IP Р°РґСЂРµСЃ РґР»СЏ РѕРіСЂР°РЅРёС‡РµРЅРёСЏ Р·Р°СЏРІРѕРє
   ipAddress        String?
 
   client           Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
@@ -374,7 +380,7 @@ model Lead {
 
 model Complaint {
   id                 String   @id @default(cuid())
-  fromType           String   // 'client' или 'psychologist'
+  fromType           String   // 'client' РёР»Рё 'psychologist'
   fromClientId       String?
   fromPsychologistId String?
   toClientId         String?
@@ -406,21 +412,21 @@ enum LeadStatus {
 }
 
 enum LeadResolution {
-  PSYCHOLOGIST_REJECTED  // психолог отказал сразу
-  NO_CONTACT             // не удалось связаться
-  NO_AGREEMENT           // связались, но не договорились
-  CLIENT_DROPPED         // договорились, клиент пропал
-  FREE_ONLY              // только бесплатная сессия
-  PAID_COMPLETED         // были платные сессии
+  PSYCHOLOGIST_REJECTED  // РїСЃРёС…РѕР»РѕРі РѕС‚РєР°Р·Р°Р» СЃСЂР°Р·Сѓ
+  NO_CONTACT             // РЅРµ СѓРґР°Р»РѕСЃСЊ СЃРІСЏР·Р°С‚СЊСЃСЏ
+  NO_AGREEMENT           // СЃРІСЏР·Р°Р»РёСЃСЊ, РЅРѕ РЅРµ РґРѕРіРѕРІРѕСЂРёР»РёСЃСЊ
+  CLIENT_DROPPED         // РґРѕРіРѕРІРѕСЂРёР»РёСЃСЊ, РєР»РёРµРЅС‚ РїСЂРѕРїР°Р»
+  FREE_ONLY              // С‚РѕР»СЊРєРѕ Р±РµСЃРїР»Р°С‚РЅР°СЏ СЃРµСЃСЃРёСЏ
+  PAID_COMPLETED         // Р±С‹Р»Рё РїР»Р°С‚РЅС‹Рµ СЃРµСЃСЃРёРё
 }
 
-// ==================== КУРСЫ ====================
+// ==================== РљРЈР РЎР« ====================
 
 model Course {
   id          String   @id @default(cuid())
   slug        String   @unique          // "pp", "pm", "pa", "mak"
-  title       String                    // "Психолог-практик"
-  shortTitle  String                    // "ПП" — для бейджей
+  title       String                    // "РџСЃРёС…РѕР»РѕРі-РїСЂР°РєС‚РёРє"
+  shortTitle  String                    // "РџРџ" вЂ” РґР»СЏ Р±РµР№РґР¶РµР№
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -432,13 +438,13 @@ model Course {
   @@index([slug])
 }
 
-// ==================== СВЯЗЬ ПОЛЬЗОВАТЕЛЬ-КУРС ====================
+// ==================== РЎР’РЇР—Р¬ РџРћР›Р¬Р—РћР’РђРўР•Р›Р¬-РљРЈР РЎ ====================
 
 model UserCourse {
   id         String   @id @default(cuid())
   userId     String
   courseId   String
-  status     String   // "enrolled" или "graduated"
+  status     String   // "enrolled" РёР»Рё "graduated"
   assignedAt DateTime @default(now())
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -450,14 +456,14 @@ model UserCourse {
   @@index([status])
 }
 
-// ==================== ПРОМОКОДЫ ====================
+// ==================== РџР РћРњРћРљРћР”Р« ====================
 
 model CourseKey {
   id         String   @id @default(cuid())
   courseId   String
   key        String   @unique
-  status     String   // "enrolled" или "graduated" — статус, который присваивается пользователю
-  maxUses    Int      @default(1)       // 0 — без ограничений
+  status     String   // "enrolled" РёР»Рё "graduated" вЂ” СЃС‚Р°С‚СѓСЃ, РєРѕС‚РѕСЂС‹Р№ РїСЂРёСЃРІР°РёРІР°РµС‚СЃСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЋ
+  maxUses    Int      @default(1)       // 0 вЂ” Р±РµР· РѕРіСЂР°РЅРёС‡РµРЅРёР№
   usedCount  Int      @default(0)
   expiresAt  DateTime?
   createdAt  DateTime @default(now())
@@ -483,13 +489,13 @@ model CourseKeyUse {
   @@index([userId])
 }
 
-// ==================== СВЯЗЬ КУРСОВ С ИСПЫТАНИЯМИ ====================
+// ==================== РЎР’РЇР—Р¬ РљРЈР РЎРћР’ РЎ РРЎРџР«РўРђРќРРЇРњР ====================
 
 model CourseChallengeAccess {
   id          String   @id @default(cuid())
   courseId    String
   challengeId String
-  status      String   // "enrolled" (ученик) или "graduated" (выпускник)
+  status      String   // "enrolled" (СѓС‡РµРЅРёРє) РёР»Рё "graduated" (РІС‹РїСѓСЃРєРЅРёРє)
   order       Int      @default(0)
 
   course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
@@ -500,7 +506,7 @@ model CourseChallengeAccess {
   @@index([challengeId])
 }
 
-// ==================== СИСТЕМА СЕРТИФИКАЦИИ И ТЕСТОВ ====================
+// ==================== РЎРРЎРўР•РњРђ РЎР•Р РўРР¤РРљРђР¦РР Р РўР•РЎРўРћР’ ====================
 
 enum ChallengeType {
   TEST
@@ -510,6 +516,24 @@ enum ChallengeType {
 enum AttemptStatus {
   IN_PROGRESS
   COMPLETED
+}
+
+enum WorkStatus {
+  SUBMITTED
+  REVIEWING
+  APPROVED
+  REJECTED
+}
+
+enum ReviewVerdict {
+  APPROVED
+  REJECTED
+}
+
+enum WorkReviewStatus {
+  TAKEN
+  COMPLETED
+  CANCELLED
 }
 
 model Challenge {
@@ -524,10 +548,12 @@ model Challenge {
 
   test         TestChallenge?
   work         WorkChallenge?
+  price        Int?           // С†РµРЅР° Р·Р° СЂР°Р·Р±Р»РѕРєРёСЂРѕРІРєСѓ РІ РєРѕРїРµР№РєР°С… (null = Р±РµСЃРїР»Р°С‚РЅРѕ)
   requirements CertificationRequirement[]
   attempts     ChallengeAttempt[]
   userStates   ChallengeUserState[]
   courseAccess CourseChallengeAccess[]
+  workSubmissions WorkSubmission[]
 
   @@index([slug])
   @@index([type])
@@ -537,12 +563,11 @@ model Challenge {
 model TestChallenge {
   id             String      @id @default(cuid())
   challengeId    String      @unique
-  questionsPool  Json        // банк вопросов в формате JSON
-  questionsCount Int         // сколько вопросов выбирается в тест
-  passingScore   Int         // сколько правильных ответов нужно для сдачи
-  timeLimit      Int?        // лимит времени в минутах (null = без лимита)
+  questionsPool  Json        // Р±Р°РЅРє РІРѕРїСЂРѕСЃРѕРІ РІ С„РѕСЂРјР°С‚Рµ JSON
+  questionsCount Int         // СЃРєРѕР»СЊРєРѕ РІРѕРїСЂРѕСЃРѕРІ РІС‹Р±РёСЂР°РµС‚СЃСЏ РІ С‚РµСЃС‚
+  passingScore   Int         // СЃРєРѕР»СЊРєРѕ РїСЂР°РІРёР»СЊРЅС‹С… РѕС‚РІРµС‚РѕРІ РЅСѓР¶РЅРѕ РґР»СЏ СЃРґР°С‡Рё
+  timeLimit      Int?        // Р»РёРјРёС‚ РІСЂРµРјРµРЅРё РІ РјРёРЅСѓС‚Р°С… (null = Р±РµР· Р»РёРјРёС‚Р°)
   freeAttempts   Int         @default(2)
-  unlockPrice    Int?        // цена разблокировки в копейках (null = нельзя купить)
 
   challenge      Challenge   @relation(fields: [challengeId], references: [id], onDelete: Cascade)
 
@@ -552,10 +577,9 @@ model TestChallenge {
 model WorkChallenge {
   id              String    @id @default(cuid())
   challengeId     String    @unique
-  instructions    String?   @db.Text  // инструкция для супервизора
+  instructions    String?   @db.Text  // РёРЅСЃС‚СЂСѓРєС†РёСЏ РґР»СЏ СЃСѓРїРµСЂРІРёР·РѕСЂР°
   requiredReviews Int       @default(1)
   reviewsToPass   Int       @default(1)
-  reviewPrice     Int?      // цена проверки (в копейках)
 
   challenge       Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
 
@@ -570,8 +594,8 @@ model ChallengeAttempt {
   passed                Boolean?
   startedAt             DateTime?
   finishedAt            DateTime?
-  selectedQuestionIndices Json?       // индексы выбранных вопросов из пула
-  answers               Json?         // ответы пользователя: { "0": [2], "1": [0,3] }
+  selectedQuestionIndices Json?       // РёРЅРґРµРєСЃС‹ РІС‹Р±СЂР°РЅРЅС‹С… РІРѕРїСЂРѕСЃРѕРІ РёР· РїСѓР»Р°
+  answers               Json?         // РѕС‚РІРµС‚С‹ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: { "0": [2], "1": [0,3] }
   score                 Int?
 
   createdAt             DateTime      @default(now())
@@ -601,12 +625,54 @@ model ChallengeUserState {
   @@index([userId])
 }
 
+model WorkSubmission {
+  id              String     @id @default(cuid())
+  challengeId     String
+  userId          String
+  videoUrl        String     // СЃСЃС‹Р»РєР° РЅР° РІРёРґРµРѕ
+  transcriptUrl   String     // СЃСЃС‹Р»РєР° РЅР° СЂР°СЃС€РёС„СЂРѕРІРєСѓ
+  status          WorkStatus @default(SUBMITTED)
+  approvedCount   Int        @default(0)
+  rejectedCount   Int        @default(0)
+  submittedAt     DateTime   @default(now())
+  reviewerId      String?    // С‚РµРєСѓС‰РёР№ РїСЂРѕРІРµСЂСЏСЋС‰РёР№ (РєС‚Рѕ РІР·СЏР» РЅР° РїСЂРѕРІРµСЂРєСѓ)
+
+  challenge       Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserWorkSubmissions")
+  reviewer        User?     @relation(fields: [reviewerId], references: [id], name: "ReviewerWorkSubmissions")
+  reviews         WorkReview[] @relation(name: "SubmissionWorkReviews")
+
+  @@index([challengeId])
+  @@index([userId])
+  @@index([status])
+  @@index([submittedAt])
+}
+
+model WorkReview {
+  id           String           @id @default(cuid())
+  submissionId String
+  supervisorId String
+  status       WorkReviewStatus @default(TAKEN)
+  verdict      ReviewVerdict?
+  comment      String?          @db.Text  // РєРѕРјРјРµРЅС‚Р°СЂРёР№ РґР»СЏ РїСЃРёС…РѕР»РѕРіР° (РїСЂРё REJECTED)
+  createdAt    DateTime         @default(now())
+  resolvedAt   DateTime?        // РєРѕРіРґР° Р·Р°РІРµСЂС€РµРЅР° (COMPLETED РёР»Рё CANCELLED)
+
+  submission WorkSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade, name: "SubmissionWorkReviews")
+  supervisor User           @relation(fields: [supervisorId], references: [id], onDelete: Cascade, name: "SupervisorWorkReviews")
+
+  @@unique([submissionId, supervisorId])
+  @@index([submissionId])
+  @@index([supervisorId])
+  @@index([status])
+}
+
 model Certification {
   id          String   @id @default(cuid())
   slug        String   @unique
   title       String
   description String?
-  level       Int?     // null = не повышает уровень, иначе новый уровень
+  level       Int?     // null = РЅРµ РїРѕРІС‹С€Р°РµС‚ СѓСЂРѕРІРµРЅСЊ, РёРЅР°С‡Рµ РЅРѕРІС‹Р№ СѓСЂРѕРІРµРЅСЊ
   isActive    Boolean  @default(true)
   order       Int      @default(0)
   createdAt   DateTime @default(now())
@@ -646,25 +712,64 @@ model CertificationAward {
   @@index([certificationId])
 }
 
-// ==================== БИЛЛИНГ ====================
+// ==================== Р‘РР›Р›РРќР“ ====================
 
 enum TransactionType {
-  DEPOSIT      // пополнение счёта (внешняя оплата или ручное зачисление)
-  WITHDRAWAL   // вывод средств (заявка на вывод)
-  PURCHASE     // списание за услугу (разблокировка теста, проверка работы)
-  EARNING      // начисление супервизору за проверку
-  ADJUSTMENT   // корректировка админом
+  DEPOSIT      // РїРѕРїРѕР»РЅРµРЅРёРµ СЃС‡С‘С‚Р° (РІРЅРµС€РЅСЏСЏ РѕРїР»Р°С‚Р° РёР»Рё СЂСѓС‡РЅРѕРµ Р·Р°С‡РёСЃР»РµРЅРёРµ)
+  WITHDRAWAL   // РІС‹РІРѕРґ СЃСЂРµРґСЃС‚РІ (Р·Р°СЏРІРєР° РЅР° РІС‹РІРѕРґ)
+  PURCHASE     // СЃРїРёСЃР°РЅРёРµ Р·Р° СѓСЃР»СѓРіСѓ (СЂР°Р·Р±Р»РѕРєРёСЂРѕРІРєР° С‚РµСЃС‚Р°, РїСЂРѕРІРµСЂРєР° СЂР°Р±РѕС‚С‹)
+  EARNING      // РЅР°С‡РёСЃР»РµРЅРёРµ СЃСѓРїРµСЂРІРёР·РѕСЂСѓ Р·Р° РїСЂРѕРІРµСЂРєСѓ
+  ADJUSTMENT   // РєРѕСЂСЂРµРєС‚РёСЂРѕРІРєР° Р°РґРјРёРЅРѕРј
+}
+
+// ==================== РћР‘РЈР§РђР®Р©РР• РџРћР”РЎРљРђР—РљР (ONBOARDING TIPS) ====================
+
+enum TipType {
+  TOAST
+  MODAL
+}
+
+model OnboardingTip {
+  id           String           @id @default(cuid())
+  title        String
+  message      String           @db.Text
+  type         TipType
+  pageUrl      String
+  delaySeconds Int              @default(0)
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  
+  dismissals   UserTipDismissal[]
+  
+  @@index([pageUrl])
+  @@index([type])
+  @@index([isActive])
+}
+
+model UserTipDismissal {
+  id          String    @id @default(cuid())
+  userId      String
+  tipId       String
+  dismissedAt DateTime  @default(now())
+  
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tip         OnboardingTip @relation(fields: [tipId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, tipId])
+  @@index([userId])
+  @@index([tipId])
 }
 
 model Transaction {
   id           String          @id @default(cuid())
   userId       String
   type         TransactionType
-  amount       Int             // сумма в копейках (положительная для DEPOSIT/EARNING, отрицательная для PURCHASE/WITHDRAWAL)
-  balanceAfter Int             // баланс ПОСЛЕ операции
+  amount       Int             // СЃСѓРјРјР° РІ РєРѕРїРµР№РєР°С… (РїРѕР»РѕР¶РёС‚РµР»СЊРЅР°СЏ РґР»СЏ DEPOSIT/EARNING, РѕС‚СЂРёС†Р°С‚РµР»СЊРЅР°СЏ РґР»СЏ PURCHASE/WITHDRAWAL)
+  balanceAfter Int             // Р±Р°Р»Р°РЅСЃ РџРћРЎР›Р• РѕРїРµСЂР°С†РёРё
   description  String
-  paymentId    String?         @unique  // для защиты от дублей (идемпотентность)
-  metadata     Json            @default("{}")  // дополнительная информация (serviceId, paymentId, adminId и т.д.)
+  paymentId    String?         @unique  // РґР»СЏ Р·Р°С‰РёС‚С‹ РѕС‚ РґСѓР±Р»РµР№ (РёРґРµРјРїРѕС‚РµРЅС‚РЅРѕСЃС‚СЊ)
+  metadata     Json            @default("{}")  // РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅР°СЏ РёРЅС„РѕСЂРјР°С†РёСЏ (serviceId, paymentId, adminId Рё С‚.Рґ.)
   createdAt    DateTime        @default(now())
 
   user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)

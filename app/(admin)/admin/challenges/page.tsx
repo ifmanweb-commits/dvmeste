@@ -7,6 +7,7 @@ export default async function ChallengesPage() {
     include: {
       test: true,
       work: true,
+      lesson: true,
       _count: {
         select: {
           attempts: true,
@@ -109,10 +110,13 @@ export default async function ChallengesPage() {
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           challenge.type === 'TEST'
                             ? 'bg-blue-100 text-blue-800'
-                            : 'bg-purple-100 text-purple-800'
+                            : challenge.type === 'WORK'
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-green-100 text-green-800'
                         }`}
                       >
-                        {challenge.type === 'TEST' ? 'Тест' : 'Работа'}
+                        {challenge.type === 'TEST' ? 'Тест' :
+                         challenge.type === 'WORK' ? 'Работа' : 'Урок'}
                       </span>
                     </td>
                     <td className="px-6 py-4">

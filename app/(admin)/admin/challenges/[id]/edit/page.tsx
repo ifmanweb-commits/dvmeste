@@ -30,15 +30,21 @@ interface WorkChallenge {
   reviewPrice: number | null;
 }
 
+interface LessonChallenge {
+  id: string;
+  content: string;
+}
+
 interface Challenge {
   id: string;
   slug: string;
   title: string;
   description: string | null;
-  type: 'TEST' | 'WORK';
+  type: 'TEST' | 'WORK' | 'LESSON';
   isActive: boolean;
   test: TestChallenge | null;
   work: WorkChallenge | null;
+  lesson: LessonChallenge | null;
 }
 
 interface TestSettings {
@@ -52,6 +58,10 @@ interface WorkSettings {
   instructions: string;
   requiredReviews: number;
   reviewsToPass: number;
+}
+
+interface LessonSettings {
+  content: string;
 }
 
 export default function EditChallengePage() {
@@ -68,8 +78,13 @@ export default function EditChallengePage() {
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
-  const [challengeType, setChallengeType] = useState<'TEST' | 'WORK'>('TEST');
+  const [challengeType, setChallengeType] = useState<'TEST' | 'WORK' | 'LESSON'>('TEST');
   const [isActive, setIsActive] = useState(true);
+
+  // Настройки урока
+  const [lessonSettings, setLessonSettings] = useState<LessonSettings>({
+    content: '',
+  });
 
   // Настройки теста
   const [testSettings, setTestSettings] = useState<TestSettings>({
@@ -127,6 +142,12 @@ export default function EditChallengePage() {
             instructions: data.work.instructions || '',
             requiredReviews: data.work.requiredReviews,
             reviewsToPass: data.work.reviewsToPass,
+          });
+        }
+
+        if (data.type === 'LESSON' && data.lesson) {
+          setLessonSettings({
+            content: data.lesson.content || '',
           });
         }
 
@@ -288,6 +309,9 @@ export default function EditChallengePage() {
             requiredReviews: workSettings.requiredReviews,
             reviewsToPass: workSettings.reviewsToPass,
           }),
+          ...(challengeType === 'LESSON' && {
+            content: lessonSettings.content || '',
+          }),
         }),
       });
 
@@ -387,8 +411,13 @@ export default function EditChallengePage() {
                     Тип
                   </label>
                   <div className="mt-2 flex gap-4">
-                    <span className={`flex items-center text-sm ${challengeType === 'TEST' ? 'font-medium text-gray-900' : 'text-gray-500'}`}>
-                      {challengeType === 'TEST' ? 'Тест' : 'Квалификационная работа'}
+                    <span className={`flex items-center text-sm ${
+                      challengeType === 'TEST' ? 'font-medium text-gray-900' :
+                      challengeType === 'WORK' ? 'font-medium text-gray-900' :
+                      challengeType === 'LESSON' ? 'font-medium text-gray-900' : 'text-gray-500'
+                    }`}>
+                      {challengeType === 'TEST' ? 'Тест' :
+                       challengeType === 'WORK' ? 'Квалификационная работа' : 'Урок'}
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
@@ -745,6 +774,38 @@ export default function EditChallengePage() {
                       className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Настройки урока */}
+          {challengeType === 'LESSON' && (
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">
+                Настройки урока
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Контент урока (HTML)
+                  </label>
+                  <textarea
+                    value={lessonSettings.content}
+                    onChange={(e) =>
+                      setLessonSettings({
+                        ...lessonSettings,
+                        content: e.target.value,
+                      })
+                    }
+                    rows={12}
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                    placeholder="<h2>Заголовок урока</h2><p>Текст урока...</p>"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Поддерживается HTML: заголовки, параграфы, списки, ссылки, видео (YouTube/Vimeo embed)
+                  </p>
                 </div>
               </div>
             </div>

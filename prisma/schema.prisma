@@ -8,72 +8,65 @@ datasource db {
 }
 
 model User {
-  id                    String             @id @default(cuid())
-  email                 String             @unique /// @encrypted
-  emailHash             String?            @unique
+  id                    String               @id @default(cuid())
+  /// @encrypted
+  email                 String               @unique
   emailVerified         DateTime?
   fullName              String?
-  isAdmin               Boolean            @default(false)
-  isManager             Boolean            @default(false)
-  isSupervisor          Boolean            @default(false)
-  status                PsychologistStatus @default(PENDING)
-  isPublished           Boolean            @default(false)
-  slug                  String?            @unique
+  isAdmin               Boolean              @default(false)
+  isManager             Boolean              @default(false)
+  status                PsychologistStatus   @default(PENDING)
+  isPublished           Boolean              @default(false)
+  slug                  String?              @unique
   gender                String?
   birthDate             DateTime?
   city                  String?
   workFormat            String?
   mainParadigm          String[]
-  certificationLevel    Int                @default(0)
+  certificationLevel    Int                  @default(0)
   firstDiplomaDate      DateTime?
   lastCertificationDate DateTime?
-  shortBio              String?            @db.VarChar(400)
+  shortBio              String?              @db.VarChar(400)
   longBio               String?
   price                 Int?
-  contactInfo           String?            @db.VarChar(150)
-  unsubscribed          Boolean            @default(false)
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  draftData             Json?              @default("{}") @db.Json
-  hasUnpublishedChanges Boolean            @default(false)
+  contactInfo           String?              @db.VarChar(150)
+  unsubscribed          Boolean              @default(false)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  draftData             Json?                @default("{}") @db.Json
+  hasUnpublishedChanges Boolean              @default(false)
   avatarUrl             String?
-  freeSession           Int                @default(0)
-  sortOrder             Int                @default(0)
-  showCandidate         Boolean            @default(false)
-  totalBonus            Int                @default(0)
-  moderatedArticles     Article[]          @relation("ModeratedArticles")
-  articles              Article[]          @relation("AuthorArticles")
-  documents             Document[]         @relation("user_documents")
-  verifiedDocuments     Document[]         @relation("verifier_documents")
-  moderatorRecords      ModerationRecord[] @relation("moderator_records")
-  moderationRecords     ModerationRecord[] @relation("moderated_user")
-  sessions              Session[]
-  dialogs               Dialog[]
+  freeSession           Int                  @default(0)
+  emailHash             String?              @unique
+  isSupervisor          Boolean              @default(false)
+  sortOrder             Int                  @default(0)
+  showCandidate         Boolean              @default(false)
+  balance               Int                  @default(0)
+  totalBonus            Int                  @default(0)
+  moderatedArticles     Article[]            @relation("ModeratedArticles")
+  articles              Article[]            @relation("AuthorArticles")
+  certificationAwards   CertificationAward[] @relation("CertificationAwards")
+  challengeAttempts     ChallengeAttempt[]   @relation("UserChallengeAttempts")
+  challengeStates       ChallengeUserState[] @relation("UserChallengeStates")
+  complaintsFrom        Complaint[]          @relation("psychologist_complaints_from")
+  complaintsTo          Complaint[]          @relation("psychologist_complaints_to")
+  courseKeys            CourseKeyUse[]
+  dialogs               Dialog?
+  documents             Document[]           @relation("user_documents")
+  verifiedDocuments     Document[]           @relation("verifier_documents")
+  leads                 Lead[]
+  lessonCompletions     LessonCompletion[]   @relation("UserLessonCompletions")
+  moderatorRecords      ModerationRecord[]   @relation("moderator_records")
+  moderationRecords     ModerationRecord[]   @relation("moderated_user")
   notifications         Notification[]
   pushSubscriptions     PushSubscription[]
-  complaintsFrom        Complaint[] @relation("psychologist_complaints_from")
-  complaintsTo          Complaint[] @relation("psychologist_complaints_to")
-  leads                 Lead[]
-  
-
-  // Курсы
-  courses      UserCourse[]
-  courseKeys   CourseKeyUse[]
-
-  // Сертификация
-  certificationAwards CertificationAward[] @relation(name: "CertificationAwards")
-  challengeAttempts ChallengeAttempt[] @relation(name: "UserChallengeAttempts")
-  challengeStates ChallengeUserState[] @relation(name: "UserChallengeStates")
-  workSubmissions WorkSubmission[] @relation(name: "UserWorkSubmissions")
-  reviewedSubmissions WorkSubmission[] @relation(name: "ReviewerWorkSubmissions")
-  workReviews WorkReview[] @relation(name: "SupervisorWorkReviews")
-
-  // Обучающие подсказки
-  tipDismissals UserTipDismissal[]
-
-  // Биллинг
-  balance Int @default(0)
-  transactions Transaction[]
+  sessions              Session[]
+  transactions          Transaction[]
+  courses               UserCourse[]
+  tipDismissals         UserTipDismissal[]
+  workReviews           WorkReview[]         @relation("SupervisorWorkReviews")
+  reviewedSubmissions   WorkSubmission[]     @relation("ReviewerWorkSubmissions")
+  workSubmissions       WorkSubmission[]     @relation("UserWorkSubmissions")
 
   @@index([email])
   @@index([status])
@@ -118,8 +111,8 @@ model Article {
   tags             String[]         @default([])
   moderatorComment String?
   submittedAt      DateTime?
-  bonusPoints      Int              @default(0)
   moderationStatus ModerationStatus @default(DRAFT)
+  bonusPoints      Int              @default(0)
   moderator        User?            @relation("ModeratedArticles", fields: [moderatedBy], references: [id])
   user             User?            @relation("AuthorArticles", fields: [userId], references: [id])
   articleImages    ArticleImage[]
@@ -139,7 +132,6 @@ model ArticleImage {
 
   @@index([articleId])
 }
-
 
 model Document {
   id           String       @id @default(cuid())
@@ -188,33 +180,25 @@ model ModerationRecord {
   @@index([moderatorId])
 }
 
-enum DialogStatus {
-  ACTIVE // требует ответа модератора
-  WAITING // ждем ответа пользователя
-  ARCHIVED // закрыт/архив
-}
-
 model Dialog {
   id            String       @id @default(cuid())
-  userId        String       @unique // один диалог на пользователя
+  userId        String       @unique
   status        DialogStatus @default(ACTIVE)
   lastMessageAt DateTime     @default(now())
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
-
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages Message[]
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages      Message[]
 }
 
 model Message {
   id        String   @id @default(cuid())
-  dialogId  String // связь с диалогом
-  direction String // 'to_moder' или 'to_user'
-  text      String   @db.Text
+  direction String
+  text      String
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
-
-  dialog Dialog @relation(fields: [dialogId], references: [id], onDelete: Cascade)
+  dialogId  String
+  dialog    Dialog   @relation(fields: [dialogId], references: [id], onDelete: Cascade)
 
   @@index([dialogId])
   @@index([createdAt])
@@ -251,6 +235,428 @@ model DataList {
   @@index([slug])
 }
 
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String
+  type       NotificationType
+  title      String
+  message    String
+  linkUrl    String?
+  linkText   String?
+  isRead     Boolean          @default(false)
+  isArchived Boolean          @default(false)
+  expiresAt  DateTime?
+  createdAt  DateTime         @default(now())
+  metadata   Json?            @default("{}")
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model PushSubscription {
+  id         String   @id @default(cuid())
+  userId     String
+  endpoint   String   @unique
+  p256dh     String
+  auth       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  browser    String?
+  deviceOs   String?
+  deviceType String?
+  userAgent  String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Client {
+  id             String      @id @default(cuid())
+  email          String      @unique
+  emailHash      String?     @unique
+  name           String?
+  phone          String?
+  telegram       String?
+  vk             String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  complaintCount Int         @default(0)
+  isShadowBanned Boolean     @default(false)
+  complaintsFrom Complaint[] @relation("client_complaints_from")
+  complaintsTo   Complaint[] @relation("client_complaints_to")
+  leads          Lead[]
+
+  @@index([email])
+  @@index([emailHash])
+}
+
+model Lead {
+  id               String          @id @default(cuid())
+  clientId         String
+  psychologistId   String
+  message          String?
+  status           LeadStatus      @default(NEW)
+  statusChangedAt  DateTime?
+  createdAt        DateTime        @default(now())
+  viewedAt         DateTime?
+  isSuspicious     Boolean         @default(false)
+  suspiciousReason String?
+  ipAddress        String?
+  resolution       LeadResolution?
+  complaints       Complaint[]
+  client           Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  psychologist     User            @relation(fields: [psychologistId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([psychologistId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Complaint {
+  id                 String    @id @default(cuid())
+  fromType           String
+  fromClientId       String?
+  fromPsychologistId String?
+  toClientId         String?
+  toPsychologistId   String?
+  reason             String
+  description        String?
+  leadId             String?
+  createdAt          DateTime  @default(now())
+  resolvedAt         DateTime?
+  resolvedBy         String?
+  resolution         String?
+  fromClient         Client?   @relation("client_complaints_from", fields: [fromClientId], references: [id])
+  fromPsychologist   User?     @relation("psychologist_complaints_from", fields: [fromPsychologistId], references: [id])
+  lead               Lead?     @relation(fields: [leadId], references: [id])
+  toClient           Client?   @relation("client_complaints_to", fields: [toClientId], references: [id])
+  toPsychologist     User?     @relation("psychologist_complaints_to", fields: [toPsychologistId], references: [id])
+
+  @@index([fromType])
+  @@index([toClientId])
+  @@index([toPsychologistId])
+  @@index([createdAt])
+}
+
+model Course {
+  id              String                  @id @default(cuid())
+  slug            String                  @unique
+  title           String
+  shortTitle      String
+  description     String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  challengeAccess CourseChallengeAccess[]
+  keys            CourseKey[]
+  enrollments     UserCourse[]
+
+  @@index([slug])
+}
+
+model UserCourse {
+  id         String   @id @default(cuid())
+  userId     String
+  courseId   String
+  status     String
+  assignedAt DateTime @default(now())
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+}
+
+model CourseKey {
+  id        String         @id @default(cuid())
+  courseId  String
+  key       String         @unique
+  status    String
+  maxUses   Int            @default(1)
+  usedCount Int            @default(0)
+  expiresAt DateTime?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  course    Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  uses      CourseKeyUse[]
+
+  @@index([key])
+  @@index([courseId])
+}
+
+model CourseKeyUse {
+  id     String    @id @default(cuid())
+  keyId  String
+  userId String
+  usedAt DateTime  @default(now())
+  key    CourseKey @relation(fields: [keyId], references: [id], onDelete: Cascade)
+  user   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([keyId])
+  @@index([userId])
+}
+
+model CourseChallengeAccess {
+  id          String    @id @default(cuid())
+  courseId    String
+  challengeId String
+  status      String
+  order       Int       @default(0)
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, challengeId, status])
+  @@index([courseId])
+  @@index([challengeId])
+}
+
+model Challenge {
+  id                String                     @id @default(cuid())
+  slug              String                     @unique
+  title             String
+  description       String?
+  type              ChallengeType
+  isActive          Boolean                    @default(true)
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  price             Int?
+  requirements      CertificationRequirement[]
+  attempts          ChallengeAttempt[]
+  userStates        ChallengeUserState[]
+  courseAccess      CourseChallengeAccess[]
+  lesson            LessonChallenge?
+  lessonCompletions LessonCompletion[]         @relation("ChallengeLessonCompletions")
+  test              TestChallenge?
+  work              WorkChallenge?
+  workSubmissions   WorkSubmission[]
+
+  @@index([slug])
+  @@index([type])
+  @@index([isActive])
+}
+
+model TestChallenge {
+  id             String    @id @default(cuid())
+  challengeId    String    @unique
+  questionsPool  Json
+  questionsCount Int
+  passingScore   Int
+  timeLimit      Int?
+  freeAttempts   Int       @default(2)
+  challenge      Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+}
+
+model WorkChallenge {
+  id              String    @id @default(cuid())
+  challengeId     String    @unique
+  instructions    String?   @db.Text  // инструкция для супервизора
+  requiredReviews Int       @default(1)
+  reviewsToPass   Int       @default(1)
+  reviewPrice     Int?      // цена проверки (в копейках)
+  challenge       Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+}
+
+model LessonChallenge {
+  id          String    @id @default(cuid())
+  challengeId String    @unique
+  content     String
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+}
+
+model LessonCompletion {
+  id            String    @id @default(cuid())
+  challengeId   String
+  userId        String
+  firstViewedAt DateTime  @default(now())
+  lastViewedAt  DateTime  @updatedAt
+  challenge     Challenge @relation("ChallengeLessonCompletions", fields: [challengeId], references: [id], onDelete: Cascade)
+  user          User      @relation("UserLessonCompletions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+  @@index([userId])
+  @@index([challengeId])
+}
+
+model ChallengeAttempt {
+  id                      String        @id @default(cuid())
+  challengeId             String
+  userId                  String
+  status                  AttemptStatus @default(IN_PROGRESS)
+  passed                  Boolean?
+  startedAt               DateTime?
+  finishedAt              DateTime?
+  selectedQuestionIndices Json?
+  answers                 Json?
+  score                   Int?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  challenge               Challenge     @relation(fields: [challengeId], references: [id])
+  user                    User          @relation("UserChallengeAttempts", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+  @@index([userId])
+  @@index([status])
+}
+
+model ChallengeUserState {
+  id           String    @id @default(cuid())
+  challengeId  String
+  userId       String
+  attemptsLeft Int
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  challenge    Challenge @relation(fields: [challengeId], references: [id])
+  user         User      @relation("UserChallengeStates", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+  @@index([userId])
+}
+
+model WorkSubmission {
+  id            String       @id @default(cuid())
+  challengeId   String
+  userId        String
+  videoUrl      String
+  transcriptUrl String
+  status        WorkStatus   @default(SUBMITTED)
+  submittedAt   DateTime     @default(now())
+  reviewerId    String?
+  approvedCount Int          @default(0)
+  rejectedCount Int          @default(0)
+  reviews       WorkReview[] @relation("SubmissionWorkReviews")
+  challenge     Challenge    @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  reviewer      User?        @relation("ReviewerWorkSubmissions", fields: [reviewerId], references: [id])
+  user          User         @relation("UserWorkSubmissions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+  @@index([userId])
+  @@index([status])
+  @@index([submittedAt])
+}
+
+model WorkReview {
+  id           String           @id @default(cuid())
+  submissionId String
+  supervisorId String
+  status       WorkReviewStatus @default(TAKEN)
+  verdict      ReviewVerdict?
+  comment      String?
+  createdAt    DateTime         @default(now())
+  resolvedAt   DateTime?
+  submission   WorkSubmission   @relation("SubmissionWorkReviews", fields: [submissionId], references: [id], onDelete: Cascade)
+  supervisor   User             @relation("SupervisorWorkReviews", fields: [supervisorId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, supervisorId])
+  @@index([submissionId])
+  @@index([supervisorId])
+  @@index([status])
+}
+
+model Certification {
+  id           String                     @id @default(cuid())
+  slug         String                     @unique
+  title        String
+  description  String?
+  level        Int?
+  isActive     Boolean                    @default(true)
+  order        Int                        @default(0)
+  createdAt    DateTime                   @default(now())
+  updatedAt    DateTime                   @updatedAt
+  awards       CertificationAward[]
+  requirements CertificationRequirement[]
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model CertificationRequirement {
+  id              String        @id @default(cuid())
+  certificationId String
+  challengeId     String
+  order           Int           @default(0)
+  certification   Certification @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+  challenge       Challenge     @relation(fields: [challengeId], references: [id])
+
+  @@index([certificationId])
+  @@index([challengeId])
+}
+
+model CertificationAward {
+  id              String        @id @default(cuid())
+  certificationId String
+  userId          String
+  awardedAt       DateTime      @default(now())
+  certification   Certification @relation(fields: [certificationId], references: [id])
+  user            User          @relation("CertificationAwards", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([certificationId, userId])
+  @@index([userId])
+  @@index([certificationId])
+}
+
+model OnboardingTip {
+  id           String             @id @default(cuid())
+  title        String
+  message      String
+  type         TipType
+  pageUrl      String
+  delaySeconds Int                @default(0)
+  isActive     Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  dismissals   UserTipDismissal[]
+
+  @@index([pageUrl])
+  @@index([type])
+  @@index([isActive])
+}
+
+model UserTipDismissal {
+  id          String        @id @default(cuid())
+  userId      String
+  tipId       String
+  dismissedAt DateTime      @default(now())
+  tip         OnboardingTip @relation(fields: [tipId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tipId])
+  @@index([userId])
+  @@index([tipId])
+}
+
+model Transaction {
+  id           String          @id @default(cuid())
+  userId       String
+  type         TransactionType
+  amount       Int
+  balanceAfter Int
+  description  String
+  paymentId    String?         @unique
+  metadata     Json            @default("{}")
+  createdAt    DateTime        @default(now())
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([type])
+}
+
+enum DialogStatus {
+  ACTIVE
+  WAITING
+  ARCHIVED
+}
+
 enum PsychologistStatus {
   PENDING
   CANDIDATE
@@ -277,132 +683,14 @@ enum DocumentType {
 }
 
 enum NotificationType {
-  LEAD // заявка от клиента
-  ARTICLE_APPROVED // статья одобрена
-  ARTICLE_REVISION // статья на доработку
-  PROFILE_APPROVED // профиль одобрен
-  PROFILE_REJECTED // профиль отклонен
-  DOCUMENT_VERIFIED // документ проверен
-  REMINDER // напоминание о статье
-  INFO // новости проекта
-}
-
-model Notification {
-  id         String           @id @default(cuid())
-  userId     String
-  type       NotificationType
-  title      String
-  message    String
-  linkUrl    String?
-  linkText   String?
-  isRead     Boolean          @default(false)
-  isArchived Boolean          @default(false)
-  expiresAt  DateTime?
-  createdAt  DateTime         @default(now())
-  metadata   Json?            @default("{}")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([isRead])
-  @@index([createdAt])
-}
-
-model PushSubscription {
-  id         String   @id @default(cuid())
-  userId     String
-  endpoint   String   @unique
-  p256dh     String
-  auth       String
-  deviceType String?  // 'desktop', 'mobile', 'tablet'
-  deviceOs   String?  // 'windows', 'macos', 'ios', 'android', 'linux'
-  browser    String?  // 'chrome', 'safari', 'firefox', 'edge', 'other'
-  userAgent  String?  // исходный User-Agent
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-// ==================== МОДЕЛИ СИСТЕМЫ ЗАЯВОК ====================
-
-model Client {
-  id              String   @id @default(cuid())
-  email           String   @unique // @encrypted
-  emailHash       String?  @unique
-  name            String?  // @encrypted
-  phone           String?  // @encrypted
-  telegram        String?  // @encrypted
-  vk              String?  // @encrypted
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  // Репутация (невидимая для клиента)
-  complaintCount  Int      @default(0)
-  isShadowBanned  Boolean  @default(false)
-
-  leads           Lead[]
-  complaintsFrom  Complaint[] @relation("client_complaints_from")
-  complaintsTo    Complaint[] @relation("client_complaints_to")
-
-  @@index([email])
-  @@index([emailHash])
-}
-
-model Lead {
-  id               String         @id @default(cuid())
-  clientId         String
-  psychologistId   String
-  message          String?        @db.Text
-  status           LeadStatus     @default(NEW)
-  resolution       LeadResolution?
-  statusChangedAt  DateTime?
-  createdAt        DateTime       @default(now())
-  viewedAt         DateTime?
-
-  // Для подозрительных клиентов
-  isSuspicious     Boolean        @default(false)
-  suspiciousReason String?
-
-  // IP адрес для ограничения заявок
-  ipAddress        String?
-
-  client           Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  psychologist     User           @relation(fields: [psychologistId], references: [id], onDelete: Cascade)
-  complaints       Complaint[]
-
-  @@index([clientId])
-  @@index([psychologistId])
-  @@index([status])
-  @@index([createdAt])
-}
-
-model Complaint {
-  id                 String   @id @default(cuid())
-  fromType           String   // 'client' или 'psychologist'
-  fromClientId       String?
-  fromPsychologistId String?
-  toClientId         String?
-  toPsychologistId   String?
-  reason             String
-  description        String?  @db.Text
-  leadId             String?
-  createdAt          DateTime @default(now())
-  resolvedAt         DateTime?
-  resolvedBy         String?
-  resolution         String?
-
-  fromClient         Client?  @relation("client_complaints_from", fields: [fromClientId], references: [id])
-  fromPsychologist   User?    @relation("psychologist_complaints_from", fields: [fromPsychologistId], references: [id])
-  toClient           Client?  @relation("client_complaints_to", fields: [toClientId], references: [id])
-  toPsychologist     User?    @relation("psychologist_complaints_to", fields: [toPsychologistId], references: [id])
-  lead               Lead?    @relation(fields: [leadId], references: [id])
-
-  @@index([fromType])
-  @@index([toClientId])
-  @@index([toPsychologistId])
-  @@index([createdAt])
+  LEAD
+  ARTICLE_APPROVED
+  ARTICLE_REVISION
+  PROFILE_APPROVED
+  PROFILE_REJECTED
+  DOCUMENT_VERIFIED
+  REMINDER
+  INFO
 }
 
 enum LeadStatus {
@@ -412,105 +700,18 @@ enum LeadStatus {
 }
 
 enum LeadResolution {
-  PSYCHOLOGIST_REJECTED  // психолог отказал сразу
-  NO_CONTACT             // не удалось связаться
-  NO_AGREEMENT           // связались, но не договорились
-  CLIENT_DROPPED         // договорились, клиент пропал
-  FREE_ONLY              // только бесплатная сессия
-  PAID_COMPLETED         // были платные сессии
+  PSYCHOLOGIST_REJECTED
+  NO_CONTACT
+  NO_AGREEMENT
+  CLIENT_DROPPED
+  FREE_ONLY
+  PAID_COMPLETED
 }
-
-// ==================== КУРСЫ ====================
-
-model Course {
-  id          String   @id @default(cuid())
-  slug        String   @unique          // "pp", "pm", "pa", "mak"
-  title       String                    // "Психолог-практик"
-  shortTitle  String                    // "ПП" — для бейджей
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  enrollments UserCourse[]
-  keys        CourseKey[]
-  challengeAccess CourseChallengeAccess[]
-
-  @@index([slug])
-}
-
-// ==================== СВЯЗЬ ПОЛЬЗОВАТЕЛЬ-КУРС ====================
-
-model UserCourse {
-  id         String   @id @default(cuid())
-  userId     String
-  courseId   String
-  status     String   // "enrolled" или "graduated"
-  assignedAt DateTime @default(now())
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, courseId])
-  @@index([userId])
-  @@index([courseId])
-  @@index([status])
-}
-
-// ==================== ПРОМОКОДЫ ====================
-
-model CourseKey {
-  id         String   @id @default(cuid())
-  courseId   String
-  key        String   @unique
-  status     String   // "enrolled" или "graduated" — статус, который присваивается пользователю
-  maxUses    Int      @default(1)       // 0 — без ограничений
-  usedCount  Int      @default(0)
-  expiresAt  DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  uses   CourseKeyUse[]
-
-  @@index([key])
-  @@index([courseId])
-}
-
-model CourseKeyUse {
-  id         String   @id @default(cuid())
-  keyId      String
-  userId     String
-  usedAt     DateTime @default(now())
-
-  key  CourseKey @relation(fields: [keyId], references: [id], onDelete: Cascade)
-  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([keyId])
-  @@index([userId])
-}
-
-// ==================== СВЯЗЬ КУРСОВ С ИСПЫТАНИЯМИ ====================
-
-model CourseChallengeAccess {
-  id          String   @id @default(cuid())
-  courseId    String
-  challengeId String
-  status      String   // "enrolled" (ученик) или "graduated" (выпускник)
-  order       Int      @default(0)
-
-  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  challenge Challenge @relation(fields: [challengeId], references: [id])
-
-  @@unique([courseId, challengeId, status])
-  @@index([courseId])
-  @@index([challengeId])
-}
-
-// ==================== СИСТЕМА СЕРТИФИКАЦИИ И ТЕСТОВ ====================
 
 enum ChallengeType {
   TEST
   WORK
+  LESSON
 }
 
 enum AttemptStatus {
@@ -536,245 +737,15 @@ enum WorkReviewStatus {
   CANCELLED
 }
 
-model Challenge {
-  id           String             @id @default(cuid())
-  slug         String             @unique
-  title        String
-  description  String?
-  type         ChallengeType
-  isActive     Boolean            @default(true)
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-
-  test         TestChallenge?
-  work         WorkChallenge?
-  price        Int?           // цена за разблокировку в копейках (null = бесплатно)
-  requirements CertificationRequirement[]
-  attempts     ChallengeAttempt[]
-  userStates   ChallengeUserState[]
-  courseAccess CourseChallengeAccess[]
-  workSubmissions WorkSubmission[]
-
-  @@index([slug])
-  @@index([type])
-  @@index([isActive])
-}
-
-model TestChallenge {
-  id             String      @id @default(cuid())
-  challengeId    String      @unique
-  questionsPool  Json        // банк вопросов в формате JSON
-  questionsCount Int         // сколько вопросов выбирается в тест
-  passingScore   Int         // сколько правильных ответов нужно для сдачи
-  timeLimit      Int?        // лимит времени в минутах (null = без лимита)
-  freeAttempts   Int         @default(2)
-
-  challenge      Challenge   @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-
-  @@index([challengeId])
-}
-
-model WorkChallenge {
-  id              String    @id @default(cuid())
-  challengeId     String    @unique
-  instructions    String?   @db.Text  // инструкция для супервизора
-  requiredReviews Int       @default(1)
-  reviewsToPass   Int       @default(1)
-
-  challenge       Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-
-  @@index([challengeId])
-}
-
-model ChallengeAttempt {
-  id                    String        @id @default(cuid())
-  challengeId           String
-  userId                String
-  status                AttemptStatus @default(IN_PROGRESS)
-  passed                Boolean?
-  startedAt             DateTime?
-  finishedAt            DateTime?
-  selectedQuestionIndices Json?       // индексы выбранных вопросов из пула
-  answers               Json?         // ответы пользователя: { "0": [2], "1": [0,3] }
-  score                 Int?
-
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
-
-  challenge             Challenge     @relation(fields: [challengeId], references: [id])
-  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserChallengeAttempts")
-
-  @@index([challengeId])
-  @@index([userId])
-  @@index([status])
-}
-
-model ChallengeUserState {
-  id          String   @id @default(cuid())
-  challengeId String
-  userId      String
-  attemptsLeft Int
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  challenge   Challenge @relation(fields: [challengeId], references: [id])
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserChallengeStates")
-
-  @@unique([challengeId, userId])
-  @@index([userId])
-}
-
-model WorkSubmission {
-  id              String     @id @default(cuid())
-  challengeId     String
-  userId          String
-  videoUrl        String     // ссылка на видео
-  transcriptUrl   String     // ссылка на расшифровку
-  status          WorkStatus @default(SUBMITTED)
-  approvedCount   Int        @default(0)
-  rejectedCount   Int        @default(0)
-  submittedAt     DateTime   @default(now())
-  reviewerId      String?    // текущий проверяющий (кто взял на проверку)
-
-  challenge       Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserWorkSubmissions")
-  reviewer        User?     @relation(fields: [reviewerId], references: [id], name: "ReviewerWorkSubmissions")
-  reviews         WorkReview[] @relation(name: "SubmissionWorkReviews")
-
-  @@index([challengeId])
-  @@index([userId])
-  @@index([status])
-  @@index([submittedAt])
-}
-
-model WorkReview {
-  id           String           @id @default(cuid())
-  submissionId String
-  supervisorId String
-  status       WorkReviewStatus @default(TAKEN)
-  verdict      ReviewVerdict?
-  comment      String?          @db.Text  // комментарий для психолога (при REJECTED)
-  createdAt    DateTime         @default(now())
-  resolvedAt   DateTime?        // когда завершена (COMPLETED или CANCELLED)
-
-  submission WorkSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade, name: "SubmissionWorkReviews")
-  supervisor User           @relation(fields: [supervisorId], references: [id], onDelete: Cascade, name: "SupervisorWorkReviews")
-
-  @@unique([submissionId, supervisorId])
-  @@index([submissionId])
-  @@index([supervisorId])
-  @@index([status])
-}
-
-model Certification {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  description String?
-  level       Int?     // null = не повышает уровень, иначе новый уровень
-  isActive    Boolean  @default(true)
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  requirements CertificationRequirement[]
-  awards       CertificationAward[]
-
-  @@index([slug])
-  @@index([isActive])
-}
-
-model CertificationRequirement {
-  id              String   @id @default(cuid())
-  certificationId String
-  challengeId     String
-  order           Int      @default(0)
-
-  certification   Certification @relation(fields: [certificationId], references: [id], onDelete: Cascade)
-  challenge       Challenge     @relation(fields: [challengeId], references: [id])
-
-  @@index([certificationId])
-  @@index([challengeId])
-}
-
-model CertificationAward {
-  id              String   @id @default(cuid())
-  certificationId String
-  userId          String
-  awardedAt       DateTime @default(now())
-
-  certification   Certification @relation(fields: [certificationId], references: [id])
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade, name: "CertificationAwards")
-
-  @@unique([certificationId, userId])
-  @@index([userId])
-  @@index([certificationId])
-}
-
-// ==================== БИЛЛИНГ ====================
-
 enum TransactionType {
-  DEPOSIT      // пополнение счёта (внешняя оплата или ручное зачисление)
-  WITHDRAWAL   // вывод средств (заявка на вывод)
-  PURCHASE     // списание за услугу (разблокировка теста, проверка работы)
-  EARNING      // начисление супервизору за проверку
-  ADJUSTMENT   // корректировка админом
+  DEPOSIT
+  WITHDRAWAL
+  PURCHASE
+  EARNING
+  ADJUSTMENT
 }
-
-// ==================== ОБУЧАЮЩИЕ ПОДСКАЗКИ (ONBOARDING TIPS) ====================
 
 enum TipType {
   TOAST
   MODAL
-}
-
-model OnboardingTip {
-  id           String           @id @default(cuid())
-  title        String
-  message      String           @db.Text
-  type         TipType
-  pageUrl      String
-  delaySeconds Int              @default(0)
-  isActive     Boolean          @default(true)
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  
-  dismissals   UserTipDismissal[]
-  
-  @@index([pageUrl])
-  @@index([type])
-  @@index([isActive])
-}
-
-model UserTipDismissal {
-  id          String    @id @default(cuid())
-  userId      String
-  tipId       String
-  dismissedAt DateTime  @default(now())
-  
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tip         OnboardingTip @relation(fields: [tipId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, tipId])
-  @@index([userId])
-  @@index([tipId])
-}
-
-model Transaction {
-  id           String          @id @default(cuid())
-  userId       String
-  type         TransactionType
-  amount       Int             // сумма в копейках (положительная для DEPOSIT/EARNING, отрицательная для PURCHASE/WITHDRAWAL)
-  balanceAfter Int             // баланс ПОСЛЕ операции
-  description  String
-  paymentId    String?         @unique  // для защиты от дублей (идемпотентность)
-  metadata     Json            @default("{}")  // дополнительная информация (serviceId, paymentId, adminId и т.д.)
-  createdAt    DateTime        @default(now())
-
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([createdAt])
-  @@index([type])
 }

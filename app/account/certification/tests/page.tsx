@@ -145,6 +145,15 @@ export default async function CertificationTestsPage() {
                 Работы
               </Link>
             </li>
+            <li>
+              <Link
+                href="/account/certification/lessons"
+                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+              >
+                <Play className="h-4 w-4" />
+                Уроки
+              </Link>
+            </li>
           </ul>
         </nav>
 
