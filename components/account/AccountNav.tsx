@@ -112,12 +112,6 @@ export default function AccountNav({ user, isMobile, onNavigate }: AccountNavPro
       show: true // Доступ у всех статусов
     },
     {
-      href: '/account/push',
-      label: 'Push-уведомления',
-      icon: Radio,
-      show: true // Доступ у всех статусов
-    },
-    {
       href: '/account/messages',
       label: 'Служба заботы',
       icon: MessageCircleIcon,
