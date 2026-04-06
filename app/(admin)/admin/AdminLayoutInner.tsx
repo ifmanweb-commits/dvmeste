@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { User } from '@prisma/client'
 import { logout } from '@/lib/auth/logout';
 import { LogOut } from 'lucide-react';
+import { OnboardingProvider } from '@/components/account/OnboardingProvider';
 
 interface AdminLayoutInnerProps {
   children: ReactNode
@@ -30,6 +31,7 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
     { href: '/admin/courses', label: 'Курсы', roles: ['admin', 'manager'] },
     { href: '/admin/challenges', label: 'Испытания', roles: ['admin', 'manager'] },
     { href: '/admin/payments', label: 'Платежи', roles: ['admin'] },
+    { href: '/admin/onboarding', label: 'Советы', roles: ['admin', 'manager'] },
     { href: '/admin/pages', label: 'Страницы', roles: ['admin'] },
     { href: '/admin/managers', label: 'Менеджеры', roles: ['admin'] },
     { href: '/admin/blocks', label: 'Блоки', roles: ['admin'] },
@@ -131,6 +133,9 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
 
               </div>
             </main>
-    </div>
+            
+            {/* Провайдер обучающих подсказок */}
+            <OnboardingProvider />
+          </div>
   )
 }

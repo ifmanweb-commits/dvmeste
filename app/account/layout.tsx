@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import AccountNav from '@/components/account/AccountNav'
 import AccountHeader from '@/components/account/AccountHeader'
 import { getBalance } from '@/lib/billing'
+import { OnboardingProvider } from '@/components/account/OnboardingProvider'
 
 export default async function AccountLayout({
   children,
@@ -39,6 +40,9 @@ export default async function AccountLayout({
           {children}
         </main>
       </div>
+      
+      {/* Провайдер обучающих подсказок */}
+      <OnboardingProvider />
     </div>
   )
 }

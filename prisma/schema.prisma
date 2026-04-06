@@ -68,6 +68,9 @@ model User {
   reviewedSubmissions WorkSubmission[] @relation(name: "ReviewerWorkSubmissions")
   workReviews WorkReview[] @relation(name: "SupervisorWorkReviews")
 
+  // Обучающие подсказки
+  tipDismissals UserTipDismissal[]
+
   // Биллинг
   balance Int @default(0)
   transactions Transaction[]
@@ -717,6 +720,45 @@ enum TransactionType {
   PURCHASE     // списание за услугу (разблокировка теста, проверка работы)
   EARNING      // начисление супервизору за проверку
   ADJUSTMENT   // корректировка админом
+}
+
+// ==================== ОБУЧАЮЩИЕ ПОДСКАЗКИ (ONBOARDING TIPS) ====================
+
+enum TipType {
+  TOAST
+  MODAL
+}
+
+model OnboardingTip {
+  id           String           @id @default(cuid())
+  title        String
+  message      String           @db.Text
+  type         TipType
+  pageUrl      String
+  delaySeconds Int              @default(0)
+  isActive     Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  
+  dismissals   UserTipDismissal[]
+  
+  @@index([pageUrl])
+  @@index([type])
+  @@index([isActive])
+}
+
+model UserTipDismissal {
+  id          String    @id @default(cuid())
+  userId      String
+  tipId       String
+  dismissedAt DateTime  @default(now())
+  
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tip         OnboardingTip @relation(fields: [tipId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, tipId])
+  @@index([userId])
+  @@index([tipId])
 }
 
 model Transaction {
