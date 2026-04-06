@@ -9,8 +9,8 @@ import { Bell, BellOff, Loader2, AlertCircle } from "lucide-react"
 interface PushSubscription {
   id: string
   endpoint: string
-  p256dh: string
-  auth: string
+  p256dh?: string
+  auth?: string
   deviceType: string | null
   deviceOs: string | null
   browser: string | null
