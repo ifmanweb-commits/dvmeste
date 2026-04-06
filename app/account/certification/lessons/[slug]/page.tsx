@@ -87,29 +87,9 @@ export default async function LessonPage({ params }: LessonPageProps) {
       <div className="mx-auto max-w-7xl">
         {/* Заголовок страницы */}
         <div className="mb-8">
-          <div className="mb-4">
-            <Link
-              href="/account/certification/lessons"
-              className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Назад к урокам
-            </Link>
-          </div>
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
-              {lesson.title}
-            </h1>
-            {completion && (
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle className="h-5 w-5" />
-                <span className="text-sm font-medium">Пройдено</span>
-              </div>
-            )}
-          </div>
-          {lesson.description && (
-            <p className="mt-2 text-gray-600">{lesson.description}</p>
-          )}
+          <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+            Уроки
+          </h1>
         </div>
 
         {/* Навигационная панель */}
@@ -154,10 +134,43 @@ export default async function LessonPage({ params }: LessonPageProps) {
           </ul>
         </nav>
 
+        {/* Заголовок урока и кнопка назад */}
+        <div className="mb-8">
+
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {lesson.title}
+            </h2>
+            {completion && (
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle className="h-5 w-5" />
+                <span className="text-sm font-medium">Пройдено</span>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Контент урока */}
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <div
-            className="prose prose-lg "
+            className="prose prose-lg max-w-none
+              prose-headings:font-bold prose-headings:text-gray-900
+              prose-h1:text-3xl prose-h1:mb-4
+              prose-h2:text-2xl prose-h2:mb-3 prose-h2:mt-6
+              prose-h3:text-xl prose-h3:mb-2 prose-h3:mt-4
+              prose-h4:text-lg prose-h4:mb-2
+              prose-p:text-gray-700 prose-p:mb-4 prose-p:leading-relaxed
+              prose-ul:mb-4 prose-ul:list-disc prose-ul:pl-6
+              prose-ol:mb-4 prose-ol:list-decimal prose-ol:pl-6
+              prose-li:mb-1 prose-li:text-gray-700
+              prose-a:text-[#5858E2] prose-a:underline prose-a:hover:text-[#4a4ac4]
+              prose-blockquote:border-l-4 prose-blockquote:border-[#5858E2] prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-600
+              prose-code:rounded prose-code:bg-gray-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:font-mono
+              prose-pre:rounded-lg prose-pre:bg-gray-900 prose-pre:p-4
+              prose-img:rounded-lg prose-img:my-4
+              prose-hr:my-6 prose-hr:border-gray-200
+              prose-strong:font-semibold prose-strong:text-gray-900
+              prose-em:italic prose-em:text-gray-600"
             dangerouslySetInnerHTML={{ __html: sanitizedContent }}
           />
         </div>
