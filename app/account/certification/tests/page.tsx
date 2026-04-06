@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, Award, FileText, CheckCircle, Play, Lock, Loader2 } from 'lucide-react';
+import { BookOpen, Award, FileText, CheckCircle, Lock, Loader2 } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import TestsListClient from '@/components/account/TestsListClient';
 
@@ -150,7 +150,7 @@ export default async function CertificationTestsPage() {
                 href="/account/certification/lessons"
                 className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
               >
-                <Play className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
                 Уроки
               </Link>
             </li>

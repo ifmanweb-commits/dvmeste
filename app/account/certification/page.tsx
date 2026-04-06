@@ -2,7 +2,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Award, CheckCircle, BookOpen, FileText, Play } from 'lucide-react';
+import { Award, CheckCircle, BookOpen, FileText } from 'lucide-react';
 import Image from 'next/image';
 
 export default async function CertificationPage() {
@@ -133,7 +133,7 @@ export default async function CertificationPage() {
                 href="/account/certification/lessons"
                 className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
               >
-                <Play className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
                 Уроки
               </Link>
             </li>
