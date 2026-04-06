@@ -1,13 +1,56 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import DeleteChallengeButton from './DeleteChallengeButton';
+import ChallengesFilters from './ChallengesFilters';
 
-export default async function ChallengesPage() {
+type SearchParams = {
+  type?: string;
+  certification?: string;
+};
+
+export default async function ChallengesPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
+  const typeFilter = params.type;
+  const certificationFilter = params.certification;
+
+  // Получаем все сертификации для фильтра
+  const certifications = await prisma.certification.findMany({
+    where: { isActive: true },
+    orderBy: { title: 'asc' },
+  });
+
+  // Формируем запрос с фильтрами
+  const whereClause: any = {};
+  
+  // Фильтр по типу
+  if (typeFilter && typeFilter !== 'all') {
+    whereClause.type = typeFilter;
+  }
+
+  // Фильтр по сертификации
+  if (certificationFilter && certificationFilter !== 'all') {
+    whereClause.requirements = {
+      some: {
+        certificationId: certificationFilter,
+      },
+    };
+  }
+
   const challenges = await prisma.challenge.findMany({
+    where: whereClause,
     include: {
       test: true,
       work: true,
       lesson: true,
+      requirements: {
+        include: {
+          certification: true,
+        },
+      },
       _count: {
         select: {
           attempts: true,
@@ -53,46 +96,56 @@ export default async function ChallengesPage() {
         </div>
       </div>
 
-        {challenges.length === 0 ? (
-          <div className="rounded-xl border-2 border-[#5858E2]/20 bg-white p-8 text-center shadow-sm">
-            <p className="text-gray-500">Испытания ещё не созданы</p>
-            <Link
-              href="/admin/challenges/new"
-              className="mt-4 inline-block rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
-            >
-              Создать первое испытание
-            </Link>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Название
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Slug
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Тип
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Статус
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Попыток
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Пользователей
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Действия
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
-                {challenges.map((challenge) => (
+      {/* Фильтры */}
+      <ChallengesFilters
+        typeFilter={typeFilter}
+        certificationFilter={certificationFilter}
+        certifications={certifications}
+      />
+
+      {challenges.length === 0 ? (
+        <div className="rounded-xl border-2 border-[#5858E2]/20 bg-white p-8 text-center shadow-sm">
+          <p className="text-gray-500">Испытания не найдены</p>
+          <Link
+            href="/admin/challenges/new"
+            className="mt-4 inline-block rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
+          >
+            Создать первое испытание
+          </Link>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <table className="table-fixed w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 w-1/4">
+                  Название
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 w-1/6">
+                  Сертификации
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 w-[10%]">
+                  Тип
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 w-[10%]">
+                  Статус
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 w-[8%]">
+                  Попыток
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 w-[10%]">
+                  Пользователей
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 w-[15%]">
+                  Действия
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {challenges.map((challenge) => {
+                const challengeCertifications = challenge.requirements.map(r => r.certification);
+                
+                return (
                   <tr key={challenge.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="text-sm font-medium text-gray-900">
@@ -105,9 +158,23 @@ export default async function ChallengesPage() {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <code className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600">
-                        {challenge.slug}
-                      </code>
+                      {challengeCertifications.length === 0 ? (
+                        <span className="text-gray-400">—</span>
+                      ) : (
+                        <ul className="text-sm space-y-1">
+                          {challengeCertifications.map((cert) => (
+                            <li key={cert.id}>
+                              <Link
+                                href={`/admin/challenges?certification=${cert.id}`}
+                                className="text-[#5858E2] hover:underline"
+                                title="Фильтровать по этой сертификации"
+                              >
+                                {cert.title}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span
@@ -134,10 +201,10 @@ export default async function ChallengesPage() {
                         {challenge.isActive ? 'Активен' : 'Неактивен'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
+                    <td className="px-6 py-4 text-sm text-gray-500 text-center">
                       {challenge._count.attempts}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
+                    <td className="px-6 py-4 text-sm text-gray-500 text-center">
                       {challenge._count.userStates}
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -152,11 +219,12 @@ export default async function ChallengesPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
