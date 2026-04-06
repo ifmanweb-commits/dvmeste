@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, Award, FileText, Lock, CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
+import { BookOpen, Award, FileText, FileBadge, Lock, CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import WorkSubmissionClient from './WorkSubmissionClient';
 
@@ -92,8 +92,17 @@ export default async function WorkSubmissionPage({ params }: PageProps) {
                 href="/account/certification/works"
                 className="inline-flex items-center gap-2 border-b-2 border-[#5858E2] pb-3 text-sm font-medium text-[#5858E2]"
               >
-                <FileText className="h-4 w-4" />
+                <FileBadge className="h-4 w-4" />
                 Работы
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/account/certification/lessons"
+                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+              >
+                <FileText className="h-4 w-4" />
+                Уроки
               </Link>
             </li>
           </ul>

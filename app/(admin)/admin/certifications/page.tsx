@@ -30,33 +30,37 @@ export default async function CertificationsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
-      <div className="mx-auto max-w-[1900px]">
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link
-                href="/admin/certifications"
-                className="text-lg font-bold text-[#5858E2] sm:text-xl"
-              >
-                Сертификации
-              </Link>
-              <span className="h-6 w-px bg-gray-300"></span>
-              <Link
-                href="/admin/challenges"
-                className="text-lg font-medium text-gray-500 transition-colors hover:text-gray-700 sm:text-xl"
-              >
-                Испытания
-              </Link>
-            </div>
-            <Link
-              href="/admin/certifications/new"
-              className="rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
-            >
-              + Создать сертификацию
-            </Link>
+    <div>
+      <div className="mb-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Сертификации</h1>
+            <p className="text-gray-500 mt-1">Управление испытаниями и сертификациями</p>
           </div>
+          <Link
+            href="/admin/certifications/new"
+            className="rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
+          >
+            + Создать сертификацию
+          </Link>
         </div>
+
+        {/* Вкладки */}
+        <div className="flex gap-2 border-b border-gray-200 mt-4">
+          <Link
+            href="/admin/certifications"
+            className="px-4 py-2 text-sm font-medium text-[#5858E2] border-b-2 border-[#5858E2] hover:text-[#4a4ac7]"
+          >
+            Сертификации
+          </Link>
+          <Link
+            href="/admin/challenges"
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
+          >
+            Испытания
+          </Link>
+        </div>
+      </div>
 
         {certifications.length === 0 ? (
           <div className="rounded-xl border-2 border-[#5858E2]/20 bg-white p-8 text-center shadow-sm">
@@ -154,7 +158,6 @@ export default async function CertificationsPage() {
             </table>
           </div>
         )}
-      </div>
     </div>
   );
 }
