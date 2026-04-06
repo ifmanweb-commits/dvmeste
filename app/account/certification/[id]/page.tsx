@@ -2,7 +2,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
-import { Award, CheckCircle, BookOpen, FileText, Clock } from 'lucide-react';
+import { Award, CheckCircle, BookOpen, FileText, FileBadge, Clock } from 'lucide-react';
 import Image from 'next/image';
 
 interface PageProps {
@@ -51,7 +51,7 @@ export default async function CertificationDetailPage({ params }: PageProps) {
     certification.requirements.map(async (req) => {
       let isCompleted = false;
       
-      // Для TEST проверяем challengeAttempt, для WORK - workSubmission
+      // Для TEST проверяем challengeAttempt, для WORK - workSubmission, для LESSON - lessonCompletion
       if (req.challenge.type === 'TEST') {
         const successfulAttempt = await prisma.challengeAttempt.findFirst({
           where: {
@@ -70,6 +70,17 @@ export default async function CertificationDetailPage({ params }: PageProps) {
           },
         });
         isCompleted = !!approvedSubmission;
+      } else if (req.challenge.type === 'LESSON') {
+        // Для урока проверяем, есть ли запись о просмотре
+        const lessonCompletion = await prisma.lessonCompletion.findUnique({
+          where: {
+            challengeId_userId: {
+              challengeId: req.challengeId,
+              userId: user.id,
+            },
+          },
+        });
+        isCompleted = !!lessonCompletion;
       }
 
       return {
@@ -128,8 +139,17 @@ export default async function CertificationDetailPage({ params }: PageProps) {
                 href="/account/certification/works"
                 className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
               >
-                <FileText className="h-4 w-4" />
+                <FileBadge className="h-4 w-4" />
                 Работы
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/account/certification/lessons"
+                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+              >
+                <FileText className="h-4 w-4" />
+                Уроки
               </Link>
             </li>
           </ul>
@@ -248,17 +268,22 @@ export default async function CertificationDetailPage({ params }: PageProps) {
                       <h4 className="text-lg font-semibold text-gray-900">
                         {req.challenge.title}
                       </h4>
-                      {req.challenge.type === 'TEST' ? (
-                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                          <BookOpen className="mr-1 h-3 w-3" />
-                          Тест
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
-                          <FileText className="mr-1 h-3 w-3" />
-                          Работа
-                        </span>
-                      )}
+                       {req.challenge.type === 'TEST' ? (
+                         <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                           <BookOpen className="mr-1 h-3 w-3" />
+                           Тест
+                         </span>
+                       ) : req.challenge.type === 'LESSON' ? (
+                         <span className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">
+                           <FileText className="mr-1 h-3 w-3" />
+                           Урок
+                         </span>
+                       ) : (
+                         <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
+                           <FileBadge className="mr-1 h-3 w-3" />
+                           Работа
+                         </span>
+                       )}
                       {req.isCompleted && (
                         <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                           <CheckCircle className="mr-1 h-3 w-3" />
@@ -300,28 +325,40 @@ export default async function CertificationDetailPage({ params }: PageProps) {
                           </div>
                         </>
                       )}
+                      {req.challenge.type === 'LESSON' && (
+                        <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                          <span>Просмотрите материал урока</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Ссылка на прохождение */}
-                    {!req.isCompleted && (
-                      <div className="mt-4">
-                        {req.challenge.type === 'TEST' ? (
-                          <Link
-                            href={`/account/certification/tests`}
-                            className="inline-flex items-center text-sm font-medium text-[#5858E2] transition-colors hover:text-[#4a4ac9]"
-                          >
-                            Пройти тест →
-                          </Link>
-                        ) : (
-                          <Link
-                            href={`/account/certification/works`}
-                            className="inline-flex items-center text-sm font-medium text-[#5858E2] transition-colors hover:text-[#4a4ac9]"
-                          >
-                            Выполнить работу →
-                          </Link>
+                        {!req.isCompleted && (
+                          <div className="mt-4">
+                            {req.challenge.type === 'TEST' ? (
+                              <Link
+                                href={`/account/certification/tests`}
+                                className="inline-flex items-center text-sm font-medium text-[#5858E2] transition-colors hover:text-[#4a4ac9]"
+                              >
+                                Пройти тест →
+                              </Link>
+                            ) : req.challenge.type === 'LESSON' ? (
+                              <Link
+                                href={`/account/certification/lessons`}
+                                className="inline-flex items-center text-sm font-medium text-[#5858E2] transition-colors hover:text-[#4a4ac9]"
+                              >
+                                Открыть урок →
+                              </Link>
+                            ) : (
+                              <Link
+                                href={`/account/certification/works`}
+                                className="inline-flex items-center text-sm font-medium text-[#5858E2] transition-colors hover:text-[#4a4ac9]"
+                              >
+                                Выполнить работу →
+                              </Link>
+                            )}
+                          </div>
                         )}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

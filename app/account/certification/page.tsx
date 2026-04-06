@@ -2,7 +2,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Award, CheckCircle, BookOpen, FileText } from 'lucide-react';
+import { Award, CheckCircle, BookOpen, FileText, FileBadge } from 'lucide-react';
 import Image from 'next/image';
 
 export default async function CertificationPage() {
@@ -40,7 +40,7 @@ export default async function CertificationPage() {
       const requirementsWithStatus = [];
       
       for (const req of cert.requirements) {
-        // Для TEST проверяем challengeAttempt, для WORK - workSubmission
+        // Для TEST проверяем challengeAttempt, для WORK - workSubmission, для LESSON - lessonCompletion
         let isCompleted = false;
         
         if (req.challenge.type === 'TEST') {
@@ -62,6 +62,17 @@ export default async function CertificationPage() {
             },
           });
           isCompleted = !!approvedSubmission;
+        } else if (req.challenge.type === 'LESSON') {
+          // Для урока проверяем, есть ли запись о просмотре
+          const lessonCompletion = await prisma.lessonCompletion.findUnique({
+            where: {
+              challengeId_userId: {
+                challengeId: req.challengeId,
+                userId: user.id,
+              },
+            },
+          });
+          isCompleted = !!lessonCompletion;
         }
         
         if (isCompleted) {
@@ -124,7 +135,7 @@ export default async function CertificationPage() {
                 href="/account/certification/works"
                 className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
               >
-                <FileText className="h-4 w-4" />
+                <FileBadge className="h-4 w-4" />
                 Работы
               </Link>
             </li>
@@ -240,6 +251,15 @@ export default async function CertificationPage() {
                           {req.challenge.type === 'TEST' ? (
                             <Link
                               href={`/account/certification/tests?certification=${cert.id}`}
+                              className={`hover:text-[#5858E2] hover:underline ${
+                                req.isCompleted ? 'font-medium' : ''
+                              }`}
+                            >
+                              {req.challenge.title}
+                            </Link>
+                          ) : req.challenge.type === 'LESSON' ? (
+                            <Link
+                              href={`/account/certification/lessons?certification=${cert.id}`}
                               className={`hover:text-[#5858E2] hover:underline ${
                                 req.isCompleted ? 'font-medium' : ''
                               }`}

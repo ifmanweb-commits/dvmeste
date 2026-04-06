@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, FileText, CheckCircle, Lock } from 'lucide-react';
+import { ArrowLeft, Award, BookOpen, FileText, FileBadge, CheckCircle, Lock } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { markLessonAsViewed, sanitizeHtml } from '@/lib/actions/lessons';
 
@@ -100,7 +100,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
                 href="/account/certification"
                 className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
               >
-                <FileText className="h-4 w-4" />
+                <Award className="h-4 w-4" />
                 Сертификации
               </Link>
             </li>
@@ -109,7 +109,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
                 href="/account/certification/tests"
                 className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
               >
-                <FileText className="h-4 w-4" />
+                <BookOpen className="h-4 w-4" />
                 Тесты
               </Link>
             </li>
@@ -118,7 +118,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
                 href="/account/certification/works"
                 className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
               >
-                <FileText className="h-4 w-4" />
+                <FileBadge className="h-4 w-4" />
                 Работы
               </Link>
             </li>
@@ -222,7 +222,7 @@ function LockedLessonPage({
                 href="/account/certification"
                 className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
               >
-                <FileText className="h-4 w-4" />
+                <Award className="h-4 w-4" />
                 Сертификации
               </Link>
             </li>
@@ -231,7 +231,7 @@ function LockedLessonPage({
                 href="/account/certification/tests"
                 className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
               >
-                <FileText className="h-4 w-4" />
+                <BookOpen className="h-4 w-4" />
                 Тесты
               </Link>
             </li>
@@ -240,7 +240,7 @@ function LockedLessonPage({
                 href="/account/certification/works"
                 className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
               >
-                <FileText className="h-4 w-4" />
+                <FileBadge className="h-4 w-4" />
                 Работы
               </Link>
             </li>
