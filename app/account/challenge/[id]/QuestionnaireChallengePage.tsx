@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { CheckCircle, XCircle, Clock, Play, FileText, Award, BookOpen, FileBadge, ClipboardList } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Play, FileText } from 'lucide-react';
+import CertificationHorNav from '@/components/account/CertificationHorNav';
 
 interface Question {
   index: number;
@@ -297,55 +298,7 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
   return (
     <div className="mx-auto max-w-3xl">
       {/* Навигационная панель */}
-      <nav className="mb-6 border-b border-gray-200">
-        <ul className="flex gap-6">
-          <li>
-            <Link
-              href="/account/certification"
-              className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-            >
-              <Award className="h-4 w-4" />
-              Сертификации
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/account/certification/tests"
-              className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-            >
-              <BookOpen className="h-4 w-4" />
-              Тесты
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/account/certification/works"
-              className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-            >
-              <FileBadge className="h-4 w-4" />
-              Работы
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/account/certification/lessons"
-              className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-            >
-              <FileText className="h-4 w-4" />
-              Уроки
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/account/certification/questionnaires"
-              className="inline-flex items-center gap-2 border-b-2 border-[#5858E2] pb-3 text-sm font-medium text-[#5858E2]"
-            >
-              <ClipboardList className="h-4 w-4" />
-              Вопросники
-            </Link>
-          </li>
-        </ul>
-      </nav>
+      <CertificationHorNav activeTab="questionnaires" />
 
       {/* Заголовок */}
       <div className="mb-6">

@@ -1,9 +1,8 @@
 import { getCurrentUser } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
-import { ClipboardList, Award, FileText, FileBadge, BookOpen, CheckCircle } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import QuestionnairesListClient from '@/components/account/QuestionnairesListClient';
+import CertificationHorNav from '@/components/account/CertificationHorNav';
 
 export default async function CertificationQuestionnairesPage() {
   const user = await getCurrentUser();
@@ -39,12 +38,13 @@ export default async function CertificationQuestionnairesPage() {
   // Для каждого вопросника получаем статус пользователя и список сертификаций
   const questionnairesWithStatus = await Promise.all(
     questionnaireChallenges.map(async (challenge) => {
-      // Проверяем, есть ли submission (вопросник отправлен на проверку)
-      const existingSubmission = await prisma.questionnaireSubmission.findFirst({
+      // Последняя submission (вопросник отправлен на проверку)
+      const lastSubmission = await prisma.questionnaireSubmission.findFirst({
         where: {
           userId: user.id,
           challengeId: challenge.id,
         },
+        orderBy: { submittedAt: 'desc' },
       });
 
       // Последняя попытка в процессе
@@ -57,6 +57,16 @@ export default async function CertificationQuestionnairesPage() {
         orderBy: { createdAt: 'desc' },
       });
 
+      // Состояние пользователя (остаток попыток)
+      const userState = await prisma.challengeUserState.findUnique({
+        where: {
+          challengeId_userId: {
+            challengeId: challenge.id,
+            userId: user.id,
+          },
+        },
+      });
+
       // Находим все сертификации, в которых используется этот вопросник
       const requirements = await prisma.certificationRequirement.findMany({
         where: { challengeId: challenge.id },
@@ -66,9 +76,12 @@ export default async function CertificationQuestionnairesPage() {
       });
       const certs = requirements.map(r => r.certification);
 
-      const isCompleted = !!existingSubmission;
+      // isCompleted = true только если submission одобрен
+      const isCompleted = lastSubmission?.status === 'APPROVED';
       const hasInProgress = !!inProgressAttempt;
-      const submissionStatus = existingSubmission?.status;
+      const submissionStatus = lastSubmission?.status ?? null;
+      const baseAttempts = 1; // у вопросников нет freeAttempts в модели
+      const attemptsLeft = userState?.attemptsLeft ?? baseAttempts;
 
       return {
         ...challenge,
@@ -76,6 +89,7 @@ export default async function CertificationQuestionnairesPage() {
         hasInProgress,
         inProgressAttemptId: inProgressAttempt?.id,
         submissionStatus,
+        attemptsLeft,
         questionnaire: challenge.questionnaire ? {
           questionsCount: challenge.questionnaire.questionsCount || (challenge.questionnaire.questionsPool as string[])?.length || 0,
           timeLimit: challenge.questionnaire.timeLimit,
@@ -97,55 +111,7 @@ export default async function CertificationQuestionnairesPage() {
         </div>
 
         {/* Навигационная панель */}
-        <nav className="mb-8 border-b border-gray-200">
-          <ul className="flex gap-6">
-            <li>
-              <Link
-                href="/account/certification"
-                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-              >
-                <Award className="h-4 w-4" />
-                Сертификации
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/account/certification/tests"
-                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-              >
-                <BookOpen className="h-4 w-4" />
-                Тесты
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/account/certification/works"
-                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-              >
-                <FileBadge className="h-4 w-4" />
-                Работы
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/account/certification/lessons"
-                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-              >
-                <FileText className="h-4 w-4" />
-                Уроки
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/account/certification/questionnaires"
-                className="inline-flex items-center gap-2 border-b-2 border-[#5858E2] pb-3 text-sm font-medium text-[#5858E2]"
-              >
-                <ClipboardList className="h-4 w-4" />
-                Вопросники
-              </Link>
-            </li>
-          </ul>
-        </nav>
+        <CertificationHorNav activeTab="questionnaires" />
 
         {/* Список вопросников */}
         <QuestionnairesListClient

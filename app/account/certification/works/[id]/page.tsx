@@ -1,9 +1,10 @@
 import { getCurrentUser } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, Award, FileText, FileBadge, Lock, CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
+import { BookOpen, Lock, CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import WorkSubmissionClient from './WorkSubmissionClient';
+import CertificationHorNav from '@/components/account/CertificationHorNav';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -67,46 +68,7 @@ export default async function WorkSubmissionPage({ params }: PageProps) {
     <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
       <div className="mx-auto max-w-4xl">
         {/* Навигационная панель */}
-        <nav className="mb-8 border-b border-gray-200">
-          <ul className="flex gap-6">
-            <li>
-              <Link
-                href="/account/certification"
-                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-              >
-                <Award className="h-4 w-4" />
-                Сертификации
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/account/certification/tests"
-                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-              >
-                <BookOpen className="h-4 w-4" />
-                Тесты
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/account/certification/works"
-                className="inline-flex items-center gap-2 border-b-2 border-[#5858E2] pb-3 text-sm font-medium text-[#5858E2]"
-              >
-                <FileBadge className="h-4 w-4" />
-                Работы
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/account/certification/lessons"
-                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-              >
-                <FileText className="h-4 w-4" />
-                Уроки
-              </Link>
-            </li>
-          </ul>
-        </nav>
+        <CertificationHorNav activeTab="works" />
 
         {/* Кнопка назад */}
         <div className="mb-6">

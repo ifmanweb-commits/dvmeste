@@ -2,8 +2,9 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
-import { Award, CheckCircle, BookOpen, FileText, FileBadge, Clock } from 'lucide-react';
+import { Award, CheckCircle, Clock, BookOpen, FileText, FileBadge } from 'lucide-react';
 import Image from 'next/image';
+import CertificationHorNav from '@/components/account/CertificationHorNav';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -114,46 +115,7 @@ export default async function CertificationDetailPage({ params }: PageProps) {
         </div>
 
         {/* Навигационная панель */}
-        <nav className="mb-8 border-b border-gray-200">
-          <ul className="flex gap-6">
-            <li>
-              <Link
-                href="/account/certification"
-                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-              >
-                <Award className="h-4 w-4" />
-                Сертификации
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/account/certification/tests"
-                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-              >
-                <BookOpen className="h-4 w-4" />
-                Тесты
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/account/certification/works"
-                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-              >
-                <FileBadge className="h-4 w-4" />
-                Работы
-              </Link>
-            </li>
-            <li>
-              <Link
-                href="/account/certification/lessons"
-                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
-              >
-                <FileText className="h-4 w-4" />
-                Уроки
-              </Link>
-            </li>
-          </ul>
-        </nav>
+        <CertificationHorNav activeTab="certifications" />
 
         {/* Заголовок сертификации и награда */}
         <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">

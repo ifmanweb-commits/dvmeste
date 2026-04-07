@@ -22,6 +22,7 @@ interface QuestionnaireChallenge {
   hasInProgress: boolean;
   inProgressAttemptId: string | null;
   submissionStatus: 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED' | null;
+  attemptsLeft: number;
   questionnaire: {
     questionsCount: number;
     timeLimit: number | null;
@@ -73,35 +74,6 @@ export default function QuestionnairesListClient({ questionnaires, certification
   const formatPrice = (priceInKopecks: number | null): string => {
     if (priceInKopecks === null) return "0";
     return (priceInKopecks / 100).toFixed(0);
-  };
-
-  const getSubmissionStatusLabel = (status: string | null) => {
-    switch (status) {
-      case 'PENDING':
-        return 'На проверке';
-      case 'IN_REVIEW':
-        return 'На проверке';
-      case 'APPROVED':
-        return 'Одобрено';
-      case 'REJECTED':
-        return 'Отклонено';
-      default:
-        return '';
-    }
-  };
-
-  const getSubmissionStatusColor = (status: string | null) => {
-    switch (status) {
-      case 'PENDING':
-      case 'IN_REVIEW':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'APPROVED':
-        return 'bg-green-100 text-green-800';
-      case 'REJECTED':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
   };
 
   if (questionnaires.length === 0) {
@@ -205,125 +177,158 @@ export default function QuestionnairesListClient({ questionnaires, certification
             </p>
           </div>
         ) : (
-          filteredQuestionnaires.map((q, index) => (
-            <div
-              key={q.id}
-              className={`overflow-hidden rounded-xl border shadow-sm ${
-                q.isCompleted
-                  ? "border-green-300 bg-green-50"
-                  : "border-gray-200 bg-white"
-              }`}
-            >
-              <div className="p-6">
-                <div className="grid grid-cols-12 gap-4 items-center">
-                  {/* Колонка 1: Номер */}
-                  <div className="col-span-1">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full font-semibold ${
-                        q.isCompleted
-                          ? "bg-green-200 text-green-800"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {index + 1}
-                    </div>
-                  </div>
+          filteredQuestionnaires.map((q, index) => {
+            // Определяем цвет карточки по статусу
+            const cardClasses = q.submissionStatus === 'APPROVED'
+              ? "border-green-300 bg-green-50"
+              : q.submissionStatus === 'REJECTED'
+              ? "border-red-300 bg-red-50"
+              : "border-gray-200 bg-white";
 
-                  {/* Колонка 2: Название и описание */}
-                  <div className="col-span-5">
-                    <h3
-                      className={`text-lg font-medium ${
-                        q.isCompleted ? "text-green-900" : "text-gray-900"
-                      }`}
-                    >
-                      {q.title}
-                    </h3>
-                    {q.description && (
-                      <p
-                        className={`mt-1 text-sm whitespace-pre-wrap ${
-                          q.isCompleted ? "text-green-700" : "text-gray-600"
-                        }`}
-                      >
-                        {q.description}
-                      </p>
-                    )}
-                    <div
-                      className={`mt-2 flex items-center gap-4 text-xs ${
-                        q.isCompleted ? "text-green-600" : "text-gray-500"
-                      }`}
-                    >
-                      <span>Вопросов: {q.questionnaire?.questionsCount}</span>
-                      {q.questionnaire?.timeLimit && (
-                        <span>Время: {q.questionnaire.timeLimit} мин</span>
-                      )}
-                      {q.questionnaire?.reviewPrice && (
-                        <span>Цена проверки: {formatPrice(q.questionnaire.reviewPrice)} ₽</span>
-                      )}
-                    </div>
-                    
-                    {/* Сертификации */}
-                    {q.certifications && q.certifications.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {q.certifications.map((cert) => (
-                          <Link
-                            key={cert.id}
-                            href={`/account/certification/${cert.id}`}
-                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                              q.isCompleted
-                                ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                            }`}
-                          >
-                            <Award className="mr-1 h-3 w-3" />
-                            {cert.title}
-                          </Link>
-                        ))}
+            // Определяем цвет номера
+            const numberClasses = q.submissionStatus === 'APPROVED'
+              ? "bg-green-200 text-green-800"
+              : q.submissionStatus === 'REJECTED'
+              ? "bg-red-200 text-red-800"
+              : "bg-gray-100 text-gray-700";
+
+            // Определяем цвет текста
+            const titleClasses = q.submissionStatus === 'APPROVED' ? "text-green-900" : "text-gray-900";
+            const descClasses = q.submissionStatus === 'APPROVED' ? "text-green-700" : "text-gray-600";
+            const metaClasses = q.submissionStatus === 'APPROVED' ? "text-green-600" : "text-gray-500";
+
+            // Определяем цвет бейджа сертификации
+            const certBadgeClasses = q.submissionStatus === 'APPROVED'
+              ? "bg-green-100 text-green-700 hover:bg-green-200"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200";
+
+            return (
+              <div
+                key={q.id}
+                className={`overflow-hidden rounded-xl border shadow-sm ${cardClasses}`}
+              >
+                <div className="p-6">
+                  <div className="grid grid-cols-12 gap-4 items-center">
+                    {/* Колонка 1: Номер */}
+                    <div className="col-span-1">
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-full font-semibold ${numberClasses}`}>
+                        {index + 1}
                       </div>
-                    )}
-                  </div>
+                    </div>
 
-                  {/* Колонка 3: Статус */}
-                  <div className="col-span-3">
-                    {q.isCompleted ? (
-                      <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${getSubmissionStatusColor(q.submissionStatus)}`}>
-                        {getSubmissionStatusLabel(q.submissionStatus)}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-800">
-                        Не начат
-                      </span>
-                    )}
-                  </div>
+                    {/* Колонка 2: Название и описание */}
+                    <div className="col-span-5">
+                      <h3 className={`text-lg font-medium ${titleClasses}`}>
+                        {q.title}
+                      </h3>
+                      {q.description && (
+                        <p className={`mt-1 text-sm whitespace-pre-wrap ${descClasses}`}>
+                          {q.description}
+                        </p>
+                      )}
+                      <div className={`mt-2 flex items-center gap-4 text-xs ${metaClasses}`}>
+                        <span>Вопросов: {q.questionnaire?.questionsCount}</span>
+                        {q.questionnaire?.timeLimit && (
+                          <span>Время: {q.questionnaire.timeLimit} мин</span>
+                        )}
+                        {q.questionnaire?.reviewPrice && (
+                          <span>Цена проверки: {formatPrice(q.questionnaire.reviewPrice)} ₽</span>
+                        )}
+                      </div>
+                      
+                      {/* Сертификации */}
+                      {q.certifications && q.certifications.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {q.certifications.map((cert) => (
+                            <Link
+                              key={cert.id}
+                              href={`/account/certification/${cert.id}`}
+                              className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${certBadgeClasses}`}
+                            >
+                              <Award className="mr-1 h-3 w-3" />
+                              {cert.title}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
-                  {/* Колонка 4: Кнопка */}
-                  <div className="col-span-3 flex justify-end">
-                    {q.isCompleted ? (
-                      <span className="inline-flex items-center rounded-full bg-green-200 px-4 py-2 text-sm font-medium text-green-800">
-                        <CheckCircle className="mr-1 h-4 w-4" />
-                        Сдано
-                      </span>
-                    ) : q.hasInProgress ? (
-                      <Link
-                        href={`/account/challenge/${q.id}?attempt=${q.inProgressAttemptId}`}
-                        className="inline-flex items-center rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600"
-                      >
-                        <Play className="mr-1 h-4 w-4" />
-                        Продолжить
-                      </Link>
-                    ) : (
-                      <Link
-                        href={`/account/challenge/${q.id}`}
-                        className="inline-flex items-center rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
-                      >
-                        <Play className="mr-1 h-4 w-4" />
-                        Начать
-                      </Link>
-                    )}
+                    {/* Колонка 3: Статус */}
+                    <div className="col-span-3">
+                      {q.submissionStatus === 'APPROVED' ? (
+                        <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
+                          <CheckCircle className="mr-1 h-3 w-3" />
+                          Сдано
+                        </span>
+                      ) : q.submissionStatus === 'REJECTED' ? (
+                        <span className="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-800">
+                          Отклонено
+                        </span>
+                      ) : q.submissionStatus === 'PENDING' || q.submissionStatus === 'IN_REVIEW' ? (
+                        <span className="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-800">
+                          На проверке
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-800">
+                          Не начат
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Колонка 4: Кнопка */}
+                    <div className="col-span-3 flex justify-end">
+                      {q.submissionStatus === 'APPROVED' ? (
+                        <span className="inline-flex items-center rounded-full bg-green-200 px-4 py-2 text-sm font-medium text-green-800">
+                          <CheckCircle className="mr-1 h-4 w-4" />
+                          Сдано
+                        </span>
+                      ) : q.submissionStatus === 'PENDING' || q.submissionStatus === 'IN_REVIEW' ? (
+                        // На проверке - кнопку не показываем
+                        <span className="inline-flex items-center rounded-full bg-yellow-100 px-4 py-2 text-sm font-medium text-yellow-800">
+                          На проверке
+                        </span>
+                      ) : q.submissionStatus === 'REJECTED' ? (
+                        // Отклонено - показываем кнопку в зависимости от attemptsLeft
+                        q.attemptsLeft > 0 ? (
+                          <Link
+                            href={`/account/challenge/${q.id}`}
+                            className="inline-flex items-center rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
+                          >
+                            <Play className="mr-1 h-4 w-4" />
+                            Начать
+                          </Link>
+                        ) : (
+                          <Link
+                            href={`/account/challenge/${q.id}`}
+                            className="inline-flex items-center rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
+                          >
+                            <Play className="mr-1 h-4 w-4" />
+                            Оплатить попытку
+                          </Link>
+                        )
+                      ) : q.hasInProgress ? (
+                        <Link
+                          href={`/account/challenge/${q.id}?attempt=${q.inProgressAttemptId}`}
+                          className="inline-flex items-center rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600"
+                        >
+                          <Play className="mr-1 h-4 w-4" />
+                          Продолжить
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/account/challenge/${q.id}`}
+                          className="inline-flex items-center rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
+                        >
+                          <Play className="mr-1 h-4 w-4" />
+                          Начать
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
