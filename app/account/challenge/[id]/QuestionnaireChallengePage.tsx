@@ -29,9 +29,6 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
   const [timeLimit, setTimeLimit] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [instructionsForPsychologist, setInstructionsForPsychologist] = useState<string | null>(null);
-  const [showInstructions, setShowInstructions] = useState(false);
-
   // Загрузка состояния попытки
   const loadAttempt = useCallback(async (id: string) => {
     try {
@@ -54,13 +51,7 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
       setAnswers(data.answers || {});
       setTimeRemaining(data.timeRemaining);
       setTimeLimit(data.timeLimit);
-      setInstructionsForPsychologist(data.instructionsForPsychologist || null);
       
-      // Показываем инструкцию если она есть
-      if (data.instructionsForPsychologist) {
-        setShowInstructions(true);
-      }
-
       // Определяем текущий вопрос (первый без ответа или 0)
       let firstUnanswered = 0;
       for (let i = 0; i < data.questionsCount; i++) {
@@ -240,36 +231,6 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
               >
                 <Play className="mr-2 h-5 w-5" />
                 {isSubmitting ? 'Загрузка...' : 'Начать вопросник'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Модальное окно с инструкцией
-  if (showInstructions && instructionsForPsychologist) {
-    return (
-      <div className="mx-auto max-w-2xl">
-        <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
-          <div className="text-center">
-            <FileText className="mx-auto h-16 w-16 text-[#5858E2]" />
-            <h1 className="mt-4 text-2xl font-bold text-gray-900">
-              Инструкция перед началом
-            </h1>
-            <div className="mt-6 text-left">
-              <div className="prose prose-sm max-w-none whitespace-pre-wrap text-gray-700">
-                {instructionsForPsychologist}
-              </div>
-            </div>
-            <div className="mt-8">
-              <button
-                onClick={() => setShowInstructions(false)}
-                className="inline-flex items-center rounded-lg bg-[#5858E2] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
-              >
-                <Play className="mr-2 h-5 w-5" />
-                Начать вопросник
               </button>
             </div>
           </div>

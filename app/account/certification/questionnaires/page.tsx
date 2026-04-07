@@ -35,6 +35,12 @@ export default async function CertificationQuestionnairesPage() {
     },
   });
 
+  // Получаем баланс пользователя
+  const currentUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { balance: true },
+  });
+
   // Для каждого вопросника получаем статус пользователя и список сертификаций
   const questionnairesWithStatus = await Promise.all(
     questionnaireChallenges.map(async (challenge) => {
@@ -117,6 +123,7 @@ export default async function CertificationQuestionnairesPage() {
         <QuestionnairesListClient
           questionnaires={questionnairesWithStatus as any}
           certifications={certifications}
+          userBalance={currentUser?.balance ?? 0}
         />
       </div>
     </div>
