@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Требуется роль супервизора' }, { status: 403 });
     }
 
-    // Получаем историю проверок (COMPLETED и CANCELLED)
-    const reviews = await prisma.workReview.findMany({
+    // Получаем историю проверок работ (COMPLETED и CANCELLED)
+    const workReviews = await prisma.workReview.findMany({
       where: {
         supervisorId: user.id,
         status: {
@@ -26,14 +26,9 @@ export async function GET(request: NextRequest) {
         submission: {
           include: {
             challenge: {
-              include: {
-                work: true,
-              },
-            },
-            user: {
               select: {
                 id: true,
-                fullName: true,
+                title: true,
               },
             },
           },
@@ -44,9 +39,35 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Форматируем результат
-    const formattedReviews = reviews.map((review) => ({
+    // Получаем историю проверок вопросников (COMPLETED и CANCELLED)
+    const questionnaireReviews = await prisma.questionnaireReview.findMany({
+      where: {
+        supervisorId: user.id,
+        status: {
+          in: ['COMPLETED', 'CANCELLED'],
+        },
+      },
+      include: {
+        submission: {
+          include: {
+            challenge: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        resolvedAt: 'desc',
+      },
+    });
+
+    // Форматируем и объединяем результаты
+    const formattedWorkReviews = workReviews.map((review) => ({
       id: review.id,
+      type: 'WORK' as const,
       submissionId: review.submissionId,
       verdict: review.verdict,
       status: review.status,
@@ -57,13 +78,29 @@ export async function GET(request: NextRequest) {
         id: review.submission.challenge.id,
         title: review.submission.challenge.title,
       },
-      psychologist: {
-        id: review.submission.user.id,
-        fullName: review.submission.user.fullName,
+    }));
+
+    const formattedQuestionnaireReviews = questionnaireReviews.map((review) => ({
+      id: review.id,
+      type: 'QUESTIONNAIRE' as const,
+      submissionId: review.submissionId,
+      verdict: review.verdict,
+      status: review.status,
+      comment: review.comment,
+      createdAt: review.createdAt,
+      resolvedAt: review.resolvedAt,
+      challenge: {
+        id: review.submission.challenge.id,
+        title: review.submission.challenge.title,
       },
     }));
 
-    return NextResponse.json(formattedReviews);
+    // Объединяем и сортируем по дате
+    const allReviews = [...formattedWorkReviews, ...formattedQuestionnaireReviews].sort(
+      (a, b) => new Date(b.resolvedAt || 0).getTime() - new Date(a.resolvedAt || 0).getTime()
+    );
+
+    return NextResponse.json(allReviews);
   } catch (error) {
     console.error('Error fetching review history:', error);
     return NextResponse.json(

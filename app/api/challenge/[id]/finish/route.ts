@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
+import { checkCertificationCompletion } from '@/lib/check-certification-completion';
 
 // POST /api/challenge/:id/finish - завершить тест и получить результат
 export async function POST(
@@ -49,17 +50,29 @@ export async function POST(
         const now = Date.now();
         
         if (now > endTime) {
-          // Время истекло - обновляем статус на SUBMITTED (отправлено на проверку)
-          // REVIEWING будет установлен когда супервизор возьмёт вопросник
+          // Время истекло - отклоняем вопросник
           await prisma.questionnaireSubmission.update({
             where: { id: attemptOrSubmissionId },
             data: {
-              status: 'SUBMITTED',
+              status: 'REJECTED',
+              submittedAt: new Date(),
             },
+          });
+          
+          // Уменьшаем количество попыток
+          await prisma.challengeUserState.update({
+            where: {
+              challengeId_userId: {
+                challengeId: submission.challengeId,
+                userId: submission.userId,
+              },
+            },
+            data: { attemptsLeft: { decrement: 1 } },
           });
           
           return NextResponse.json({
             status: 'COMPLETED',
+            passed: false,
             timeExpired: true,
           });
         }
@@ -289,72 +302,9 @@ export async function POST(
       });
     }
 
-    // Если сдал - проверяем, не нужно ли выдать сертификацию
+    // Если сдал - проверяем сертификацию
     if (passed) {
-      // Находим все сертификации, где есть это испытание
-      const certifications = await prisma.certification.findMany({
-        where: { isActive: true },
-        include: {
-          requirements: true,  // Получаем ВСЕ требования, а не только текущее
-        },
-      });
-
-      for (const cert of certifications) {
-        // Проверяем, есть ли текущее испытание в требованиях этой сертификации
-        const hasCurrentChallenge = cert.requirements.some(
-          (req) => req.challengeId === attempt.challengeId
-        );
-
-        // Если этого испытания нет в требованиях - пропускаем
-        if (!hasCurrentChallenge) {
-          continue;
-        }
-
-        // Проверяем, все ли требования выполнены
-        const allRequirementsCompleted = await Promise.all(
-          cert.requirements.map(async (req) => {
-            const successfulAttempt = await prisma.challengeAttempt.findFirst({
-              where: {
-                userId: user.id,
-                challengeId: req.challengeId,
-                passed: true,
-              },
-            });
-            return !!successfulAttempt;
-          })
-        );
-
-        const allCompleted = allRequirementsCompleted.every((r) => r);
-
-        if (allCompleted) {
-          // Проверяем, не выдана ли уже награда
-          const existingAward = await prisma.certificationAward.findFirst({
-            where: {
-              certificationId: cert.id,
-              userId: user.id,
-            },
-          });
-
-          if (!existingAward) {
-            // Выдаём награду
-            await prisma.certificationAward.create({
-              data: {
-                certificationId: cert.id,
-                userId: user.id,
-              },
-            });
-
-            // Обновляем уровень сертификации пользователя
-            // Если level не null и больше текущего - присваиваем, иначе не меняем
-            if (cert.level !== null && cert.level > user.certificationLevel) {
-              await prisma.user.update({
-                where: { id: user.id },
-                data: { certificationLevel: cert.level },
-              });
-            }
-          }
-        }
-      }
+      await checkCertificationCompletion(user.id, attempt.challengeId);
     }
 
     return NextResponse.json({

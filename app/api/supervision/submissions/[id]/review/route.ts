@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
 import { creditSupervisor } from '@/lib/billing';
+import { checkCertificationCompletion } from '@/lib/check-certification-completion';
 
 // POST /api/supervision/submissions/:id/review - вынести вердикт
 export async function POST(
@@ -159,8 +160,13 @@ export async function POST(
       return finalSubmission;
     });
 
+    // Если работа одобрена — проверяем сертификацию
+    if (result.status === 'APPROVED') {
+      await checkCertificationCompletion(result.userId, result.challengeId);
+    }
+
     // Начисляем оплату супервизору (отдельно от транзакции)
-    const price = submission.challenge.price || 0;
+    const price = workChallenge?.reviewPrice || 0;
     if (price > 0) {
       await creditSupervisor(user.id, price, submissionId, 'Проверка квалификационной работы');
     }

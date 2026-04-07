@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth/session"
 import { revalidatePath } from "next/cache"
+import { checkCertificationCompletion } from "@/lib/check-certification-completion"
 
 // ==================== CLIENT ACTIONS ====================
 
@@ -63,6 +64,9 @@ export async function markLessonAsViewed(challengeId: string, userId: string) {
         firstViewedAt: new Date(),
       },
     })
+
+    // Проверяем сертификацию
+    await checkCertificationCompletion(userId, challengeId)
 
     return { success: true, data: result }
   } catch (error) {

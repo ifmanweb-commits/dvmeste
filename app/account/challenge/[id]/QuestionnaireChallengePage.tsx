@@ -30,6 +30,7 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [timeExpired, setTimeExpired] = useState(false);
   // Загрузка состояния попытки
   const loadAttempt = useCallback(async (id: string) => {
     try {
@@ -98,8 +99,8 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
         if (!prev || prev <= 1) {
-          // Время истекло - автоматически отправляем
-          finishQuestionnaire();
+          // Время истекло - автоматически отклоняем
+          finishQuestionnaire(true);
           return 0;
         }
         return prev - 1;
@@ -217,14 +218,16 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
   };
 
   // Отправка вопросника
-  const finishQuestionnaire = async () => {
+  const finishQuestionnaire = async (timeExpired = false) => {
     if (!attemptIdState) return;
 
-    // Валидация всех ответов
-    const validationError = validateAllAnswers();
-    if (validationError) {
-      setValidationError(validationError);
-      return;
+    // Валидация всех ответов (только если не истекло время)
+    if (!timeExpired) {
+      const validationError = validateAllAnswers();
+      if (validationError) {
+        setValidationError(validationError);
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -253,6 +256,14 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
         throw new Error(data.error || 'Failed to finish');
       }
 
+      // Если время истекло - показываем сообщение об отклонении
+      if (data.timeExpired) {
+        setTimeExpired(true);
+        setIsSubmitted(true);
+        setIsSubmitting(false);
+        return;
+      }
+
       setIsSubmitted(true);
     } catch (err: any) {
       setError(err.message);
@@ -269,20 +280,36 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Рендеринг результата (отправлено на проверку)
+  // Рендеринг результата
   if (isSubmitted) {
     return (
       <div className="mx-auto max-w-2xl">
         <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
           <div className="text-center">
-            <FileText className="mx-auto h-16 w-16 text-[#5858E2]" />
-            <h1 className="mt-4 text-2xl font-bold text-gray-900">
-              Ответы отправлены на проверку
-            </h1>
-            <p className="mt-4 text-gray-600">
-              Ваш вопросник отправлен супервизорам на проверку. 
-              Вы получите уведомление о результате проверки.
-            </p>
+            {timeExpired ? (
+              <>
+                <XCircle className="mx-auto h-16 w-16 text-red-500" />
+                <h1 className="mt-4 text-2xl font-bold text-gray-900">
+                  Время истекло
+                </h1>
+                <p className="mt-4 text-gray-600">
+                  К сожалению, время на прохождение вопросника истекло. 
+                  Ваша попытка отклонена. Вы можете попробовать пройти вопросник снова, 
+                  если у вас остались доступные попытки.
+                </p>
+              </>
+            ) : (
+              <>
+                <FileText className="mx-auto h-16 w-16 text-[#5858E2]" />
+                <h1 className="mt-4 text-2xl font-bold text-gray-900">
+                  Ответы отправлены на проверку
+                </h1>
+                <p className="mt-4 text-gray-600">
+                  Ваш вопросник отправлен супервизорам на проверку. 
+                  Вы получите уведомление о результате проверки.
+                </p>
+              </>
+            )}
             <div className="mt-8">
               <Link
                 href={`/account/certification/questionnaires/${challengeId}`}
@@ -457,7 +484,7 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
 
           {isLastQuestion ? (
             <button
-              onClick={finishQuestionnaire}
+              onClick={() => finishQuestionnaire(false)}
               disabled={isSubmitting}
               className="rounded-lg bg-[#5858E2] px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9] disabled:opacity-50 disabled:cursor-not-allowed"
             >

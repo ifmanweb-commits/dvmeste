@@ -61,6 +61,7 @@ export interface QuestionnaireSubmission {
 
 export interface ReviewHistory {
   id: string;
+  type: 'WORK' | 'QUESTIONNAIRE';
   submissionId: string;
   verdict: "APPROVED" | "REJECTED" | null;
   status: "TAKEN" | "COMPLETED" | "CANCELLED";
@@ -70,10 +71,6 @@ export interface ReviewHistory {
   challenge: {
     id: string;
     title: string;
-  };
-  psychologist: {
-    id: string;
-    fullName: string | null;
   };
 }
 
@@ -595,8 +592,17 @@ function HistoryTab({ reviews }: { reviews: ReviewHistory[] }) {
         >
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold text-gray-900">{r.challenge.title}</h3>
+                {r.type === 'WORK' ? (
+                  <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+                    Работа
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                    Вопросник
+                  </span>
+                )}
                 {r.status === "CANCELLED" ? (
                   <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs">
                     Отказ
@@ -613,9 +619,6 @@ function HistoryTab({ reviews }: { reviews: ReviewHistory[] }) {
                   </span>
                 )}
               </div>
-              <p className="text-sm text-gray-600 mt-1">
-                Психолог: {r.psychologist.fullName || "Аноним"}
-              </p>
               <p className="text-xs text-gray-500 mt-2">
                 Завершено: {r.resolvedAt ? new Date(r.resolvedAt).toLocaleDateString("ru-RU") : "-"}
               </p>
