@@ -654,12 +654,12 @@ model CertificationRequirement {
 }
 
 model CertificationAward {
-  id              String        @id @default(cuid())
-  certificationId String
+  id              String         @id @default(cuid())
+  certificationId String?
   userId          String
-  awardedAt       DateTime      @default(now())
-  certification   Certification @relation(fields: [certificationId], references: [id])
-  user            User          @relation("CertificationAwards", fields: [userId], references: [id], onDelete: Cascade)
+  awardedAt       DateTime       @default(now())
+  certification   Certification? @relation(fields: [certificationId], references: [id], onDelete: SetNull)
+  user            User           @relation("CertificationAwards", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([certificationId, userId])
   @@index([userId])
@@ -801,8 +801,9 @@ enum WorkReviewStatus {
 }
 
 enum QuestionnaireStatus {
+  IN_PROGRESS
   SUBMITTED
-  IN_REVIEW
+  REVIEWING
   APPROVED
   REJECTED
 }

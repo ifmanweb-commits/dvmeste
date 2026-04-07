@@ -13,11 +13,78 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: attemptId } = await params;
+    const { id: attemptOrSubmissionId } = await params;
+    const { type } = await request.json().catch(() => ({}));
 
-    // Получаем попытку с данными теста/вопросника
+    // Для вопросников используем QuestionnaireSubmission
+    if (type === 'QUESTIONNAIRE') {
+      const submission = await prisma.questionnaireSubmission.findUnique({
+        where: { id: attemptOrSubmissionId },
+        include: {
+          challenge: {
+            include: {
+              questionnaire: true,
+            },
+          },
+        },
+      });
+
+      if (!submission) {
+        return NextResponse.json(
+          { error: 'Submission not found' },
+          { status: 404 }
+        );
+      }
+
+      if (submission.userId !== user.id) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+
+      const questionnaireChallenge = submission.challenge.questionnaire;
+      
+      // Проверяем время (если есть лимит)
+      if (questionnaireChallenge?.timeLimit && submission.startedAt) {
+        const startTime = submission.startedAt.getTime();
+        const endTime = startTime + questionnaireChallenge.timeLimit * 60 * 1000;
+        const now = Date.now();
+        
+        if (now > endTime) {
+          // Время истекло - обновляем статус на SUBMITTED (отправлено на проверку)
+          // REVIEWING будет установлен когда супервизор возьмёт вопросник
+          await prisma.questionnaireSubmission.update({
+            where: { id: attemptOrSubmissionId },
+            data: {
+              status: 'SUBMITTED',
+            },
+          });
+          
+          return NextResponse.json({
+            status: 'COMPLETED',
+            timeExpired: true,
+          });
+        }
+      }
+      
+      // Обновляем статус на SUBMITTED (отправлено на проверку)
+      // attemptsLeft уже был уменьшен при старте в start/route.ts
+      // REVIEWING будет установлен когда супервизор возьмёт вопросник через API take
+      await prisma.questionnaireSubmission.update({
+        where: { id: attemptOrSubmissionId },
+        data: {
+          status: 'SUBMITTED',
+          submittedAt: new Date(),
+        },
+      });
+      
+      return NextResponse.json({
+        status: 'COMPLETED',
+        submissionId: submission.id,
+      });
+    }
+
+    // Для тестов используем ChallengeAttempt
     const attempt = await prisma.challengeAttempt.findUnique({
-      where: { id: attemptId },
+      where: { id: attemptOrSubmissionId },
       include: {
         challenge: {
           include: {
@@ -57,7 +124,7 @@ export async function POST(
       );
     }
 
-    // Для вопросника - отдельная логика
+    // Для вопросника - отдельная логика (оставляем для обратной совместимости)
     if (isQuestionnaire && questionnaireChallenge) {
       const body = await request.json();
       const { answers } = body || {};
@@ -71,7 +138,7 @@ export async function POST(
         if (now > endTime) {
           // Время истекло
           await prisma.challengeAttempt.update({
-            where: { id: attemptId },
+            where: { id: attemptOrSubmissionId },
             data: {
               status: 'COMPLETED',
               finishedAt: new Date(),
@@ -105,7 +172,7 @@ export async function POST(
       
       // Обновляем попытку
       await prisma.challengeAttempt.update({
-        where: { id: attemptId },
+        where: { id: attemptOrSubmissionId },
         data: {
           status: 'COMPLETED',
           finishedAt: new Date(),
@@ -139,7 +206,7 @@ export async function POST(
       if (now > endTime) {
         // Время истекло - автоматический провал
         await prisma.challengeAttempt.update({
-          where: { id: attemptId },
+          where: { id: attemptOrSubmissionId },
           data: {
             status: 'COMPLETED',
             passed: false,
@@ -200,7 +267,7 @@ export async function POST(
 
     // Обновляем попытку
     await prisma.challengeAttempt.update({
-      where: { id: attemptId },
+      where: { id: attemptOrSubmissionId },
       data: {
         status: 'COMPLETED',
         passed,

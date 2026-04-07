@@ -153,31 +153,85 @@ export async function POST(request: NextRequest) {
         timeLimit: testChallenge.timeLimit,
       });
     } else if (challenge.type === 'QUESTIONNAIRE' && questionnaireChallenge) {
-      // Для вопросника - берём все вопросы из пула
+      // Для вопросников - используем QuestionnaireSubmission, а не ChallengeAttempt
       const questionsPool = questionnaireChallenge.questionsPool as string[];
+      const questionsCount = questionnaireChallenge.questionsCount;
       
-      // Создаём массив вопросов
-      const selectedQuestions = questionsPool.map((text, index) => ({
+      // Проверяем, есть ли уже активная попытка (QuestionnaireSubmission)
+      // Активная попытка - это submission со статусом IN_PROGRESS (в процессе заполнения)
+      const existingSubmission = await prisma.questionnaireSubmission.findFirst({
+        where: {
+          userId: user.id,
+          challengeId: challenge.id,
+          status: 'IN_PROGRESS',
+        },
+        orderBy: { startedAt: 'desc' },
+      });
+
+      if (existingSubmission) {
+        return NextResponse.json({
+          submissionId: existingSubmission.id,
+          exists: true,
+        });
+      }
+      
+      // Получаем или создаём состояние пользователя для проверки attemptsLeft
+      let userState = await prisma.challengeUserState.findUnique({
+        where: {
+          challengeId_userId: {
+            challengeId: challenge.id,
+            userId: user.id,
+          },
+        },
+      });
+
+      // Если состояния нет, создаём с 1 попыткой (бесплатная первая попытка)
+      if (!userState) {
+        userState = await prisma.challengeUserState.create({
+          data: {
+            challengeId: challenge.id,
+            userId: user.id,
+            attemptsLeft: 1,
+          },
+        });
+      }
+
+      // Проверяем, есть ли доступные попытки
+      if (userState.attemptsLeft <= 0) {
+        return NextResponse.json(
+          { error: 'No attempts left. Please purchase more.' },
+          { status: 403 }
+        );
+      }
+
+      // Выбираем случайно questionsCount вопросов из пула
+      const shuffled = [...questionsPool].sort(() => Math.random() - 0.5);
+      const selectedQuestions = shuffled.slice(0, questionsCount).map((text, index) => ({
         index,
         text,
       }));
 
-      // Создаём новую попытку для вопросника
-      const attempt = await prisma.challengeAttempt.create({
+      // Уменьшаем количество попыток
+      await prisma.challengeUserState.update({
+        where: { id: userState.id },
+        data: { attemptsLeft: userState.attemptsLeft - 1 },
+      });
+
+      // Создаём QuestionnaireSubmission с вопросами (answers будет пустым)
+      const submission = await prisma.questionnaireSubmission.create({
         data: {
           challengeId: challenge.id,
           userId: user.id,
+          answers: selectedQuestions, // Сохраняем список вопросов в answers
           status: 'IN_PROGRESS',
           startedAt: new Date(),
-          selectedQuestionIndices: selectedQuestions,
-          answers: {},
         },
       });
 
       return NextResponse.json({
-        attemptId: attempt.id,
+        submissionId: submission.id,
         exists: false,
-        questionsCount: selectedQuestions.length,
+        questionsCount,
         timeLimit: questionnaireChallenge.timeLimit,
       });
     }

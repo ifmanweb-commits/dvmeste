@@ -45,7 +45,7 @@ export async function POST(
       );
     }
 
-    if (submission.status !== 'IN_REVIEW' || submission.reviewerId !== user.id) {
+    if (submission.status !== 'REVIEWING' || submission.reviewerId !== user.id) {
       return NextResponse.json(
         { error: 'Работа не находится у вас на проверке' },
         { status: 400 }

@@ -21,7 +21,7 @@ interface QuestionnaireChallenge {
   isCompleted: boolean;
   hasInProgress: boolean;
   inProgressAttemptId: string | null;
-  submissionStatus: 'SUBMITTED' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED' | null;
+  submissionStatus: 'SUBMITTED' | 'REVIEWING' | 'APPROVED' | 'REJECTED' | null;
   attemptsLeft: number;
   questionnaire: {
     questionsCount: number;
@@ -73,7 +73,7 @@ export default function QuestionnairesListClient({ questionnaires, certification
 
       // Фильтр по статусу
       if (statusFilter === "completed" && !q.isCompleted) return false;
-      if (statusFilter === "submitted" && q.submissionStatus !== 'SUBMITTED' && q.submissionStatus !== 'IN_REVIEW') return false;
+      if (statusFilter === "submitted" && q.submissionStatus !== 'SUBMITTED' && q.submissionStatus !== 'REVIEWING') return false;
 
       return true;
     });
@@ -245,7 +245,7 @@ export default function QuestionnairesListClient({ questionnaires, certification
                         <CheckCircle className="mr-1 h-3 w-3" />
                         Сдано
                       </span>
-                    ) : q.submissionStatus === 'SUBMITTED' || q.submissionStatus === 'IN_REVIEW' ? (
+                    ) : q.submissionStatus === 'SUBMITTED' || q.submissionStatus === 'REVIEWING' ? (
                       <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
                         <Clock className="mr-1 h-3 w-3" />
                         На проверке

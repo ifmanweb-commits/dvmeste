@@ -13,11 +13,93 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: attemptId } = await params;
+    const { id: attemptOrSubmissionId } = await params;
+    // Получаем type из query параметров
+    const searchParams = request.nextUrl.searchParams;
+    const type = searchParams.get('type') || 'TEST';
 
-    // Получаем попытку с данными теста/вопросника
+    // Для вопросников используем QuestionnaireSubmission
+    if (type === 'QUESTIONNAIRE') {
+      const submission = await prisma.questionnaireSubmission.findUnique({
+        where: { id: attemptOrSubmissionId },
+        include: {
+          challenge: {
+            include: {
+              questionnaire: true,
+            },
+          },
+        },
+      });
+
+      if (!submission) {
+        return NextResponse.json(
+          { error: 'Submission not found' },
+          { status: 404 }
+        );
+      }
+
+      if (submission.userId !== user.id) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+
+      const questionnaireChallenge = submission.challenge.questionnaire;
+      
+      // Если попытка завершена (APPROVED или REJECTED) - возвращаем результат
+      // IN_PROGRESS означает что ответы ещё заполняются (активная попытка)
+      // SUBMITTED/REVIEWING означает что вопросник отправлен на проверку
+      if (submission.status === 'APPROVED' || submission.status === 'REJECTED') {
+        return NextResponse.json({
+          status: 'COMPLETED',
+          submissionStatus: submission.status,
+        });
+      }
+      
+      // Если статус SUBMITTED или REVIEWING - вопросник на проверке
+      if (submission.status === 'SUBMITTED' || submission.status === 'REVIEWING') {
+        return NextResponse.json({
+          status: 'COMPLETED',
+          submissionStatus: submission.status,
+        });
+      }
+
+      // Получаем вопросы из answers (формат: [{index, text, answer}])
+      const answers = submission.answers as any[] || [];
+      const questions = answers.map((a, i) => ({
+        index: a.index ?? i,
+        text: a.text,
+      }));
+
+      // Считаем оставшееся время (если есть лимит)
+      let timeRemaining: number | null = null;
+      const timeLimit = questionnaireChallenge?.timeLimit;
+      if (timeLimit && submission.startedAt) {
+        const startTime = submission.startedAt.getTime();
+        const endTime = startTime + timeLimit * 60 * 1000;
+        const now = Date.now();
+        timeRemaining = Math.max(0, Math.floor((endTime - now) / 1000));
+      }
+
+      // Преобразуем ответы в формат { "0": "ответ", "1": "ответ" }
+      const answersMap = answers.reduce((acc, a, i) => {
+        acc[i.toString()] = a.answer || '';
+        return acc;
+      }, {} as Record<string, string>);
+
+      return NextResponse.json({
+        status: submission.status,
+        challengeTitle: submission.challenge.title,
+        questions,
+        questionsCount: answers.length,
+        answers: answersMap,
+        timeRemaining,
+        timeLimit,
+        instructionsForPsychologist: questionnaireChallenge?.instructionsForPsychologist || null,
+      });
+    }
+
+    // Для тестов используем ChallengeAttempt
     const attempt = await prisma.challengeAttempt.findUnique({
-      where: { id: attemptId },
+      where: { id: attemptOrSubmissionId },
       include: {
         challenge: {
           include: {

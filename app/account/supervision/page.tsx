@@ -6,7 +6,7 @@ import SupervisionClient, { type Submission, type QuestionnaireSubmission } from
 
 // Тип для вопросника с правильным статусом
 type QuestionnaireSubmissionType = Omit<QuestionnaireSubmission, 'status'> & {
-  status: "SUBMITTED" | "IN_REVIEW" | "APPROVED" | "REJECTED";
+  status: "SUBMITTED" | "REVIEWING" | "APPROVED" | "REJECTED";
 };
 
 type PageProps = {
@@ -146,9 +146,10 @@ export default async function SupervisionPage({ searchParams }: PageProps) {
         submittedAt: 'asc',
       },
     }),
-    // На проверке вопросники: status = IN_REVIEW, reviewerId = текущий
+    // На проверке вопросники: status = REVIEWING, reviewerId = текущий
     prisma.questionnaireSubmission.findMany({
       where: {
+        status: 'REVIEWING',
         reviewerId: user.id,
       },
       include: {

@@ -62,13 +62,13 @@ export async function POST(
         },
       });
 
-      // Обновляем вопросник
-      return tx.questionnaireSubmission.update({
-        where: { id: submissionId },
-        data: {
-          status: 'IN_REVIEW' as any,
-          reviewerId: user.id,
-        },
+        // Обновляем вопросник
+        return tx.questionnaireSubmission.update({
+          where: { id: submissionId },
+          data: {
+            status: 'REVIEWING',
+            reviewerId: user.id,
+          },
         include: {
           challenge: {
             include: {

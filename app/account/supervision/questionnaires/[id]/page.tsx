@@ -78,7 +78,7 @@ export default async function QuestionnaireReviewPage({
   }
 
   // Проверяем, что супервизор взял эту работу
-  if (submission.reviews.length === 0 || submission.status !== "IN_REVIEW") {
+  if (submission.reviews.length === 0 || submission.status !== "REVIEWING") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 max-w-md w-full text-center">
@@ -123,7 +123,14 @@ export default async function QuestionnaireReviewPage({
         <QuestionnaireReviewClient
           submission={{
             id: submission.id,
-            answers: submission.answers as Array<{ questionIndex: number; answer: string }>,
+            // Формат answers в базе: [{index, text}] - это вопросы
+            // Ответы могут храниться в том же массиве или отдельно
+            // Преобразуем к формату {index, text, answer}
+            answers: (submission.answers as any[])?.map((item: any) => ({
+              index: item.index ?? 0,
+              text: item.text || '',
+              answer: item.answer || '',
+            })) || [],
             startedAt: submission.startedAt.toISOString(),
             submittedAt: submission.submittedAt.toISOString(),
             challenge: {

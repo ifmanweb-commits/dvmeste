@@ -3,13 +3,21 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Lock, LockOpen, CheckCircle, XCircle, Clock, X, AlertCircle, FileText } from "lucide-react";
+import { Lock, LockOpen, CheckCircle, XCircle, Clock, X, AlertCircle, FileText, MessageSquare } from "lucide-react";
+
+interface Review {
+  id: string;
+  status: "APPROVED" | "REJECTED";
+  comment: string | null;
+  createdAt: string;
+}
 
 interface Submission {
   id: string;
-  status: "SUBMITTED" | "REVIEWING" | "APPROVED" | "REJECTED";
+  status: "IN_PROGRESS" | "SUBMITTED" | "REVIEWING" | "APPROVED" | "REJECTED";
   submittedAt: string;
   score: number | null;
+  reviews: Review[];
 }
 
 interface Questionnaire {
@@ -28,8 +36,8 @@ interface QuestionnaireDetailClientProps {
   questionnaire: Questionnaire;
   submissions: Submission[];
   isUnlocked: boolean;
-  hasInProgress: boolean;
-  inProgressAttemptId: string | null;
+  hasActiveAttempt: boolean;
+  activeSubmissionId: string | null;
   pendingSubmission: boolean;
   userBalance: number;
 }
@@ -38,8 +46,8 @@ export default function QuestionnaireDetailClient({
   questionnaire,
   submissions,
   isUnlocked,
-  hasInProgress,
-  inProgressAttemptId,
+  hasActiveAttempt,
+  activeSubmissionId,
   pendingSubmission,
   userBalance,
 }: QuestionnaireDetailClientProps) {
@@ -48,6 +56,10 @@ export default function QuestionnaireDetailClient({
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [unlockSuccess, setUnlockSuccess] = useState<string | null>(null);
   const [unlockModalOpen, setUnlockModalOpen] = useState(false);
+  
+  // Состояние модалки комментария
+  const [commentModalOpen, setCommentModalOpen] = useState(false);
+  const [selectedComment, setSelectedComment] = useState<{ text: string; submissionId: string } | null>(null);
 
   // Начало вопросника
   const startQuestionnaire = async () => {
@@ -63,8 +75,13 @@ export default function QuestionnaireDetailClient({
         throw new Error(data.error || "Ошибка при старте");
       }
 
-      // Перенаправляем на страницу прохождения с attemptId
-      router.push(`/account/challenge/${questionnaire.id}?attempt=${data.attemptId}`);
+      // Перенаправляем на страницу прохождения с submissionId
+      // Для вопросников используем submissionId, а не attemptId
+      const submissionId = data.submissionId || data.attemptId;
+      if (!submissionId) {
+        throw new Error("Не удалось получить ID попытки");
+      }
+      router.push(`/account/challenge/${questionnaire.id}?attempt=${submissionId}&type=QUESTIONNAIRE`);
     } catch (err: any) {
       setUnlockError(err.message);
     }
@@ -117,6 +134,18 @@ export default function QuestionnaireDetailClient({
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  // Открытие модалки комментария
+  const openCommentModal = (comment: string, submissionId: string) => {
+    setSelectedComment({ text: comment, submissionId });
+    setCommentModalOpen(true);
+  };
+
+  // Закрытие модалки комментария
+  const closeCommentModal = () => {
+    setCommentModalOpen(false);
+    setSelectedComment(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -172,7 +201,7 @@ export default function QuestionnaireDetailClient({
             </div>
           </div>
         </div>
-      ) : hasInProgress ? (
+      ) : hasActiveAttempt ? (
         // Есть активная попытка - кнопка "Продолжить"
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold text-gray-900">
@@ -182,7 +211,7 @@ export default function QuestionnaireDetailClient({
             У вас есть активная попытка прохождения вопросника.
           </p>
           <Link
-            href={`/account/challenge/${questionnaire.id}?attempt=${inProgressAttemptId}`}
+            href={`/account/challenge/${questionnaire.id}?attempt=${activeSubmissionId}&type=QUESTIONNAIRE`}
             className="inline-flex items-center rounded-lg bg-orange-500 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-orange-600"
           >
             <FileText className="mr-2 h-5 w-5" />
@@ -271,29 +300,88 @@ export default function QuestionnaireDetailClient({
                   <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
                     Статус
                   </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
+                    Комментарий
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {submissions.map((submission, index) => (
-                  <tr
-                    key={submission.id}
-                    className="border-b border-gray-100 last:border-b-0"
-                  >
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {submissions.length - index}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {formatDateTime(submission.submittedAt)}
-                    </td>
-                    <td className="px-4 py-3">
-                      {getStatusBadge(submission.status)}
-                    </td>
-                  </tr>
-                ))}
+                {submissions.map((submission, index) => {
+                  const latestReview = submission.reviews[submission.reviews.length - 1];
+                  const isRejected = submission.status === "REJECTED" || latestReview?.status === "REJECTED";
+                  const comment = latestReview?.comment;
+                  
+                  return (
+                    <tr
+                      key={submission.id}
+                      className="border-b border-gray-100 last:border-b-0"
+                    >
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {submissions.length - index}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {formatDateTime(submission.submittedAt)}
+                      </td>
+                      <td className="px-4 py-3">
+                        {getStatusBadge(submission.status)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {isRejected && comment ? (
+                          <button
+                            onClick={() => openCommentModal(comment, submission.id)}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                            Комментарий супервизора
+                          </button>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
+      )}
+
+      {/* Модалка комментария */}
+      {commentModalOpen && selectedComment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+              {/* Заголовок */}
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Комментарий супервизора
+                </h3>
+                <button
+                  onClick={closeCommentModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Текст комментария с прокруткой */}
+              <div className="max-h-96 overflow-y-auto rounded-lg bg-gray-50 p-4">
+                <p className="whitespace-pre-wrap text-gray-800">
+                  {selectedComment.text}
+                </p>
+              </div>
+
+              {/* Кнопка закрытия */}
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={closeCommentModal}
+                  className="rounded-lg bg-[#5858E2] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
+                >
+                  Закрыть
+                </button>
+              </div>
+            </div>
+          </div>
       )}
 
       {/* Модалка оплаты */}

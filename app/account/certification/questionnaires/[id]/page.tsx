@@ -40,11 +40,14 @@ export default async function QuestionnaireDetailPage({ params }: PageProps) {
     },
   });
 
-  // Получаем все отправки вопросника
+  // Получаем все отправки вопросника с отзывами супервизоров
   const submissions = await prisma.questionnaireSubmission.findMany({
     where: {
       challengeId: questionnaireId,
       userId: user.id,
+    },
+    include: {
+      reviews: true,
     },
     orderBy: {
       submittedAt: 'desc',
@@ -61,18 +64,33 @@ export default async function QuestionnaireDetailPage({ params }: PageProps) {
   const attemptsLeft = userState?.attemptsLeft ?? 1;
   const isUnlocked = attemptsLeft > 0;
 
-  // Проверяем, есть ли активная попытка (IN_PROGRESS)
-  const inProgressAttempt = await prisma.challengeAttempt.findFirst({
+  // Проверяем, есть ли активная попытка прохождения вопросника (QuestionnaireSubmission)
+  // Активная попытка - это попытка в процессе заполнения (IN_PROGRESS)
+  const inProgressSubmission = await prisma.questionnaireSubmission.findFirst({
     where: {
       challengeId: questionnaireId,
       userId: user.id,
       status: 'IN_PROGRESS',
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { startedAt: 'desc' },
   });
 
-  // Проверяем, есть ли submission на проверке (любое, кроме null)
-  const pendingSubmission = submissions.length > 0;
+  // Проверяем, есть ли submission на проверке (отправлено и ожидает проверки)
+  const pendingSubmission = submissions.some(
+    s => s.status === 'SUBMITTED' || s.status === 'REVIEWING'
+  );
+
+  // Определяем, есть ли попытка на проверке (отправлена и ожидает проверки)
+  // submittedAttempt - это последняя отправленная попытка, которая ещё не завершена
+  const submittedAttempt = submissions.find(
+    s => s.status === 'SUBMITTED' || s.status === 'REVIEWING'
+  );
+  
+  // activeAttempt - это попытка, которую пользователь ещё не завершил (может заполнять)
+  // Это submission без статуса APPROVED/REJECTED, у которой startedAt есть
+  const activeAttempt = submissions.find(
+    s => s.status !== 'APPROVED' && s.status !== 'REJECTED'
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
@@ -108,9 +126,9 @@ export default async function QuestionnaireDetailPage({ params }: PageProps) {
           questionnaire={questionnaire as any}
           submissions={submissions as any}
           isUnlocked={isUnlocked}
-          hasInProgress={!!inProgressAttempt}
-          inProgressAttemptId={inProgressAttempt?.id || null}
-          pendingSubmission={!!pendingSubmission}
+          hasActiveAttempt={!!activeAttempt && !submittedAttempt}
+          activeSubmissionId={activeAttempt?.id || null}
+          pendingSubmission={!!submittedAttempt}
           userBalance={currentUser?.balance ?? 0}
         />
       </div>

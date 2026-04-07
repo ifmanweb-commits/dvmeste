@@ -75,14 +75,15 @@ export default async function CertificationPage() {
           });
           isCompleted = !!lessonCompletion;
         } else if (req.challenge.type === 'QUESTIONNAIRE') {
-          // Для вопросника проверяем, есть ли submission
-          const submission = await prisma.questionnaireSubmission.findFirst({
+          // Для вопросника проверяем, есть ли одобренная submission
+          const approvedSubmission = await prisma.questionnaireSubmission.findFirst({
             where: {
               userId: user.id,
               challengeId: req.challengeId,
+              status: 'APPROVED',
             },
           });
-          isCompleted = !!submission;
+          isCompleted = !!approvedSubmission;
         }
         
         if (isCompleted) {
@@ -202,7 +203,7 @@ export default async function CertificationPage() {
                   </div>
                   
                     {/* КОЛОНКА 3 — Список испытаний */}
-                  <div className="sm:col-span-7">
+                  <div className="sm:col-span-5">
                     <h4 className="text-sm font-semibold text-gray-700 mb-2">
                       Испытания
                     </h4>
@@ -259,6 +260,25 @@ export default async function CertificationPage() {
                         </li>
                       ))}
                     </ul>
+                  </div>
+                  
+                  {/* КОЛОНКА 4 — Прогресс */}
+                  <div className="flex flex-col justify-center sm:col-span-2">
+                    <div className="mb-2 flex items-center justify-between text-sm">
+                      <span className="font-medium text-gray-700">Прогресс</span>
+                      <span className="font-semibold text-[#5858E2]">{Math.round(cert.progress)}%</span>
+                    </div>
+                    <div className="h-3 w-full rounded-full bg-gray-200">
+                      <div
+                        className={`h-3 rounded-full transition-all ${
+                          cert.progress === 100 ? 'bg-green-500' : 'bg-[#5858E2]'
+                        }`}
+                        style={{ width: `${cert.progress}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 text-center text-xs text-gray-500">
+                      {cert.completedCount} из {cert.totalCount} пройдено
+                    </p>
                   </div>
                 </div>
               ))}

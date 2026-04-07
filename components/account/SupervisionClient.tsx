@@ -39,7 +39,7 @@ export interface QuestionnaireSubmission {
   challengeId: string;
   userId: string;
   answers: any;
-  status: "SUBMITTED" | "IN_REVIEW" | "APPROVED" | "REJECTED";
+  status: "SUBMITTED" | "REVIEWING" | "APPROVED" | "REJECTED";
   submittedAt: Date;
   reviewerId: string | null;
   challenge: {

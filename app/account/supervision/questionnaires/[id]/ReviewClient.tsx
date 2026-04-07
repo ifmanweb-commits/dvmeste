@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 interface QuestionnaireReviewClientProps {
   submission: {
     id: string;
-    answers: Array<{ questionIndex: number; answer: string }>;
+    answers: Array<{ index: number; text: string; answer?: string }>;
     startedAt: string | null;
     submittedAt: string;
     challenge: {
@@ -99,7 +99,8 @@ export default function QuestionnaireReviewClient({ submission }: QuestionnaireR
   const questionsPool = submission.challenge.questionnaire?.questionsPool || [];
 
   // Вычисляем метрики
-  const totalCharacters = submission.answers.reduce((sum, item) => sum + (item.answer?.length || 0), 0);
+  // Формат answers: [{index, text, answer}] или [{index, text}] если ответы ещё не сохранены
+  const totalCharacters = submission.answers.reduce((sum, item) => sum + ((item.answer || item.text || '').length), 0);
   
   // Вычисляем время прохождения в минутах
   let timeSpentMinutes = 0;
@@ -204,7 +205,12 @@ export default function QuestionnaireReviewClient({ submission }: QuestionnaireR
         
         <div className="space-y-4">
           {submission.answers.map((item, index) => {
-            const question = questionsPool[item.questionIndex] || `Вопрос #${item.questionIndex + 1}`;
+            // Формат: {index, text, answer} где text - вопрос, answer - ответ пользователя
+            // Если answer не указан, используем text как вопрос из пула
+            const questionIndex = item.index ?? index;
+            const question = item.text || questionsPool[questionIndex] || `Вопрос #${questionIndex + 1}`;
+            const answer = item.answer || '';
+            
             return (
               <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
                 <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
@@ -214,7 +220,11 @@ export default function QuestionnaireReviewClient({ submission }: QuestionnaireR
                   </p>
                 </div>
                 <div className="px-4 py-3">
-                  <p className="text-sm text-gray-900 whitespace-pre-wrap">{item.answer}</p>
+                  {answer ? (
+                    <p className="text-sm text-gray-900 whitespace-pre-wrap">{answer}</p>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">Ответ не предоставлен</p>
+                  )}
                 </div>
               </div>
             );

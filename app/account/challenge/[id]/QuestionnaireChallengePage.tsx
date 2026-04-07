@@ -1,4 +1,3 @@
-'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
@@ -29,10 +28,24 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
   const [timeLimit, setTimeLimit] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   // Загрузка состояния попытки
   const loadAttempt = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/challenge/${id}/status`);
+      // Проверка на валидность id
+      if (!id || id === 'undefined') {
+        throw new Error('Invalid attempt ID');
+      }
+      
+      // Определяем тип из URL параметра
+      const urlParams = new URLSearchParams(window.location.search);
+      const type = urlParams.get('type') || 'TEST';
+      
+      const res = await fetch(`/api/challenge/${id}/status?type=${type}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
       const data = await res.json();
 
       if (!res.ok) {
@@ -70,7 +83,8 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
 
   // Начальная загрузка
   useEffect(() => {
-    if (attemptIdState) {
+    // Проверяем что attemptIdState определен и не равен строке 'undefined'
+    if (attemptIdState && attemptIdState !== 'undefined') {
       loadAttempt(attemptIdState);
     } else {
       setLoading(false);
@@ -112,7 +126,14 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
         throw new Error(data.error || 'Failed to start');
       }
 
-      router.push(`/account/challenge/${challengeId}?attempt=${data.attemptId}`);
+      // Для вопросников используем submissionId
+      const id = data.submissionId || data.attemptId;
+      
+      if (!id) {
+        throw new Error('Failed to get submission ID');
+      }
+      
+      router.push(`/account/challenge/${challengeId}?attempt=${id}&type=QUESTIONNAIRE`);
     } catch (err: any) {
       setError(err.message);
       setLoading(false);
@@ -121,7 +142,64 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
 
   // Выбор ответа
   const selectAnswer = (answer: string) => {
-    setAnswers({ ...answers, [currentQuestionIndex.toString()]: answer });
+    const newAnswers = { ...answers, [currentQuestionIndex.toString()]: answer };
+    setAnswers(newAnswers);
+    // Очищаем ошибку валидации при изменении ответа
+    if (answer.length >= 100 && answer.length <= 2000) {
+      setValidationError(null);
+    }
+  };
+
+  // Автосохранение ответов с дебаунсом
+  useEffect(() => {
+    if (!attemptIdState || Object.keys(answers).length === 0) return;
+
+    setIsSaving(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        // Определяем тип из URL параметра
+        const urlParams = new URLSearchParams(window.location.search);
+        const type = urlParams.get('type') || 'TEST';
+        
+        await fetch(`/api/challenge/${attemptIdState}/save`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ answers, type }),
+        });
+      } catch (error) {
+        console.error('Error saving answers:', error);
+      } finally {
+        setIsSaving(false);
+      }
+    }, 10000); // 10 секунд дебаунс
+
+    return () => clearTimeout(timer);
+  }, [answers, attemptIdState]);
+
+  // Проверка валидации текущего ответа
+  const getCurrentAnswerValidationError = (answer: string): string | null => {
+    if (answer.length > 0 && answer.length < 100) {
+      return `Минимум 100 символов (сейчас ${answer.length})`;
+    }
+    if (answer.length > 2000) {
+      return `Максимум 2000 символов (сейчас ${answer.length})`;
+    }
+    return null;
+  };
+
+  // Проверка всех ответов перед отправкой
+  const validateAllAnswers = (): string | null => {
+    for (let i = 0; i < questions.length; i++) {
+      const answer = answers[i.toString()] || '';
+      if (answer.length < 100) {
+        return `Ответ на вопрос ${i + 1} слишком короткий. Минимум 100 символов.`;
+      }
+      if (answer.length > 2000) {
+        return `Ответ на вопрос ${i + 1} слишком длинный. Максимум 2000 символов.`;
+      }
+    }
+    return null;
   };
 
   // Переход к следующему вопросу
@@ -142,13 +220,32 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
   const finishQuestionnaire = async () => {
     if (!attemptIdState) return;
 
+    // Валидация всех ответов
+    const validationError = validateAllAnswers();
+    if (validationError) {
+      setValidationError(validationError);
+      return;
+    }
+
     setIsSubmitting(true);
+    setValidationError(null);
 
     try {
+      // Определяем тип из URL параметра
+      const urlParams = new URLSearchParams(window.location.search);
+      const type = urlParams.get('type') || 'TEST';
+      
+      // Сначала сохраняем ответы
+      await fetch(`/api/challenge/${attemptIdState}/save`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers, type }),
+      });
+
       const res = await fetch(`/api/challenge/${attemptIdState}/finish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({ type }),
       });
       const data = await res.json();
 
@@ -188,10 +285,10 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
             </p>
             <div className="mt-8">
               <Link
-                href="/account/certification"
+                href={`/account/certification/questionnaires/${challengeId}`}
                 className="inline-flex items-center rounded-lg bg-[#5858E2] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
               >
-                Вернуться к сертификации
+                Закончить
               </Link>
             </div>
           </div>
@@ -311,10 +408,42 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
             value={currentAnswer}
             onChange={(e) => selectAnswer(e.target.value)}
             rows={6}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
-            placeholder="Введите ваш ответ здесь..."
+            maxLength={2000}
+            className={`w-full rounded-lg border px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2] ${
+              currentAnswer.length > 0 && currentAnswer.length < 100
+                ? 'border-red-300 bg-red-50'
+                : currentAnswer.length > 2000
+                ? 'border-red-300 bg-red-50'
+                : 'border-gray-300 bg-white'
+            }`}
+            placeholder="Введите ваш ответ здесь (минимум 100 символов)..."
           />
+          <div className="mt-2 flex items-center justify-between">
+            <span className={`text-xs ${
+              currentAnswer.length > 0 && currentAnswer.length < 100
+                ? 'text-red-600'
+                : currentAnswer.length > 2000
+                ? 'text-red-600'
+                : 'text-gray-500'
+            }`}>
+              {currentAnswer.length > 0 && currentAnswer.length < 100
+                ? `Минимум 100 символов (сейчас ${currentAnswer.length})`
+                : currentAnswer.length > 2000
+                ? `Максимум 2000 символов (сейчас ${currentAnswer.length})`
+                : `Минимум 100, максимум 2000 символов`}
+            </span>
+            <span className="text-xs text-gray-500">
+              {currentAnswer.length} / 2000
+            </span>
+          </div>
         </div>
+
+        {/* Ошибка валидации */}
+        {validationError && (
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
+            <p className="text-sm text-red-800">{validationError}</p>
+          </div>
+        )}
 
         {/* Навигация */}
         <div className="mt-8 flex items-center justify-between">
@@ -329,7 +458,7 @@ export default function QuestionnaireChallengePage({ challengeId, attemptId }: Q
           {isLastQuestion ? (
             <button
               onClick={finishQuestionnaire}
-              disabled={!hasAnswer || isSubmitting}
+              disabled={isSubmitting}
               className="rounded-lg bg-[#5858E2] px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Отправка...' : 'Отправить на проверку'}
