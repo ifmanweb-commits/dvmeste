@@ -186,11 +186,14 @@ export default async function ChallengesPage({
                             ? 'bg-blue-100 text-blue-800'
                             : challenge.type === 'WORK'
                             ? 'bg-purple-100 text-purple-800'
+                            : challenge.type === 'QUESTIONNAIRE'
+                            ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-green-100 text-green-800'
                         }`}
                       >
                         {challenge.type === 'TEST' ? 'Тест' :
-                         challenge.type === 'WORK' ? 'Работа' : 'Урок'}
+                         challenge.type === 'WORK' ? 'Работа' :
+                         challenge.type === 'QUESTIONNAIRE' ? 'Вопросник' : 'Урок'}
                       </span>
                     </td>
                     <td className="px-6 py-4">

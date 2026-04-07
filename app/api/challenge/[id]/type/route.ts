@@ -29,6 +29,12 @@ export async function GET(
             reviewsToPass: true,
           },
         },
+        questionnaire: {
+          select: {
+            timeLimit: true,
+            questionsPool: true,
+          },
+        },
       },
     });
 
@@ -45,6 +51,7 @@ export async function GET(
       title: challenge.title,
       description: challenge.description,
       work: challenge.type === 'WORK' ? challenge.work : null,
+      questionnaire: challenge.type === 'QUESTIONNAIRE' ? challenge.questionnaire : null,
     });
   } catch (error) {
     console.error('Error fetching challenge type:', error);

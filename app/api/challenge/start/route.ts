@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       where: challengeId ? { id: challengeId } : { slug },
       include: {
         test: true,
+        questionnaire: true,
       },
     });
 
@@ -35,17 +36,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (challenge.type !== 'TEST') {
+    if (challenge.type !== 'TEST' && challenge.type !== 'QUESTIONNAIRE') {
       return NextResponse.json(
-        { error: 'Challenge is not a test' },
+        { error: 'Challenge type not supported' },
         { status: 400 }
       );
     }
 
+    // Для тестов
     const testChallenge = challenge.test;
-    if (!testChallenge) {
+    // Для вопросников
+    const questionnaireChallenge = challenge.questionnaire;
+    
+    if (challenge.type === 'TEST' && !testChallenge) {
       return NextResponse.json(
         { error: 'Test configuration not found' },
+        { status: 404 }
+      );
+    }
+    
+    if (challenge.type === 'QUESTIONNAIRE' && !questionnaireChallenge) {
+      return NextResponse.json(
+        { error: 'Questionnaire configuration not found' },
         { status: 404 }
       );
     }
@@ -81,7 +93,7 @@ export async function POST(request: NextRequest) {
         data: {
           challengeId: challenge.id,
           userId: user.id,
-          attemptsLeft: testChallenge.freeAttempts,
+          attemptsLeft: challenge.type === 'TEST' ? (testChallenge?.freeAttempts || 2) : 1,
         },
       });
     }
@@ -94,51 +106,86 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Выбираем случайные вопросы из пула
-    const questionsPool = testChallenge.questionsPool as any[];
-    const questionsCount = testChallenge.questionsCount;
-    
-    // Создаём массив индексов и перемешиваем
-    const indices = Array.from({ length: questionsPool.length }, (_, i) => i);
-    for (let i = indices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [indices[i], indices[j]] = [indices[j], indices[i]];
+    if (challenge.type === 'TEST' && testChallenge) {
+      // Выбираем случайные вопросы из пула для теста
+      const questionsPool = testChallenge.questionsPool as any[];
+      const questionsCount = testChallenge.questionsCount;
+      
+      // Создаём массив индексов и перемешиваем
+      const indices = Array.from({ length: questionsPool.length }, (_, i) => i);
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
+      
+      // Берём первые questionsCount индексов
+      const selectedIndices = indices.slice(0, questionsCount);
+      
+      // Создаём массив вопросов с правильными ответами для хранения в попытке
+      const selectedQuestions = selectedIndices.map((poolIndex) => {
+        const q = questionsPool[poolIndex];
+        return {
+          poolIndex,
+          text: q.text,
+          type: q.type,
+          options: q.options,
+          correct: q.correct,
+          explanation: q.explanation || '',
+        };
+      });
+
+      // Создаём новую попытку для теста
+      const attempt = await prisma.challengeAttempt.create({
+        data: {
+          challengeId: challenge.id,
+          userId: user.id,
+          status: 'IN_PROGRESS',
+          startedAt: new Date(),
+          selectedQuestionIndices: selectedQuestions,
+          answers: {},
+        },
+      });
+
+      return NextResponse.json({
+        attemptId: attempt.id,
+        exists: false,
+        questionsCount,
+        timeLimit: testChallenge.timeLimit,
+      });
+    } else if (challenge.type === 'QUESTIONNAIRE' && questionnaireChallenge) {
+      // Для вопросника - берём все вопросы из пула
+      const questionsPool = questionnaireChallenge.questionsPool as string[];
+      
+      // Создаём массив вопросов
+      const selectedQuestions = questionsPool.map((text, index) => ({
+        index,
+        text,
+      }));
+
+      // Создаём новую попытку для вопросника
+      const attempt = await prisma.challengeAttempt.create({
+        data: {
+          challengeId: challenge.id,
+          userId: user.id,
+          status: 'IN_PROGRESS',
+          startedAt: new Date(),
+          selectedQuestionIndices: selectedQuestions,
+          answers: {},
+        },
+      });
+
+      return NextResponse.json({
+        attemptId: attempt.id,
+        exists: false,
+        questionsCount: selectedQuestions.length,
+        timeLimit: questionnaireChallenge.timeLimit,
+      });
     }
     
-    // Берём первые questionsCount индексов
-    const selectedIndices = indices.slice(0, questionsCount);
-    
-    // Создаём массив вопросов с правильными ответами для хранения в попытке
-    const selectedQuestions = selectedIndices.map((poolIndex) => {
-      const q = questionsPool[poolIndex];
-      return {
-        poolIndex,
-        text: q.text,
-        type: q.type,
-        options: q.options,
-        correct: q.correct,
-        explanation: q.explanation || '',
-      };
-    });
-
-    // Создаём новую попытку
-    const attempt = await prisma.challengeAttempt.create({
-      data: {
-        challengeId: challenge.id,
-        userId: user.id,
-        status: 'IN_PROGRESS',
-        startedAt: new Date(),
-        selectedQuestionIndices: selectedQuestions,
-        answers: {},
-      },
-    });
-
-    return NextResponse.json({
-      attemptId: attempt.id,
-      exists: false,
-      questionsCount,
-      timeLimit: testChallenge.timeLimit,
-    });
+    return NextResponse.json(
+      { error: 'Challenge configuration not found' },
+      { status: 404 }
+    );
   } catch (error) {
     console.error('Error starting challenge:', error);
     return NextResponse.json(

@@ -67,6 +67,9 @@ model User {
   workReviews           WorkReview[]         @relation("SupervisorWorkReviews")
   reviewedSubmissions   WorkSubmission[]     @relation("ReviewerWorkSubmissions")
   workSubmissions       WorkSubmission[]     @relation("UserWorkSubmissions")
+  questionnaireReviews  QuestionnaireReview[] @relation("SupervisorQuestionnaireReviews")
+  reviewedQuestionnaireSubmissions QuestionnaireSubmission[] @relation("ReviewerQuestionnaireSubmissions")
+  questionnaireSubmissions QuestionnaireSubmission[] @relation("UserQuestionnaireSubmissions")
 
   @@index([email])
   @@index([status])
@@ -433,6 +436,8 @@ model Challenge {
   test              TestChallenge?
   work              WorkChallenge?
   workSubmissions   WorkSubmission[]
+  questionnaire     QuestionnaireChallenge?
+  questionnaireSubmissions QuestionnaireSubmission[]
 
   @@index([slug])
   @@index([type])
@@ -462,6 +467,63 @@ model WorkChallenge {
   challenge       Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
 
   @@index([challengeId])
+}
+
+model QuestionnaireChallenge {
+  id                      String    @id @default(cuid())
+  challengeId             String    @unique
+  questionsPool           Json      // массив вопросов (строки)
+  timeLimit               Int?      // время в минутах
+  reviewPrice             Int?      // цена проверки для супервизора (в копейках)
+  requiredReviews         Int       @default(1)
+  reviewsToPass           Int       @default(1)
+  questionsCount          Int       @default(5) // сколько вопросов будет задано в попытке
+  instructionsForPsychologist String? @db.Text  // инструкция для психолога
+  instructionsForSupervisor   String? @db.Text  // инструкция для супервизора
+  challenge               Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+}
+
+model QuestionnaireSubmission {
+  id            String                 @id @default(cuid())
+  challengeId   String
+  userId        String
+  answers       Json                   // массив объектов { questionIndex, answer }
+  status        QuestionnaireStatus    @default(SUBMITTED)
+  startedAt     DateTime               @default(now()) // время начала заполнения
+  submittedAt   DateTime               @default(now())
+  reviewerId    String?
+  approvedCount Int                    @default(0)
+  rejectedCount Int                    @default(0)
+  reviews       QuestionnaireReview[]  @relation("SubmissionQuestionnaireReviews")
+  challenge     Challenge              @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  reviewer      User?                  @relation("ReviewerQuestionnaireSubmissions", fields: [reviewerId], references: [id])
+  user          User                   @relation("UserQuestionnaireSubmissions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
+  @@index([userId])
+  @@index([status])
+  @@index([startedAt])
+  @@index([submittedAt])
+}
+
+model QuestionnaireReview {
+  id           String             @id @default(cuid())
+  submissionId String
+  supervisorId String
+  status       WorkReviewStatus   @default(TAKEN)
+  verdict      ReviewVerdict?
+  comment      String?            // причина отказа
+  createdAt    DateTime           @default(now())
+  resolvedAt   DateTime?
+  submission   QuestionnaireSubmission @relation("SubmissionQuestionnaireReviews", fields: [submissionId], references: [id], onDelete: Cascade)
+  supervisor   User               @relation("SupervisorQuestionnaireReviews", fields: [supervisorId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, supervisorId])
+  @@index([submissionId])
+  @@index([supervisorId])
+  @@index([status])
 }
 
 model LessonChallenge {
@@ -712,6 +774,7 @@ enum ChallengeType {
   TEST
   WORK
   LESSON
+  QUESTIONNAIRE
 }
 
 enum AttemptStatus {
@@ -735,6 +798,13 @@ enum WorkReviewStatus {
   TAKEN
   COMPLETED
   CANCELLED
+}
+
+enum QuestionnaireStatus {
+  SUBMITTED
+  IN_REVIEW
+  APPROVED
+  REJECTED
 }
 
 enum TransactionType {

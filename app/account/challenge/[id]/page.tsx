@@ -6,9 +6,10 @@ import dynamic from 'next/dynamic';
 
 // Динамически импортируем компоненты для TEST и WORK
 const TestChallengePage = dynamic(() => import('./TestChallengePage'), { ssr: false });
+const QuestionnaireChallengePage = dynamic(() => import('./QuestionnaireChallengePage'), { ssr: false });
 // const WorkChallengePage = dynamic(() => import('./WorkChallengePage'), { ssr: false });
 
-type ChallengeType = 'TEST' | 'WORK' | null;
+type ChallengeType = 'TEST' | 'WORK' | 'LESSON' | 'QUESTIONNAIRE' | null;
 
 export default function ChallengePage() {
   const params = useParams();
@@ -66,6 +67,10 @@ export default function ChallengePage() {
   // Рендерим соответствующий компонент в зависимости от типа
   if (challengeType === 'TEST') {
     return <TestChallengePage challengeId={id} attemptId={attemptId} />;
+  }
+
+  if (challengeType === 'QUESTIONNAIRE') {
+    return <QuestionnaireChallengePage challengeId={id} attemptId={attemptId} />;
   }
 
   /*

@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       isActive = true,
       price,
       // Для теста
-      questionsPool = [],
+      questionsPool: testQuestionsPool = [],
       questionsCount,
       passingScore,
       timeLimit,
@@ -77,6 +77,15 @@ export async function POST(request: NextRequest) {
       reviewsToPass = 1,
       // Для урока
       content,
+      // Для вопросника
+      questionsPool: questionnaireQuestionsPool = [],
+      timeLimit: questionnaireTimeLimit,
+      reviewPrice,
+      requiredReviews: questionnaireRequiredReviews,
+      reviewsToPass: questionnaireReviewsToPass,
+      questionsCount: questionnaireQuestionsCount,
+      instructionsForPsychologist,
+      instructionsForSupervisor,
     } = body;
 
     // Валидация
@@ -88,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (type === 'TEST') {
-      if (!questionsPool || questionsPool.length === 0) {
+      if (!testQuestionsPool || testQuestionsPool.length === 0) {
         return NextResponse.json(
           { error: 'questionsPool is required for TEST type' },
           { status: 400 }
@@ -106,7 +115,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      if (questionsCount > questionsPool.length) {
+      if (questionsCount > testQuestionsPool.length) {
         return NextResponse.json(
           { error: 'questionsCount cannot be greater than questionsPool length' },
           { status: 400 }
@@ -150,6 +159,45 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (type === 'QUESTIONNAIRE') {
+      if (!questionnaireQuestionsPool || questionnaireQuestionsPool.length === 0) {
+        return NextResponse.json(
+          { error: 'questionsPool is required for QUESTIONNAIRE type' },
+          { status: 400 }
+        );
+      }
+      if (!questionsCount || questionsCount < 1) {
+        return NextResponse.json(
+          { error: 'questionsCount must be at least 1' },
+          { status: 400 }
+        );
+      }
+      if (questionsCount > questionnaireQuestionsPool.length) {
+        return NextResponse.json(
+          { error: 'questionsCount cannot be greater than questionsPool length' },
+          { status: 400 }
+        );
+      }
+      if (questionnaireRequiredReviews && questionnaireRequiredReviews < 1) {
+        return NextResponse.json(
+          { error: 'requiredReviews must be at least 1' },
+          { status: 400 }
+        );
+      }
+      if (questionnaireReviewsToPass && questionnaireReviewsToPass < 1) {
+        return NextResponse.json(
+          { error: 'reviewsToPass must be at least 1' },
+          { status: 400 }
+        );
+      }
+      if (questionnaireReviewsToPass && questionnaireRequiredReviews && questionnaireReviewsToPass > questionnaireRequiredReviews) {
+        return NextResponse.json(
+          { error: 'reviewsToPass cannot be greater than requiredReviews' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Проверка уникальности slug
     const existing = await prisma.challenge.findUnique({
       where: { slug },
@@ -173,7 +221,7 @@ export async function POST(request: NextRequest) {
         price: price ? price * 100 : 0, // конвертируем рубли в копейки
         test: type === 'TEST' ? {
           create: {
-            questionsPool,
+            questionsPool: testQuestionsPool,
             questionsCount,
             passingScore,
             timeLimit: timeLimit || null,
@@ -185,6 +233,7 @@ export async function POST(request: NextRequest) {
             instructions: instructions || null,
             requiredReviews,
             reviewsToPass,
+            reviewPrice: reviewPrice ? reviewPrice * 100 : null,
           },
         } : undefined,
         lesson: type === 'LESSON' ? {
@@ -192,11 +241,24 @@ export async function POST(request: NextRequest) {
             content,
           },
         } : undefined,
+        questionnaire: type === 'QUESTIONNAIRE' ? {
+          create: {
+            questionsPool: questionnaireQuestionsPool,
+            timeLimit: questionnaireTimeLimit || null,
+            reviewPrice: reviewPrice ? reviewPrice * 100 : null,
+            requiredReviews: questionnaireRequiredReviews || 1,
+            reviewsToPass: questionnaireReviewsToPass || 1,
+            questionsCount: questionnaireQuestionsCount || questionsCount,
+            instructionsForPsychologist: instructionsForPsychologist || null,
+            instructionsForSupervisor: instructionsForSupervisor || null,
+          },
+        } : undefined,
       },
       include: {
         test: true,
         work: true,
         lesson: true,
+        questionnaire: true,
       },
     });
 

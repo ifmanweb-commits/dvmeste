@@ -35,16 +35,29 @@ interface LessonChallenge {
   content: string;
 }
 
+interface QuestionnaireChallenge {
+  id: string;
+  questionsPool: string[];
+  timeLimit: number | null;
+  reviewPrice: number | null;
+  requiredReviews: number;
+  reviewsToPass: number;
+  questionsCount: number;
+  instructionsForPsychologist: string | null;
+  instructionsForSupervisor: string | null;
+}
+
 interface Challenge {
   id: string;
   slug: string;
   title: string;
   description: string | null;
-  type: 'TEST' | 'WORK' | 'LESSON';
+  type: 'TEST' | 'WORK' | 'LESSON' | 'QUESTIONNAIRE';
   isActive: boolean;
   test: TestChallenge | null;
   work: WorkChallenge | null;
   lesson: LessonChallenge | null;
+  questionnaire: QuestionnaireChallenge | null;
 }
 
 interface TestSettings {
@@ -58,10 +71,22 @@ interface WorkSettings {
   instructions: string;
   requiredReviews: number;
   reviewsToPass: number;
+  reviewPrice: number;
 }
 
 interface LessonSettings {
   content: string;
+}
+
+interface QuestionnaireSettings {
+  questionsPool: string[];
+  timeLimit: number;
+  reviewPrice: number;
+  requiredReviews: number;
+  reviewsToPass: number;
+  questionsCount: number;
+  instructionsForPsychologist: string;
+  instructionsForSupervisor: string;
 }
 
 export default function EditChallengePage() {
@@ -78,7 +103,7 @@ export default function EditChallengePage() {
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
-  const [challengeType, setChallengeType] = useState<'TEST' | 'WORK' | 'LESSON'>('TEST');
+  const [challengeType, setChallengeType] = useState<'TEST' | 'WORK' | 'LESSON' | 'QUESTIONNAIRE'>('TEST');
   const [isActive, setIsActive] = useState(true);
 
   // Настройки урока
@@ -99,6 +124,19 @@ export default function EditChallengePage() {
     instructions: '',
     requiredReviews: 1,
     reviewsToPass: 1,
+    reviewPrice: 0,
+  });
+
+  // Настройки вопросника
+  const [questionnaireSettings, setQuestionnaireSettings] = useState<QuestionnaireSettings>({
+    questionsPool: [],
+    timeLimit: 0,
+    reviewPrice: 0,
+    requiredReviews: 1,
+    reviewsToPass: 1,
+    questionsCount: 5,
+    instructionsForPsychologist: '',
+    instructionsForSupervisor: '',
   });
 
   // Цена испытания (общая для всех типов)
@@ -108,6 +146,12 @@ export default function EditChallengePage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [showJsonImport, setShowJsonImport] = useState(false);
   const [jsonImportText, setJsonImportText] = useState('');
+  
+  // Для вопросника
+  const [showQuestionInput, setShowQuestionInput] = useState(false);
+  const [newQuestionText, setNewQuestionText] = useState('');
+  const [showQuestionnaireJsonImport, setShowQuestionnaireJsonImport] = useState(false);
+  const [questionnaireJsonText, setQuestionnaireJsonText] = useState('');
 
   // Загрузка данных
   useEffect(() => {
@@ -142,12 +186,26 @@ export default function EditChallengePage() {
             instructions: data.work.instructions || '',
             requiredReviews: data.work.requiredReviews,
             reviewsToPass: data.work.reviewsToPass,
+            reviewPrice: data.work.reviewPrice ? Math.round(data.work.reviewPrice / 100) : 0,
           });
         }
 
         if (data.type === 'LESSON' && data.lesson) {
           setLessonSettings({
             content: data.lesson.content || '',
+          });
+        }
+
+        if (data.type === 'QUESTIONNAIRE' && data.questionnaire) {
+          setQuestionnaireSettings({
+            questionsPool: data.questionnaire.questionsPool || [],
+            timeLimit: data.questionnaire.timeLimit || 0,
+            reviewPrice: data.questionnaire.reviewPrice ? Math.round(data.questionnaire.reviewPrice / 100) : 0,
+            requiredReviews: data.questionnaire.requiredReviews,
+            reviewsToPass: data.questionnaire.reviewsToPass,
+            questionsCount: (data.questionnaire as any).questionsCount || 5,
+            instructionsForPsychologist: data.questionnaire.instructionsForPsychologist || '',
+            instructionsForSupervisor: data.questionnaire.instructionsForSupervisor || '',
           });
         }
 
@@ -250,7 +308,7 @@ export default function EditChallengePage() {
     setQuestions(newQuestions);
   };
 
-  // Импорт JSON
+  // Импорт JSON для тестов
   const handleJsonImport = () => {
     try {
       const parsed = JSON.parse(jsonImportText);
@@ -269,6 +327,26 @@ export default function EditChallengePage() {
       setQuestions(importedQuestions);
       setShowJsonImport(false);
       setJsonImportText('');
+    } catch (err: any) {
+      alert(`Ошибка импорта JSON: ${err.message}`);
+    }
+  };
+
+  // Импорт JSON для вопросника
+  const handleQuestionnaireJsonImport = () => {
+    try {
+      const parsed = JSON.parse(questionnaireJsonText);
+      const questions = Array.isArray(parsed.questionsPool) 
+        ? parsed.questionsPool 
+        : Array.isArray(parsed) 
+          ? parsed 
+          : [];
+      setQuestionnaireSettings({
+        ...questionnaireSettings,
+        questionsPool: questions.filter((q: any) => typeof q === 'string'),
+      });
+      setShowQuestionnaireJsonImport(false);
+      setQuestionnaireJsonText('');
     } catch (err: any) {
       alert(`Ошибка импорта JSON: ${err.message}`);
     }
@@ -311,6 +389,16 @@ export default function EditChallengePage() {
           }),
           ...(challengeType === 'LESSON' && {
             content: lessonSettings.content || '',
+          }),
+          ...(challengeType === 'QUESTIONNAIRE' && {
+            questionsPool: questionnaireSettings.questionsPool,
+            timeLimit: questionnaireSettings.timeLimit || null,
+            reviewPrice: questionnaireSettings.reviewPrice,
+            requiredReviews: questionnaireSettings.requiredReviews,
+            reviewsToPass: questionnaireSettings.reviewsToPass,
+            questionsCount: questionnaireSettings.questionsCount,
+            instructionsForPsychologist: questionnaireSettings.instructionsForPsychologist || null,
+            instructionsForSupervisor: questionnaireSettings.instructionsForSupervisor || null,
           }),
         }),
       });
@@ -414,10 +502,12 @@ export default function EditChallengePage() {
                     <span className={`flex items-center text-sm ${
                       challengeType === 'TEST' ? 'font-medium text-gray-900' :
                       challengeType === 'WORK' ? 'font-medium text-gray-900' :
-                      challengeType === 'LESSON' ? 'font-medium text-gray-900' : 'text-gray-500'
+                      challengeType === 'LESSON' ? 'font-medium text-gray-900' :
+                      challengeType === 'QUESTIONNAIRE' ? 'font-medium text-gray-900' : 'text-gray-500'
                     }`}>
                       {challengeType === 'TEST' ? 'Тест' :
-                       challengeType === 'WORK' ? 'Квалификационная работа' : 'Урок'}
+                       challengeType === 'WORK' ? 'Квалификационная работа' :
+                       challengeType === 'LESSON' ? 'Урок' : 'Вопросник'}
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
@@ -558,13 +648,6 @@ export default function EditChallengePage() {
                       className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200"
                     >
                       Импорт JSON
-                    </button>
-                    <button
-                      type="button"
-                      onClick={addQuestion}
-                      className="rounded-lg bg-[#5858E2] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#4a4ac9]"
-                    >
-                      + Добавить вопрос
                     </button>
                   </div>
                 </div>
@@ -708,6 +791,17 @@ export default function EditChallengePage() {
                     ))}
                   </div>
                 )}
+
+                {/* Кнопка добавления вопроса под списком */}
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={addQuestion}
+                    className="rounded-lg bg-[#5858E2] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#4a4ac9]"
+                  >
+                    + Добавить вопрос
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -759,7 +853,7 @@ export default function EditChallengePage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Нужно положительных решений
+                      Положительных решений
                     </label>
                     <input
                       type="number"
@@ -773,6 +867,25 @@ export default function EditChallengePage() {
                       }
                       className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Цена проверки (₽)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={workSettings.reviewPrice}
+                      onChange={(e) =>
+                        setWorkSettings({
+                          ...workSettings,
+                          reviewPrice: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">Оплата супервизору за проверку</p>
                   </div>
                 </div>
               </div>
@@ -811,6 +924,308 @@ export default function EditChallengePage() {
             </div>
           )}
 
+          {/* Настройки вопросника */}
+          {challengeType === 'QUESTIONNAIRE' && (
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Настройки вопросника
+                </h2>
+              </div>
+
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Вопросов в пуле
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={questionnaireSettings.questionsPool.length}
+                      disabled
+                      className="mt-1 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-500"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">Добавьте вопросы ниже</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Сколько вопросов в попытке
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={questionnaireSettings.questionsCount}
+                      onChange={(e) =>
+                        setQuestionnaireSettings({
+                          ...questionnaireSettings,
+                          questionsCount: parseInt(e.target.value) || 1,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Лимит времени (мин)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={questionnaireSettings.timeLimit}
+                      onChange={(e) =>
+                        setQuestionnaireSettings({
+                          ...questionnaireSettings,
+                          timeLimit: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">0 = без лимита</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Оплата супервизору (₽)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={questionnaireSettings.reviewPrice}
+                      onChange={(e) =>
+                        setQuestionnaireSettings({
+                          ...questionnaireSettings,
+                          reviewPrice: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Количество проверок
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={questionnaireSettings.requiredReviews}
+                      onChange={(e) =>
+                        setQuestionnaireSettings({
+                          ...questionnaireSettings,
+                          requiredReviews: parseInt(e.target.value) || 1,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Положительных решений
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={questionnaireSettings.reviewsToPass}
+                      onChange={(e) =>
+                        setQuestionnaireSettings({
+                          ...questionnaireSettings,
+                          reviewsToPass: parseInt(e.target.value) || 1,
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                    />
+                  </div>
+                </div>
+
+                {/* Инструкции */}
+                <div className="space-y-4 pt-4 border-t border-gray-200">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Инструкция для психолога
+                    </label>
+                    <textarea
+                      value={questionnaireSettings.instructionsForPsychologist}
+                      onChange={(e) =>
+                        setQuestionnaireSettings({
+                          ...questionnaireSettings,
+                          instructionsForPsychologist: e.target.value,
+                        })
+                      }
+                      rows={4}
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                      placeholder="Инструкция для психолога перед началом прохождения вопросника..."
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Эта инструкция будет показана психологу перед началом тестирования
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Инструкция для супервизора
+                    </label>
+                    <textarea
+                      value={questionnaireSettings.instructionsForSupervisor}
+                      onChange={(e) =>
+                        setQuestionnaireSettings({
+                          ...questionnaireSettings,
+                          instructionsForSupervisor: e.target.value,
+                        })
+                      }
+                      rows={4}
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                      placeholder="Инструкция для супервизора по проверке ответов..."
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Эта инструкция будет показана супервизору при проверке работы
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-3 flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Вопросы ({questionnaireSettings.questionsPool.length})
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const json = JSON.stringify({ questionsPool: questionnaireSettings.questionsPool }, null, 2);
+                          navigator.clipboard.writeText(json);
+                          alert('JSON скопирован в буфер обмена');
+                        }}
+                        className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                      >
+                        Экспорт JSON
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowQuestionnaireJsonImport(true)}
+                        className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                      >
+                        Импорт JSON
+                      </button>
+                    </div>
+                  </div>
+
+                  {questionnaireSettings.questionsPool.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-gray-500">
+                      Вопросы ещё не добавлены
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {questionnaireSettings.questionsPool.map((q, index) => (
+                        <div key={index} className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                          <span className="text-sm font-medium text-gray-500 w-8">#{index + 1}</span>
+                          <input
+                            type="text"
+                            value={q}
+                            onChange={(e) => {
+                              const newQuestions = [...questionnaireSettings.questionsPool];
+                              newQuestions[index] = e.target.value;
+                              setQuestionnaireSettings({
+                                ...questionnaireSettings,
+                                questionsPool: newQuestions,
+                              });
+                            }}
+                            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setQuestionnaireSettings({
+                                ...questionnaireSettings,
+                                questionsPool: questionnaireSettings.questionsPool.filter((_, i) => i !== index),
+                              });
+                            }}
+                            className="text-sm text-red-600 hover:text-red-800"
+                          >
+                            Удалить
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Форма добавления вопроса */}
+                  {showQuestionInput && (
+                    <div className="mt-3 flex items-center gap-3 rounded-lg border border-[#5858E2] bg-blue-50 p-3">
+                      <span className="text-sm font-medium text-gray-500 w-8">
+                        #{questionnaireSettings.questionsPool.length + 1}
+                      </span>
+                      <input
+                        type="text"
+                        value={newQuestionText}
+                        onChange={(e) => setNewQuestionText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && newQuestionText.trim()) {
+                            setQuestionnaireSettings({
+                              ...questionnaireSettings,
+                              questionsPool: [...questionnaireSettings.questionsPool, newQuestionText.trim()],
+                            });
+                            setNewQuestionText('');
+                            setShowQuestionInput(false);
+                          } else if (e.key === 'Escape') {
+                            setShowQuestionInput(false);
+                            setNewQuestionText('');
+                          }
+                        }}
+                        placeholder="Введите текст вопроса..."
+                        className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newQuestionText.trim()) {
+                            setQuestionnaireSettings({
+                              ...questionnaireSettings,
+                              questionsPool: [...questionnaireSettings.questionsPool, newQuestionText.trim()],
+                            });
+                            setNewQuestionText('');
+                            setShowQuestionInput(false);
+                          }
+                        }}
+                        className="rounded-lg bg-[#5858E2] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#4a4ac9]"
+                      >
+                        Добавить
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowQuestionInput(false);
+                          setNewQuestionText('');
+                        }}
+                        className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                      >
+                        Отмена
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Кнопка добавления вопроса под списком */}
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowQuestionInput(true);
+                        setNewQuestionText('');
+                      }}
+                      className="rounded-lg bg-[#5858E2] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#4a4ac9]"
+                    >
+                      + Добавить вопрос
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Кнопки действий */}
           <div className="flex items-center justify-end gap-3">
             <Link
@@ -835,7 +1250,7 @@ export default function EditChallengePage() {
           )}
         </form>
 
-        {/* Модальное окно импорта JSON */}
+        {/* Модальное окно импорта JSON для тестов */}
         {showJsonImport && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="w-full max-w-2xl rounded-xl bg-white p-6">
@@ -863,6 +1278,50 @@ export default function EditChallengePage() {
                 <button
                   type="button"
                   onClick={handleJsonImport}
+                  className="rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
+                >
+                  Импорт
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Модальное окно импорта JSON для вопросника */}
+        {showQuestionnaireJsonImport && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="w-full max-w-2xl rounded-xl bg-white p-6">
+              <h3 className="mb-4 text-lg font-semibold text-gray-900">
+                Импорт вопросов из JSON
+              </h3>
+              <p className="mb-3 text-sm text-gray-600">
+                Вставьте JSON с вопросами. Поддерживаются форматы:
+              </p>
+              <ul className="mb-4 list-inside list-disc text-xs text-gray-500">
+                <li>Массив строк: <code className="bg-gray-100 px-1 py-0.5 rounded">["Вопрос 1", "Вопрос 2"]</code></li>
+                <li>Объект с questionsPool: <code className="bg-gray-100 px-1 py-0.5 rounded">{"{ questionsPool: [...] }"}</code></li>
+              </ul>
+              <textarea
+                value={questionnaireJsonText}
+                onChange={(e) => setQuestionnaireJsonText(e.target.value)}
+                rows={15}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                placeholder='["Вопрос 1", "Вопрос 2", ...]'
+              />
+              <div className="mt-4 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowQuestionnaireJsonImport(false);
+                    setQuestionnaireJsonText('');
+                  }}
+                  className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  onClick={handleQuestionnaireJsonImport}
                   className="rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
                 >
                   Импорт

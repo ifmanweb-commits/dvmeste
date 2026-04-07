@@ -20,6 +20,7 @@ export async function GET(
         test: true,
         work: true,
         lesson: true,
+        questionnaire: true,
         requirements: {
           include: {
             certification: true,
@@ -94,14 +95,24 @@ export async function PUT(
       instructions,
       requiredReviews,
       reviewsToPass,
+      reviewPrice: workReviewPrice,
       // Для урока
       content,
+      // Для вопросника
+      questionsPool: questionnaireQuestionsPool,
+      timeLimit: questionnaireTimeLimit,
+      reviewPrice,
+      requiredReviews: questionnaireRequiredReviews,
+      reviewsToPass: questionnaireReviewsToPass,
+      questionsCount: questionnaireQuestionsCount,
+      instructionsForPsychologist,
+      instructionsForSupervisor,
     } = body;
 
     // Проверка существования
     const existing = await prisma.challenge.findUnique({
       where: { id },
-      include: { test: true, work: true, lesson: true },
+      include: { test: true, work: true, lesson: true, questionnaire: true },
     });
 
     if (!existing) {
@@ -153,6 +164,7 @@ export async function PUT(
           instructions: instructions !== undefined ? instructions : existing.work.instructions,
           requiredReviews: requiredReviews !== undefined ? requiredReviews : existing.work.requiredReviews,
           reviewsToPass: reviewsToPass !== undefined ? reviewsToPass : existing.work.reviewsToPass,
+          reviewPrice: workReviewPrice !== undefined ? (workReviewPrice * 100) : existing.work.reviewPrice,
         },
       };
     }
@@ -166,6 +178,22 @@ export async function PUT(
       };
     }
 
+    // Обновляем вопросник если он есть
+    if (existing.questionnaire) {
+      updateData.questionnaire = {
+        update: {
+          questionsPool: questionnaireQuestionsPool !== undefined ? questionnaireQuestionsPool : existing.questionnaire.questionsPool,
+          timeLimit: questionnaireTimeLimit !== undefined ? questionnaireTimeLimit : existing.questionnaire.timeLimit,
+          reviewPrice: reviewPrice !== undefined ? (reviewPrice * 100) : existing.questionnaire.reviewPrice,
+          requiredReviews: questionnaireRequiredReviews !== undefined ? questionnaireRequiredReviews : existing.questionnaire.requiredReviews,
+          reviewsToPass: questionnaireReviewsToPass !== undefined ? questionnaireReviewsToPass : existing.questionnaire.reviewsToPass,
+          questionsCount: questionnaireQuestionsCount !== undefined ? questionnaireQuestionsCount : existing.questionnaire.questionsCount,
+          instructionsForPsychologist: instructionsForPsychologist !== undefined ? instructionsForPsychologist : existing.questionnaire.instructionsForPsychologist,
+          instructionsForSupervisor: instructionsForSupervisor !== undefined ? instructionsForSupervisor : existing.questionnaire.instructionsForSupervisor,
+        },
+      };
+    }
+
     const challenge = await prisma.challenge.update({
       where: { id },
       data: updateData,
@@ -173,6 +201,7 @@ export async function PUT(
         test: true,
         work: true,
         lesson: true,
+        questionnaire: true,
       },
     });
 

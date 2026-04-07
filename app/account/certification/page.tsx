@@ -2,7 +2,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Award, CheckCircle, BookOpen, FileText, FileBadge } from 'lucide-react';
+import { Award, CheckCircle, BookOpen, FileText, FileBadge, ClipboardList } from 'lucide-react';
 import Image from 'next/image';
 
 export default async function CertificationPage() {
@@ -73,6 +73,15 @@ export default async function CertificationPage() {
             },
           });
           isCompleted = !!lessonCompletion;
+        } else if (req.challenge.type === 'QUESTIONNAIRE') {
+          // Для вопросника проверяем, есть ли submission
+          const submission = await prisma.questionnaireSubmission.findFirst({
+            where: {
+              userId: user.id,
+              challengeId: req.challengeId,
+            },
+          });
+          isCompleted = !!submission;
         }
         
         if (isCompleted) {
@@ -146,6 +155,15 @@ export default async function CertificationPage() {
               >
                 <FileText className="h-4 w-4" />
                 Уроки
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/account/certification/questionnaires"
+                className="inline-flex items-center gap-2 border-b-2 border-transparent pb-3 text-sm font-medium text-gray-500 hover:text-gray-700"
+              >
+                <ClipboardList className="h-4 w-4" />
+                Вопросники
               </Link>
             </li>
           </ul>
@@ -260,6 +278,15 @@ export default async function CertificationPage() {
                           ) : req.challenge.type === 'LESSON' ? (
                             <Link
                               href={`/account/certification/lessons?certification=${cert.id}`}
+                              className={`hover:text-[#5858E2] hover:underline ${
+                                req.isCompleted ? 'font-medium' : ''
+                              }`}
+                            >
+                              {req.challenge.title}
+                            </Link>
+                          ) : req.challenge.type === 'QUESTIONNAIRE' ? (
+                            <Link
+                              href={`/account/certification/questionnaires?certification=${cert.id}`}
                               className={`hover:text-[#5858E2] hover:underline ${
                                 req.isCompleted ? 'font-medium' : ''
                               }`}

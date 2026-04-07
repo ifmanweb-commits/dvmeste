@@ -38,6 +38,7 @@ export default function ChallengesFilters({
           <option value="TEST">Тест</option>
           <option value="WORK">Работа</option>
           <option value="LESSON">Урок</option>
+          <option value="QUESTIONNAIRE">Вопросник</option>
         </select>
       </div>
 

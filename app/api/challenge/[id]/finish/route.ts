@@ -15,13 +15,14 @@ export async function POST(
 
     const { id: attemptId } = await params;
 
-    // Получаем попытку с данными теста
+    // Получаем попытку с данными теста/вопросника
     const attempt = await prisma.challengeAttempt.findUnique({
       where: { id: attemptId },
       include: {
         challenge: {
           include: {
             test: true,
+            questionnaire: true,
           },
         },
       },
@@ -46,15 +47,91 @@ export async function POST(
     }
 
     const testChallenge = attempt.challenge.test;
-    if (!testChallenge) {
+    const questionnaireChallenge = attempt.challenge.questionnaire;
+    const isQuestionnaire = attempt.challenge.type === 'QUESTIONNAIRE';
+    
+    if (!testChallenge && !questionnaireChallenge) {
       return NextResponse.json(
-        { error: 'Test configuration not found' },
+        { error: 'Challenge configuration not found' },
         { status: 404 }
       );
     }
 
+    // Для вопросника - отдельная логика
+    if (isQuestionnaire && questionnaireChallenge) {
+      const body = await request.json();
+      const { answers } = body || {};
+      
+      // Проверяем время (если есть лимит)
+      if (questionnaireChallenge.timeLimit && attempt.startedAt) {
+        const startTime = attempt.startedAt.getTime();
+        const endTime = startTime + questionnaireChallenge.timeLimit * 60 * 1000;
+        const now = Date.now();
+        
+        if (now > endTime) {
+          // Время истекло
+          await prisma.challengeAttempt.update({
+            where: { id: attemptId },
+            data: {
+              status: 'COMPLETED',
+              finishedAt: new Date(),
+            },
+          });
+          
+          return NextResponse.json({
+            status: 'COMPLETED',
+            timeExpired: true,
+          });
+        }
+      }
+      
+      // Создаём submission для вопросника
+      const selectedQuestions = (attempt.selectedQuestionIndices as any[]) || [];
+      const formattedAnswers = selectedQuestions.map((q, i) => ({
+        questionIndex: i,
+        answer: answers?.[i.toString()] || '',
+      }));
+      
+      const submission = await prisma.questionnaireSubmission.create({
+        data: {
+          challengeId: attempt.challengeId,
+          userId: user.id,
+          answers: formattedAnswers,
+          status: 'SUBMITTED',
+          startedAt: attempt.startedAt || new Date(),
+          submittedAt: new Date(),
+        },
+      });
+      
+      // Обновляем попытку
+      await prisma.challengeAttempt.update({
+        where: { id: attemptId },
+        data: {
+          status: 'COMPLETED',
+          finishedAt: new Date(),
+          answers: answers || {},
+        },
+      });
+      
+      // Уменьшаем количество попыток
+      await prisma.challengeUserState.update({
+        where: {
+          challengeId_userId: {
+            challengeId: attempt.challengeId,
+            userId: user.id,
+          },
+        },
+        data: { attemptsLeft: { decrement: 1 } },
+      });
+      
+      return NextResponse.json({
+        status: 'COMPLETED',
+        submissionId: submission.id,
+      });
+    }
+
     // Проверяем время (если есть лимит)
-    if (testChallenge.timeLimit && attempt.startedAt) {
+    if (testChallenge && testChallenge.timeLimit && attempt.startedAt) {
       const startTime = attempt.startedAt.getTime();
       const endTime = startTime + testChallenge.timeLimit * 60 * 1000;
       const now = Date.now();
@@ -118,7 +195,7 @@ export async function POST(
     }
 
     const score = correctCount;
-    const passingScore = testChallenge.passingScore;
+    const passingScore = testChallenge?.passingScore || 0;
     const passed = score >= passingScore;
 
     // Обновляем попытку

@@ -8,7 +8,7 @@ interface Challenge {
   id: string;
   slug: string;
   title: string;
-  type: 'TEST' | 'WORK';
+  type: 'TEST' | 'WORK' | 'LESSON' | 'QUESTIONNAIRE';
   isActive: boolean;
 }
 
@@ -344,7 +344,9 @@ export default function EditCertificationPage() {
                       <option value="">Выберите испытание</option>
                       {challenges.map((challenge) => (
                         <option key={challenge.id} value={challenge.id}>
-                          {challenge.title} ({challenge.type === 'TEST' ? 'Тест' : 'Работа'})
+                          {challenge.title} ({challenge.type === 'TEST' ? 'Тест' :
+                           challenge.type === 'WORK' ? 'Работа' :
+                           challenge.type === 'QUESTIONNAIRE' ? 'Вопросник' : 'Урок'})
                         </option>
                       ))}
                     </select>

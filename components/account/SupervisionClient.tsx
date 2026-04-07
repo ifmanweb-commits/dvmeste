@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { ShieldCheck, Inbox, Clock, History, CheckCircle, XCircle, MinusCircle, Loader2 } from "lucide-react";
+import { ShieldCheck, Inbox, Clock, History, CheckCircle, XCircle, MinusCircle, Loader2, ClipboardList } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +34,31 @@ export interface Submission {
   };
 }
 
+export interface QuestionnaireSubmission {
+  id: string;
+  challengeId: string;
+  userId: string;
+  answers: any;
+  status: "SUBMITTED" | "IN_REVIEW" | "APPROVED" | "REJECTED";
+  submittedAt: Date;
+  reviewerId: string | null;
+  challenge: {
+    id: string;
+    title: string;
+    description: string | null;
+    price: number | null;
+    questionnaire: {
+      timeLimit: number | null;
+      questionsPool: any;
+    } | null;
+  };
+  user: {
+    id: string;
+    fullName: string | null;
+    email: string;
+  };
+}
+
 export interface ReviewHistory {
   id: string;
   submissionId: string;
@@ -52,15 +77,17 @@ export interface ReviewHistory {
   };
 }
 
-type Tab = "available" | "reviewing" | "history";
+type Tab = "available" | "questionnaires" | "reviewing" | "history";
 
 interface SupervisionClientProps {
   searchParams: Promise<{ tab?: string }>;
   availableSubmissions: Submission[];
   reviewingSubmissions: Submission[];
+  availableQuestionnaires: QuestionnaireSubmission[];
+  reviewingQuestionnaires: QuestionnaireSubmission[];
 }
 
-const VALID_TABS = ['available', 'reviewing', 'history'] as const;
+const VALID_TABS = ['available', 'questionnaires', 'reviewing', 'history'] as const;
 
 function validateTab(tab?: string): Tab {
   if (!tab || !VALID_TABS.includes(tab as Tab)) {
@@ -73,6 +100,8 @@ export default function SupervisionClient({
   searchParams,
   availableSubmissions: initialAvailable,
   reviewingSubmissions: initialReviewing,
+  availableQuestionnaires: initialAvailableQuestionnaires = [],
+  reviewingQuestionnaires: initialReviewingQuestionnaires = [],
 }: SupervisionClientProps) {
   const params = use(searchParams);
   const activeTab = validateTab(params.tab);
@@ -84,6 +113,8 @@ export default function SupervisionClient({
   // Данные для первых двух вкладок — из пропсов (загружены на сервере)
   const [availableSubmissions, setAvailableSubmissions] = useState<Submission[]>(initialAvailable);
   const [reviewingSubmissions, setReviewingSubmissions] = useState<Submission[]>(initialReviewing);
+  const [availableQuestionnaires, setAvailableQuestionnaires] = useState<QuestionnaireSubmission[]>(initialAvailableQuestionnaires);
+  const [reviewingQuestionnaires, setReviewingQuestionnaires] = useState<QuestionnaireSubmission[]>(initialReviewingQuestionnaires);
   
   // История — загружается при переходе на вкладку
   const [reviewHistory, setReviewHistory] = useState<ReviewHistory[]>([]);
@@ -111,20 +142,31 @@ export default function SupervisionClient({
     }
   }, [activeTab]);
 
-  const handleTake = async (submissionId: string) => {
+  const handleTake = async (submissionId: string, isQuestionnaire: boolean = false) => {
     setActionLoading(submissionId);
     try {
-      const res = await fetch(`/api/supervision/submissions/${submissionId}/take`, {
+      const endpoint = isQuestionnaire 
+        ? `/api/supervision/questionnaires/${submissionId}/take`
+        : `/api/supervision/submissions/${submissionId}/take`;
+      
+      const res = await fetch(endpoint, {
         method: "POST",
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Ошибка");
       
       // Обновляем списки: убираем из доступных, добавляем в на проверке
-      setAvailableSubmissions(prev => prev.filter(s => s.id !== submissionId));
-      const resReviewing = await fetch('/api/supervision/submissions?tab=reviewing');
-      const reviewingData = await resReviewing.json();
-      setReviewingSubmissions(reviewingData);
+      if (isQuestionnaire) {
+        setAvailableQuestionnaires(prev => prev.filter(s => s.id !== submissionId));
+        const resReviewing = await fetch('/api/supervision/questionnaires?tab=reviewing');
+        const reviewingData = await resReviewing.json();
+        setReviewingQuestionnaires(reviewingData);
+      } else {
+        setAvailableSubmissions(prev => prev.filter(s => s.id !== submissionId));
+        const resReviewing = await fetch('/api/supervision/submissions?tab=reviewing');
+        const reviewingData = await resReviewing.json();
+        setReviewingSubmissions(reviewingData);
+      }
     } catch (err) {
       alert(err instanceof Error ? err.message : "Ошибка при взятии работы");
     } finally {
@@ -132,12 +174,16 @@ export default function SupervisionClient({
     }
   };
 
-  const handleCancel = async (submissionId: string) => {
+  const handleCancel = async (submissionId: string, isQuestionnaire: boolean = false) => {
     if (!confirm("Отказаться от проверки? Работа вернётся в общий пул.")) return;
     
     setActionLoading(submissionId);
     try {
-      const res = await fetch(`/api/supervision/submissions/${submissionId}/cancel`, {
+      const endpoint = isQuestionnaire
+        ? `/api/supervision/questionnaires/${submissionId}/cancel`
+        : `/api/supervision/submissions/${submissionId}/cancel`;
+      
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -146,13 +192,23 @@ export default function SupervisionClient({
       if (!res.ok) throw new Error(data.error || "Ошибка");
       
       // Перезагружаем обе вкладки
-      const resAvailable = await fetch('/api/supervision/submissions?tab=available');
-      const availableData = await resAvailable.json();
-      setAvailableSubmissions(availableData);
-      
-      const resReviewing = await fetch('/api/supervision/submissions?tab=reviewing');
-      const reviewingData = await resReviewing.json();
-      setReviewingSubmissions(reviewingData);
+      if (isQuestionnaire) {
+        const resAvailable = await fetch('/api/supervision/questionnaires?tab=available');
+        const availableData = await resAvailable.json();
+        setAvailableQuestionnaires(availableData);
+        
+        const resReviewing = await fetch('/api/supervision/questionnaires?tab=reviewing');
+        const reviewingData = await resReviewing.json();
+        setReviewingQuestionnaires(reviewingData);
+      } else {
+        const resAvailable = await fetch('/api/supervision/submissions?tab=available');
+        const availableData = await resAvailable.json();
+        setAvailableSubmissions(availableData);
+        
+        const resReviewing = await fetch('/api/supervision/submissions?tab=reviewing');
+        const reviewingData = await resReviewing.json();
+        setReviewingSubmissions(reviewingData);
+      }
     } catch (err) {
       alert(err instanceof Error ? err.message : "Ошибка при отказе");
     } finally {
@@ -181,55 +237,69 @@ export default function SupervisionClient({
       <div className="container mx-auto px-4 py-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="border-b border-gray-200">
-            <nav className="flex">
+            <nav className="flex flex-wrap">
               <Link
                 href="/account/supervision?tab=available"
                 className={cn(
-                  "flex-1 px-6 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors relative",
+                  "px-6 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors relative border-b-2",
                   activeTab === "available"
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                    : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 )}
               >
                 <Inbox className="w-4 h-4" />
-                Доступные
+                Работы
                 {availableSubmissions.length > 0 && (
                   <span className="ml-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">
                     {availableSubmissions.length}
                   </span>
                 )}
-                {activeTab === "available" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />}
+              </Link>
+              <Link
+                href="/account/supervision?tab=questionnaires"
+                className={cn(
+                  "px-6 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors relative border-b-2",
+                  activeTab === "questionnaires"
+                    ? "border-purple-600 bg-purple-50 text-purple-700"
+                    : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                )}
+              >
+                <ClipboardList className="w-4 h-4" />
+                Вопросники
+                {availableQuestionnaires.length > 0 && (
+                  <span className="ml-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs">
+                    {availableQuestionnaires.length}
+                  </span>
+                )}
               </Link>
               <Link
                 href="/account/supervision?tab=reviewing"
                 className={cn(
-                  "flex-1 px-6 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors relative",
+                  "px-6 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors relative border-b-2",
                   activeTab === "reviewing"
-                    ? "bg-amber-50 text-amber-700"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    ? "border-amber-600 bg-amber-50 text-amber-700"
+                    : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 )}
               >
                 <Clock className="w-4 h-4" />
-                На проверке
-                {reviewingSubmissions.length > 0 && (
+                В работе
+                {(reviewingSubmissions.length + reviewingQuestionnaires.length) > 0 && (
                   <span className="ml-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs">
-                    {reviewingSubmissions.length}
+                    {reviewingSubmissions.length + reviewingQuestionnaires.length}
                   </span>
                 )}
-                {activeTab === "reviewing" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-600" />}
               </Link>
               <Link
                 href="/account/supervision?tab=history"
                 className={cn(
-                  "flex-1 px-6 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors relative",
+                  "px-6 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors relative border-b-2",
                   activeTab === "history"
-                    ? "bg-green-50 text-green-700"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    ? "border-green-600 bg-green-50 text-green-700"
+                    : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 )}
               >
                 <History className="w-4 h-4" />
                 История
-                {activeTab === "history" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600" />}
               </Link>
             </nav>
           </div>
@@ -248,9 +318,16 @@ export default function SupervisionClient({
                 onTake={handleTake}
                 loading={actionLoading}
               />
+            ) : activeTab === "questionnaires" ? (
+              <AvailableQuestionnairesTab
+                questionnaires={availableQuestionnaires}
+                onTake={(id) => handleTake(id, true)}
+                loading={actionLoading}
+              />
             ) : activeTab === "reviewing" ? (
               <ReviewingTab
                 submissions={reviewingSubmissions}
+                questionnaires={reviewingQuestionnaires}
                 onCancel={handleCancel}
                 loading={actionLoading}
               />
@@ -270,7 +347,7 @@ function AvailableTab({
   loading,
 }: {
   submissions: Submission[];
-  onTake: (id: string) => void;
+  onTake: (id: string, isQuestionnaire?: boolean) => void;
   loading: string | null;
 }) {
   if (submissions.length === 0) {
@@ -302,7 +379,7 @@ function AvailableTab({
               </span>
             )}
             <button
-              onClick={() => onTake(s.id)}
+              onClick={() => onTake(s.id, false)}
               disabled={loading === s.id}
               className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
@@ -322,16 +399,76 @@ function AvailableTab({
   );
 }
 
+function AvailableQuestionnairesTab({
+  questionnaires,
+  onTake,
+  loading,
+}: {
+  questionnaires: QuestionnaireSubmission[];
+  onTake: (id: string) => void;
+  loading: string | null;
+}) {
+  if (questionnaires.length === 0) {
+    return (
+      <div className="text-center py-12 text-gray-500">
+        <ClipboardList className="w-12 h-12 mx-auto mb-4 opacity-50" />
+        <p>Нет доступных вопросников для проверки</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {questionnaires.map((q) => (
+        <div
+          key={q.id}
+          className="border border-gray-200 rounded-lg p-4 hover:border-purple-300 transition-colors flex flex-col"
+        >
+          <div className="flex-1">
+            <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">{q.challenge.title}</h3>
+            <p className="text-xs text-gray-500 mt-2">
+              {new Date(q.submittedAt).toLocaleDateString("ru-RU")}
+            </p>
+          </div>
+          <div className="flex items-center justify-between gap-2 mt-4">
+            {q.challenge.price && q.challenge.price > 0 && (
+              <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded">
+                +{(q.challenge.price / 100).toLocaleString("ru-RU")} ₽
+              </span>
+            )}
+            <button
+              onClick={() => onTake(q.id)}
+              disabled={loading === q.id}
+              className="px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            >
+              {loading === q.id ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <>
+                  <ClipboardList className="w-3.5 h-3.5" />
+                  Взять
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ReviewingTab({
   submissions,
+  questionnaires,
   onCancel,
   loading,
 }: {
   submissions: Submission[];
-  onCancel: (id: string) => void;
+  questionnaires: QuestionnaireSubmission[];
+  onCancel: (id: string, isQuestionnaire?: boolean) => void;
   loading: string | null;
 }) {
-  if (submissions.length === 0) {
+  if (submissions.length === 0 && questionnaires.length === 0) {
     return (
       <div className="text-center py-12 text-gray-500">
         <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -341,43 +478,94 @@ function ReviewingTab({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {submissions.map((s) => (
-        <div
-          key={s.id}
-          className="border border-amber-200 bg-amber-50 rounded-lg p-4 flex flex-col"
-        >
-          <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">{s.challenge.title}</h3>
-            <p className="text-xs text-gray-500 mt-2">
-              {new Date(s.submittedAt).toLocaleDateString("ru-RU")}
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 mt-4">
-            <Link
-              href={`/account/supervision/${s.id}`}
-              className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors text-center flex items-center justify-center gap-1.5"
-            >
-              <CheckCircle className="w-3.5 h-3.5" />
-              Проверить
-            </Link>
-            <button
-              onClick={() => onCancel(s.id)}
-              disabled={loading === s.id}
-              className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-            >
-              {loading === s.id ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <>
-                  <MinusCircle className="w-3.5 h-3.5" />
-                  Отказаться
-                </>
-              )}
-            </button>
+    <div className="space-y-6">
+      {submissions.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Работы</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {submissions.map((s) => (
+              <div
+                key={s.id}
+                className="border border-amber-200 bg-amber-50 rounded-lg p-4 flex flex-col"
+              >
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">{s.challenge.title}</h3>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {new Date(s.submittedAt).toLocaleDateString("ru-RU")}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 mt-4">
+                  <Link
+                    href={`/account/supervision/${s.id}`}
+                    className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors text-center flex items-center justify-center gap-1.5"
+                  >
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Проверить
+                  </Link>
+                  <button
+                    onClick={() => onCancel(s.id, false)}
+                    disabled={loading === s.id}
+                    className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                  >
+                    {loading === s.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <MinusCircle className="w-3.5 h-3.5" />
+                        Отказаться
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      ))}
+      )}
+      
+      {questionnaires.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Вопросники</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {questionnaires.map((q) => (
+              <div
+                key={q.id}
+                className="border border-amber-200 bg-amber-50 rounded-lg p-4 flex flex-col"
+              >
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900 text-sm line-clamp-2">{q.challenge.title}</h3>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {new Date(q.submittedAt).toLocaleDateString("ru-RU")}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 mt-4">
+                  <Link
+                    href={`/account/supervision/questionnaires/${q.id}`}
+                    className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors text-center flex items-center justify-center gap-1.5"
+                  >
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Проверить
+                  </Link>
+                  <button
+                    onClick={() => onCancel(q.id, true)}
+                    disabled={loading === q.id}
+                    className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                  >
+                    {loading === q.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <MinusCircle className="w-3.5 h-3.5" />
+                        Отказаться
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

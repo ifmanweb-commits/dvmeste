@@ -2,7 +2,12 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { Lock } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import SupervisionClient, { type Submission } from "@/components/account/SupervisionClient";
+import SupervisionClient, { type Submission, type QuestionnaireSubmission } from "@/components/account/SupervisionClient";
+
+// Тип для вопросника с правильным статусом
+type QuestionnaireSubmissionType = Omit<QuestionnaireSubmission, 'status'> & {
+  status: "SUBMITTED" | "IN_REVIEW" | "APPROVED" | "REJECTED";
+};
 
 type PageProps = {
   searchParams: Promise<{ tab?: string }>;
@@ -37,7 +42,7 @@ export default async function SupervisionPage({ searchParams }: PageProps) {
   }
 
   // Загружаем данные для первых двух вкладок сразу на сервере
-  const [availableSubmissions, reviewingSubmissions] = await Promise.all([
+  const [availableSubmissionsResult, reviewingSubmissionsResult, availableQuestionnairesResult, reviewingQuestionnairesResult] = await Promise.all([
     // Доступные работы: status = SUBMITTED, reviewerId = null, нет review от текущего
     prisma.workSubmission.findMany({
       where: {
@@ -101,13 +106,93 @@ export default async function SupervisionPage({ searchParams }: PageProps) {
         submittedAt: 'asc',
       },
     }),
+    // Доступные вопросники: status = SUBMITTED, reviewerId = null, нет review от текущего
+    prisma.questionnaireSubmission.findMany({
+      where: {
+        status: 'SUBMITTED',
+        reviewerId: null,
+        NOT: {
+          reviews: {
+            some: {
+              supervisorId: user.id,
+            },
+          },
+        },
+      },
+      include: {
+        challenge: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            price: true,
+            questionnaire: {
+              select: {
+                timeLimit: true,
+                questionsPool: true,
+              },
+            },
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        submittedAt: 'asc',
+      },
+    }),
+    // На проверке вопросники: status = IN_REVIEW, reviewerId = текущий
+    prisma.questionnaireSubmission.findMany({
+      where: {
+        reviewerId: user.id,
+      },
+      include: {
+        challenge: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            price: true,
+            questionnaire: {
+              select: {
+                timeLimit: true,
+                questionsPool: true,
+              },
+            },
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        submittedAt: 'asc',
+      },
+    }),
   ]);
+
+  // Приводим типы вопросников к правильному enum
+  const availableQuestionnaires = availableQuestionnairesResult as unknown as QuestionnaireSubmissionType[];
+  const reviewingQuestionnaires = reviewingQuestionnairesResult as unknown as QuestionnaireSubmissionType[];
+  const availableSubmissions = availableSubmissionsResult as unknown as Submission[];
+  const reviewingSubmissions = reviewingSubmissionsResult as unknown as Submission[];
 
   return (
     <SupervisionClient
       searchParams={searchParams}
       availableSubmissions={availableSubmissions}
       reviewingSubmissions={reviewingSubmissions}
+      availableQuestionnaires={availableQuestionnaires}
+      reviewingQuestionnaires={reviewingQuestionnaires}
     />
   );
 }

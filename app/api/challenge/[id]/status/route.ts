@@ -15,13 +15,14 @@ export async function GET(
 
     const { id: attemptId } = await params;
 
-    // Получаем попытку с данными теста
+    // Получаем попытку с данными теста/вопросника
     const attempt = await prisma.challengeAttempt.findUnique({
       where: { id: attemptId },
       include: {
         challenge: {
           include: {
             test: true,
+            questionnaire: true,
           },
         },
       },
@@ -39,44 +40,70 @@ export async function GET(
     }
 
     const testChallenge = attempt.challenge.test;
-    if (!testChallenge) {
+    const questionnaireChallenge = attempt.challenge.questionnaire;
+    
+    // Определяем тип испытания
+    const isQuestionnaire = attempt.challenge.type === 'QUESTIONNAIRE';
+    
+    if (!testChallenge && !questionnaireChallenge) {
       return NextResponse.json(
-        { error: 'Test configuration not found' },
+        { error: 'Challenge configuration not found' },
         { status: 404 }
       );
     }
 
     // Если попытка завершена - возвращаем результат
     if (attempt.status === 'COMPLETED') {
+      if (isQuestionnaire) {
+        return NextResponse.json({
+          status: 'COMPLETED',
+          submissionStatus: 'SUBMITTED',
+        });
+      }
       return NextResponse.json({
         status: 'COMPLETED',
         passed: attempt.passed,
         score: attempt.score,
-        passingScore: testChallenge.passingScore,
-        totalQuestions: testChallenge.questionsCount,
+        passingScore: testChallenge?.passingScore,
+        totalQuestions: testChallenge?.questionsCount,
         timeExpired: false,
       });
     }
 
     // Получаем вопросы (без правильных ответов)
-    // selectedQuestionIndices теперь содержит полные объекты вопросов
     const selectedQuestions = (attempt.selectedQuestionIndices as any[]) || [];
     
-    const questions = selectedQuestions.map((q, i) => {
-      return {
+    let questions: any[];
+    let timeLimit: number | null = null;
+    
+    if (isQuestionnaire && questionnaireChallenge) {
+      // Для вопросника - только текст вопросов
+      questions = selectedQuestions.map((q, i) => ({
+        index: i,
+        text: q.text,
+      }));
+      timeLimit = questionnaireChallenge.timeLimit;
+    } else if (testChallenge) {
+      // Для теста - с вариантами ответов
+      questions = selectedQuestions.map((q, i) => ({
         index: i,
         text: q.text,
         type: q.type,
         options: q.options,
-        // correct не включаем - это секрет
-      };
-    });
+      }));
+      timeLimit = testChallenge.timeLimit;
+    } else {
+      return NextResponse.json(
+        { error: 'Challenge configuration not found' },
+        { status: 404 }
+      );
+    }
 
     // Считаем оставшееся время (если есть лимит)
     let timeRemaining: number | null = null;
-    if (testChallenge.timeLimit && attempt.startedAt) {
+    if (timeLimit && attempt.startedAt) {
       const startTime = attempt.startedAt.getTime();
-      const endTime = startTime + testChallenge.timeLimit * 60 * 1000;
+      const endTime = startTime + timeLimit * 60 * 1000;
       const now = Date.now();
       timeRemaining = Math.max(0, Math.floor((endTime - now) / 1000));
     }
@@ -88,7 +115,8 @@ export async function GET(
       questionsCount: selectedQuestions.length,
       answers: attempt.answers || {},
       timeRemaining,
-      timeLimit: testChallenge.timeLimit,
+      timeLimit,
+      instructionsForPsychologist: questionnaireChallenge?.instructionsForPsychologist || null,
     });
   } catch (error) {
     console.error('Error getting attempt status:', error);
