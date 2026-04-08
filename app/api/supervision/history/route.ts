@@ -64,6 +64,30 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Собираем все ID ревью для поиска транзакций
+    const allReviewIds = [...workReviews.map(r => r.id), ...questionnaireReviews.map(r => r.id)];
+
+    // Получаем транзакции для начислений
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        userId: user.id,
+        type: 'EARNING',
+      },
+    });
+
+    // Фильтруем транзакции по reviewId из metadata
+    const transactionMap = new Map<string, number>();
+    transactions.forEach(t => {
+      // Prisma хранит metadata как JsonValue, нужно корректно распарсить
+      let reviewId: string | null = null;
+      if (t.metadata && typeof t.metadata === 'object' && 'reviewId' in t.metadata) {
+        reviewId = (t.metadata as any).reviewId as string;
+      }
+      if (reviewId && allReviewIds.includes(reviewId)) {
+        transactionMap.set(reviewId, t.amount);
+      }
+    });
+
     // Форматируем и объединяем результаты
     const formattedWorkReviews = workReviews.map((review) => ({
       id: review.id,
@@ -78,6 +102,7 @@ export async function GET(request: NextRequest) {
         id: review.submission.challenge.id,
         title: review.submission.challenge.title,
       },
+      earning: transactionMap.get(review.id) || 0,
     }));
 
     const formattedQuestionnaireReviews = questionnaireReviews.map((review) => ({
@@ -93,6 +118,7 @@ export async function GET(request: NextRequest) {
         id: review.submission.challenge.id,
         title: review.submission.challenge.title,
       },
+      earning: transactionMap.get(review.id) || 0,
     }));
 
     // Объединяем и сортируем по дате

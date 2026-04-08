@@ -168,7 +168,7 @@ export async function POST(
     // Начисляем оплату супервизору (отдельно от транзакции)
     const price = questionnaireChallenge?.reviewPrice || 0;
     if (price > 0) {
-      await creditSupervisor(user.id, price, submissionId, 'Проверка вопросника');
+      await creditSupervisor(user.id, price, submission.reviews[0].id, 'Проверка вопросника');
     }
 
     return NextResponse.json(result);
