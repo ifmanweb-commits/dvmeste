@@ -20,6 +20,7 @@
 # production
 /build
 /public/files
+/private/
 
 # misc
 .DS_Store
