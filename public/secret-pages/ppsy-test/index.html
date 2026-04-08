@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Психологи школы Сергея Смирнова</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+        body {
+            background-color: #f8faff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .wrapper {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            flex: 1;
+            width: 100%;
+        }
+        .page-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .page-header h1 {
+            font-size: 2.2rem;
+            font-weight: 500;
+            letter-spacing: -0.5px;
+            color: #1a1f36;
+            position: relative;
+            display: inline-block;
+            padding-bottom: 0.5rem;
+        }
+        .page-header h1::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 25%;
+            width: 50%;
+            height: 3px;
+            background: linear-gradient(90deg, #5858E2, #A7FF5A);
+            border-radius: 4px;
+        }
+        
+        /* общий контейнер для двух колонок */
+        .info-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.8rem;
+            margin-bottom: 3rem;
+        }
+        
+        /* стили для каждой карточки-колонки */
+        .info-card {
+            background: white;
+            border-radius: 24px;
+            padding: 1.8rem 1.8rem;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.02);
+            border: 1px solid #edeef2;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.15s ease, box-shadow 0.2s;
+            height: fit-content;
+        }
+        .info-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -12px rgba(88, 88, 226, 0.15);
+            border-color: #5858E2;
+        }
+        
+        /* цветные акценты для левой и правой колонки */
+        .info-card.students::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: linear-gradient(180deg, #5858E2 0%, #7a7af0 100%);
+            border-radius: 6px 0 0 6px;
+        }
+        
+        .info-card.graduates::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: linear-gradient(180deg, #A7FF5A 0%, #7acc3c 100%);
+            border-radius: 6px 0 0 6px;
+        }
+        
+        .info-card h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.2rem;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .info-card.students h2 {
+            color: #5858E2;
+        }
+        
+        .info-card.graduates h2 {
+            color: #4c9e2b;
+        }
+        
+        .info-card h2 span {
+            font-size: 1.8rem;
+        }
+        
+        .info-card p {
+            color: #2d3a5e;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            font-size: 0.98rem;
+        }
+        
+        .info-card p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-highlight {
+            background: #f0f3fe;
+            padding: 0.2rem 0.4rem;
+            border-radius: 6px;
+            color: #5858E2;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .info-accent {
+            color: #5858E2;
+            font-weight: 600;
+        }
+        
+        .info-card.graduates .info-highlight {
+            background: #e5f9d4;
+            color: #2d6e1a;
+        }
+        
+        .info-card.graduates .info-accent {
+            color: #3d8b1c;
+        }
+        
+        .info-quote {
+            border-left: 3px solid #A7FF5A;
+            padding-left: 1rem;
+            font-style: italic;
+            color: #4b5565;
+            margin: 1rem 0 0.5rem 0;
+            font-size: 0.95rem;
+        }
+        
+        .info-list {
+            margin: 0.8rem 0 0.5rem 1.2rem;
+            color: #2d3a5e;
+            line-height: 1.6;
+        }
+        
+        .info-list li {
+            margin-bottom: 0.4rem;
+        }
+        
+        .info-card hr {
+            border: none;
+            border-top: 1px dashed #cfd9f0;
+            margin: 1.2rem 0;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: #f0f3fe;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #5858E2;
+            margin-top: 0.5rem;
+            border: 1px solid rgba(88, 88, 226, 0.2);
+        }
+        
+        .badge.green {
+            background: #e5f9d4;
+            color: #2d6e1a;
+            border-color: rgba(167, 255, 90, 0.3);
+        }
+        
+        /* сетка психологов - 2 колонки */
+        .psych-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.8rem;
+            margin-bottom: 3rem;
+        }
+        
+        /* карточка психолога с горизонтальным расположением */
+        .psych-card {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.02), 0 2px 6px rgba(88, 88, 226, 0.05);
+            border: 1px solid #edeef2;
+            transition: transform 0.15s ease, box-shadow 0.2s;
+            display: flex;
+            gap: 1.2rem;
+            height: 100%;
+        }
+        .psych-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -12px rgba(88, 88, 226, 0.15);
+            border-color: #5858E2;
+        }
+        
+        /* левая часть с фото */
+        .psych-photo {
+            flex-shrink: 0;
+            width: 100px;
+        }
+        .photo-wrapper {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid #A7FF5A;
+            box-shadow: 0 4px 12px rgba(88, 88, 226, 0.2);
+            transition: border-color 0.2s;
+            background: #f0f2f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .psych-card:hover .photo-wrapper {
+            border-color: #5858E2;
+        }
+        .photo-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        
+        /* правая часть с информацией */
+        .psych-info {
+            flex: 1;
+            min-width: 0; /* для корректного переноса текста */
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .psych-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+            color: #1e293b;
+            line-height: 1.3;
+        }
+        .psych-name span {
+            font-weight: 500;
+            color: #4b5565;
+        }
+        
+        .psych-edu {
+            font-size: 0.9rem;
+            color: #2d3a5e;
+            line-height: 1.5;
+            margin-bottom: 0.8rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            background: #f8f9fc;
+            padding: 0.5rem 0.7rem;
+            border-radius: 12px;
+            border-left: 3px solid #cfd9f0;
+        }
+        
+        .free-sessions-text {
+            font-size: 0.9rem;
+            color: #2d3a5e;
+            font-weight: 500;
+            background: #f0f3fe;
+            padding: 0.3rem 0.8rem;
+            border-radius: 40px;
+            display: inline-block;
+            margin-bottom: 0.8rem;
+            align-self: flex-start;
+        }
+        
+        .card-action-area {
+            margin-top: auto;
+        }
+        
+        .contact-btn {
+            background-color: #5858E2;
+            border: none;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 500;
+            padding: 0.6rem 1.5rem;
+            border-radius: 60px;
+            cursor: pointer;
+            width: fit-content;
+            transition: background-color 0.15s, box-shadow 0.15s, transform 0.1s;
+            box-shadow: 0 4px 8px rgba(88, 88, 226, 0.25);
+            border: 1px solid rgba(255,255,255,0.2);
+            letter-spacing: 0.3px;
+        }
+        .contact-btn:hover {
+            background-color: #4040c2;
+            box-shadow: 0 8px 14px rgba(88, 88, 226, 0.35);
+        }
+        .contact-btn:active {
+            transform: scale(0.97);
+        }
+        
+        .contact-display {
+            margin-top: 0.8rem;
+            font-size: 0.85rem;
+            background: #f0f3fe;
+            padding: 0.6rem 1rem;
+            border-radius: 16px;
+            color: #2d3a5e;
+            border-left: 3px solid #A7FF5A;
+            word-break: break-word;
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+        .contact-display a {
+            color: #5858E2;
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 1px dashed #5858E2;
+            word-break: break-all;
+        }
+        .contact-display a:hover {
+            color: #4040c2;
+            border-bottom: 1px solid #4040c2;
+        }
+        .contact-display .plain-text {
+            color: #2d3a5e;
+            font-weight: 450;
+            border: none;
+            background: transparent;
+        }
+        .contact-display div {
+            margin-bottom: 0.2rem;
+        }
+        .contact-display div:last-child {
+            margin-bottom: 0;
+        }
+        
+        .page-footer {
+            margin-top: 3rem;
+            text-align: center;
+            border-top: 1px dashed #cfd9f0;
+            padding-top: 1.8rem;
+            color: #64748b;
+            font-size: 0.9rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.2rem 2rem;
+        }
+        .page-footer span {
+            color: #5858E2;
+            font-weight: 500;
+        }
+        .footer-accent {
+            background-color: #A7FF5A;
+            color: #1a2b3c;
+            padding: 0.2rem 1rem;
+            border-radius: 40px;
+            font-size: 0.85rem;
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 1100px) {
+            .psych-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .info-columns {
+                grid-template-columns: 1fr;
+                gap: 1.2rem;
+            }
+        }
+        
+        @media (max-width: 700px) {
+            .psych-grid {
+                grid-template-columns: 1fr; /* на мобильных одна колонка */
+            }
+            
+            .psych-card {
+                padding: 1.2rem;
+                gap: 1rem;
+            }
+            
+            .psych-photo {
+                width: 80px;
+            }
+            .photo-wrapper {
+                width: 80px;
+                height: 80px;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .page-header h1 { 
+                font-size: 1.8rem; 
+            }
+            .info-card { 
+                padding: 1.5rem; 
+            }
+        }
+        
+        /* Для очень маленьких экранов фото сверху */
+        @media (max-width: 480px) {
+            .psych-card {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            
+            .psych-info {
+                width: 100%;
+            }
+            
+            .free-sessions-text {
+                align-self: center;
+            }
+            
+            .contact-btn {
+                margin: 0 auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <header class="page-header">
+            <h1>Психологи школы Сергея Смирнова</h1>
+        </header>
+
+        <!-- Две колонки: для учащихся и для выпускников -->
+        <div class="info-columns">
+            <!-- Левая колонка - для учащихся -->
+            <div class="info-card students">
+                <h2>
+                    <span>🎓</span> Для учащихся
+                </h2>
+                <p>
+                    На этой странице — психологи, прошедшие обучение на курсе 
+                    <span class="info-highlight">«Психолог-практик»</span> и других курсах школы. 
+                    Они дали согласие на размещение контактов для участников курса.
+                </p>
+                
+                <p>
+                    <span class="info-accent">Вы можете выбрать любого</span> специалиста, 
+                    связаться по указанным контактам и получить консультации. Количество 
+                    <span class="info-highlight">бесплатных консультаций</span> указано в карточке.
+                </p>
+                
+                <p>
+                    После завершения бесплатных сессий психолог может предложить продолжить работу 
+                    на новых условиях, в том числе платно. Решение всегда за вами.
+                </p>
+                
+                <div class="info-quote">
+                    ✦ Таким образом, вы можете получить первичную личную терапию бесплатно 
+                    в практически неограниченных количествах — обращаться к разным психологам 
+                    никто не запрещает. Однако помните, что каждый новый психолог будет вынужден узнавать ваши особенности заново.
+                </div>
+                <div class="badge" id="maxSessionsBadge">
+                    Каждый психолог в каталоге предоставляет минимум 1 бесплатную сессию
+                </div>
+                <p style="margin-top:10px;">
+                    <sup>*</sup>Психологи на странице выводятся в случайном порядке.
+                </p>
+            </div>
+            
+            <!-- Правая колонка - для выпускников -->
+            <div class="info-card graduates">
+                <h2>
+                    <span>⭐</span> Для выпускников
+                </h2>
+                <p>
+                    <span class="info-accent">Сдавшие экзамен</span> могут разместить свои данные 
+                    в этом каталоге. Это отличная возможность:
+                </p>
+                
+                <ul class="info-list">
+                    <li>получать первых клиентов для тренировки навыков;</li>
+                    <li>повышать профессионализм в реальной практике;</li>
+                    <li>набирать материал для супервизий;</li>
+                    <li>находить клиентов для платной работы, если ваша помощь понравится обратившимся.</li>
+                </ul>
+                
+                <hr>
+                
+                <p>
+                    <span class="info-accent">Условия размещения:</span> успешная сдача экзаменов 
+                    и обязательство предоставить минимум 
+                    <span class="info-highlight">1 бесплатную сессию</span> для каждого из обратившихся учеников школы.
+                </p>
+                
+                <p>
+                    Если ваша работа понравится клиенту, вы сможете продолжить на платной основе. 
+                    Каталог может стать одним из источников платных клиентов.
+                </p>
+                
+                <div class="badge green">
+                    Получайте клиентов для старта практики бесплатно. Набирайтесь опыта, переходите к платным консультациям.
+                </div>
+            </div>
+        </div>
+
+        <div id="psychContainer" class="psych-grid"></div>
+        
+        <footer class="page-footer">
+            <div>© Школа Сергея Смирнова — практикующие психологи</div>
+            <div><span>✦</span> клиенты для старта практики <span>✦</span></div>
+            <div><span>✦</span> бесплатная личная терапия <span>✦</span></div>
+        </footer>
+    </div>
+
+    <script>
+        (function() {
+            // --- Генератор ID ---
+            const idGenerator = (function() {
+                let counter = 0;
+                const sessionId = Date.now();
+                return function() {
+                    counter++;
+                    return `psy_${sessionId}_${counter}`;
+                };
+            })();
+
+            // --- Данные психологов из таблицы ---
+            const psychologistsData = [
+                {
+                    firstName: "Александра",
+                    lastName: "Фомина",
+                    photoUrl: "./photo/fomina.jpg",
+                    education: "АНО ДПО ФИПКиП (2021), повышение квалификации, Школа Смирнова, магистратура МОСГУ (клин. психология)",
+                    freeSessions: 1,
+                    contact: "ВК: allen_m\nТГ: @fominaalex"
+                },
+                {
+                    firstName: "Татьяна",
+                    lastName: "Серова",
+                    photoUrl: "./photo/serova.jpg",
+                    education: "Психолог-практик, аналитик, мастер; НЛП-практик, НЛП-мастер",
+                    freeSessions: 1,
+                    contact: "Тел: +79190178068 (TG)\nВК: i_psychologinya"
+                },
+                {
+                    firstName: "Ирина",
+                    lastName: "Капустина",
+                    photoUrl: "./photo/kapustina.jpg",
+                    education: "Психолог-Практик",
+                    freeSessions: 1,
+                    contact: "ВК: Koshka_na_rolikah\nТГ: @maydory"
+                },
+                {
+                    firstName: "Игорь",
+                    lastName: "Третьяков",
+                    photoUrl: "./photo/tretyakov.jpg",
+                    education: "ДПО Психолог-консультант (2022), Экзистенциальный подход (2022), Психолог-Мастер (2026)",
+                    freeSessions: 2,
+                    contact: "Тел: +79021719900\nВК: psyolmer\nТГ: @igort79"
+                },
+                {
+                    firstName: "Анна",
+                    lastName: "Феоктистова",
+                    photoUrl: "./photo/feoktistova.jpg",
+                    education: "ВО: СПбИПиА (Психолог, 2012), ДПО: Клиническая психология (2024)",
+                    freeSessions: 1,
+                    contact: "Тел: 89650018955"
+                },
+                {
+                    firstName: "Юлия",
+                    lastName: "Ефименко",
+                    photoUrl: "./photo/efimenko.jpg",
+                    education: "ВО: ПГПУ (Психолог, 2003), курс Психолог-практик (2025)",
+                    freeSessions: 4,
+                    contact: "Тел: 89129805500 (TG)\nВК: club232914481"
+                },
+                {
+                    firstName: "Вероника",
+                    lastName: "Байбурина",
+                    photoUrl: "./photo/baiburina.jpg",
+                    education: "Психолог-тренер (2026), Психолог-практик/мастер/аналитик (2025)",
+                    freeSessions: 1,
+                    contact: "ТГ: @bv3095\nСайт: https://vbpsy.taplink.ws"
+                },
+                {
+                    firstName: "Галина",
+                    lastName: "Коннова",
+                    photoUrl: "./photo/konnova.jpg",
+                    education: "ПП расширенный (экзамен сдан, удостоверение ожидается)",
+                    freeSessions: 2,
+                    contact: "Тел: +79195755645\nТГ: @Galalekskon"
+                },
+                {
+                    firstName: "Екатерина",
+                    lastName: "Козырева",
+                    photoUrl: "./photo/kozireva.JPG",
+                    education: "Психолог-мастер, переподготовка МУИП, ТОТ, телесные гипнозы",
+                    freeSessions: 1,
+                    contact: "Тел: +79113769414\nВК: ek_kozyreva\nТГ: @ek_kozyreva"
+                },
+                {
+                    firstName: "Светлана",
+                    lastName: "Бакшеева",
+                    photoUrl: "./photo/baksheeva.jpg",
+                    education: "ИСПиП (спец. психология, 2010), КПТ (640 часов)",
+                    freeSessions: 2,
+                    contact: "Тел: +79111575665"
+                },
+                {
+                    firstName: "Анна",
+                    lastName: "Солодова",
+                    photoUrl: "./photo/solodova.jpg",
+                    education: "Высшее педагогическое, курсы Психолог-практик/мастер/аналитик",
+                    freeSessions: 1,
+                    contact: "Тел: +19787713721\nВК: solodova.psychology\nТГ: av_solodova"
+                },
+                {
+                    firstName: "Даниил",
+                    lastName: "Васютин",
+                    photoUrl: "./photo/vasutin.jpg",
+                    education: "ЛГПУ\nПсихолог-практик\nПсихолог-мастер\nПсихолог-аналитик",
+                    freeSessions: 1,
+                    contact: "Тел. - +79591578979\nВК - https://vk.com/dandisimus\nТГ - @Dandi_Simus"
+                },
+                {
+                    firstName: "Анастасия",
+                    lastName: "Сторчак",
+                    photoUrl: "./photo/storchak.webp",
+                    education: "Гештальт-терапия (НАДПО), Психолог-практик, Психолог-мастер",
+                    freeSessions: 1,
+                    contact: "Тел: +79609275437\nТГ: @nastyastorchak"
+                },
+                {
+                    firstName: "Екатерина",
+                    lastName: "Красногорская",
+                    photoUrl: "./photo/krasnogorskaya.jpeg",
+                    education: "Психолог-консультант, Деловая психология",
+                    freeSessions: 1,
+                    contact: "ТГ: @Ekaterina_Krasnogorskaia\nВК: psiho_focus"
+                },
+				{
+                    firstName: "Ольга",
+                    lastName: "Дмитриева",
+                    photoUrl: "./photo/dmitrieva.jpg",
+                    education: "ННГУ (Психология, 2016 г), школа Сергея Смирнова \"Психолог-практик\" (2022 г), Мастерская Альянса (коучинг, 2023 г).\nОбласть интересов: женская психология, карьера, отношения, саморазвитие, экзистенциальные вопросы",
+                    freeSessions: 2,
+                    contact: "ТГ: +79601979344\nВК: olgadmitt"
+                },
+                {
+                    firstName: "Анна",
+                    lastName: "Нарзикулова",
+                    photoUrl: "./photo/narzikulova.jpg",
+                    education: "МИППиПКП -  \"психолог-консультант\",\nШкола Сергея Смирнова - Психолог-практик, Психолог -мастер.",
+                    freeSessions: 1,
+                    contact: "ТГ: +79231953387\nТел: +79231953387"
+                },
+            ];
+
+            // Добавляем ID каждому психологу
+            const psychologists = psychologistsData.map(person => ({
+                ...person,
+                id: idGenerator()
+            }));
+
+            // Функция перемешивания массива
+            function shuffleArray(arr) {
+                const a = [...arr];
+                for (let i = a.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [a[i], a[j]] = [a[j], a[i]];
+                }
+                return a;
+            }
+
+            // Форматирование контактов для отображения
+            function formatContactDisplay(rawContact) {
+                const lines = rawContact.split('\n');
+                let html = '';
+                
+                lines.forEach(line => {
+                    line = line.trim();
+                    if (!line) return;
+                    
+                    // Обработка ВКонтакте
+                    if (line.startsWith('ВК:')) {
+                        let vkPart = line.substring(3).trim();
+                        vkPart = vkPart.replace(/^[:,\s]+/, '');
+                        if (vkPart && !vkPart.includes('://')) {
+                            html += `<div><a href="https://vk.com/${vkPart}" target="_blank">${line}</a></div>`;
+                        } else {
+                            html += `<div><span class="plain-text">${line}</span></div>`;
+                        }
+                    }
+                    // Обработка Telegram
+                    else if (line.startsWith('ТГ:') || line.startsWith('TG:') || line.startsWith('тг:')) {
+                        let tgPart = line.substring(3).trim();
+                        tgPart = tgPart.replace(/^[:,\s]+/, '');
+                        tgPart = tgPart.replace(/^@/, '');
+                        if (tgPart && !tgPart.includes('://')) {
+                            html += `<div><a href="https://t.me/${tgPart}" target="_blank">${line}</a></div>`;
+                        } else {
+                            html += `<div><span class="plain-text">${line}</span></div>`;
+                        }
+                    }
+                    // Обработка телефона (просто текст)
+                    else if (line.startsWith('Тел:') || line.startsWith('тел:')) {
+                        html += `<div><span class="plain-text">${line}</span></div>`;
+                    }
+                    // Обработка ссылок на сайты
+                    else if (line.includes('://') || line.startsWith('www.')) {
+                        const urlMatch = line.match(/(https?:\/\/[^\s]+)|(www\.[^\s]+)/i);
+                        if (urlMatch) {
+                            let url = urlMatch[0];
+                            if (url.startsWith('www.')) url = 'https://' + url;
+                            html += `<div><a href="${url}" target="_blank">${line}</a></div>`;
+                        } else {
+                            html += `<div><span class="plain-text">${line}</span></div>`;
+                        }
+                    }
+                    // Если остальное - просто текст
+                    else {
+                        html += `<div><span class="plain-text">${line}</span></div>`;
+                    }
+                });
+                
+                return html || `<span class="plain-text">${rawContact}</span>`;
+            }
+
+            const container = document.getElementById('psychContainer');
+            if (!container) return;
+
+            // Перемешиваем психологов
+            const shuffledPsych = shuffleArray(psychologists);
+
+            // Находим максимальное количество сессий
+            let maxSessions = 0;
+            shuffledPsych.forEach(p => {
+                if (p.freeSessions > maxSessions) maxSessions = p.freeSessions;
+            });
+
+            // Обновляем текст в бейдже
+            const badge = document.getElementById('maxSessionsBadge');
+            if (badge) {
+                badge.textContent = `Каждый психолог в каталоге предоставляет минимум 1 и максимум ${maxSessions} бесплатных сессий`;
+            }
+
+            // Создаем карточки
+            shuffledPsych.forEach(person => {
+                const card = document.createElement('div');
+                card.className = 'psych-card';
+
+                // Левая часть с фото
+                const photoDiv = document.createElement('div');
+                photoDiv.className = 'psych-photo';
+                
+                const photoWrapper = document.createElement('div');
+                photoWrapper.className = 'photo-wrapper';
+                
+                const img = document.createElement('img');
+                img.src = person.photoUrl;
+                img.alt = `${person.firstName} ${person.lastName}`;
+                img.loading = 'lazy';
+                img.onerror = function() {
+                    this.onerror = null;
+                    this.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" fill="%23cfd9f0"><circle cx="50" cy="50" r="40" /><text x="50" y="70" font-size="40" text-anchor="middle" fill="%2364748b">?</text></svg>';
+                };
+                
+                photoWrapper.appendChild(img);
+                photoDiv.appendChild(photoWrapper);
+
+                // Правая часть с информацией
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'psych-info';
+
+                const nameEl = document.createElement('div');
+                nameEl.className = 'psych-name';
+                nameEl.innerHTML = `${person.firstName} <span>${person.lastName}</span>`;
+
+                const eduEl = document.createElement('div');
+                eduEl.className = 'psych-edu';
+                eduEl.textContent = person.education;
+
+                const freeText = document.createElement('div');
+                freeText.className = 'free-sessions-text';
+                freeText.textContent = `Бесплатных консультаций: ${person.freeSessions}`;
+
+                const actionArea = document.createElement('div');
+                actionArea.className = 'card-action-area';
+
+                const btn = document.createElement('button');
+                btn.className = 'contact-btn';
+                btn.textContent = 'контакт';
+                btn.dataset.psyId = person.id;
+
+                actionArea.appendChild(btn);
+                
+                infoDiv.appendChild(nameEl);
+                infoDiv.appendChild(eduEl);
+                infoDiv.appendChild(freeText);
+                infoDiv.appendChild(actionArea);
+
+                card.appendChild(photoDiv);
+                card.appendChild(infoDiv);
+
+                container.appendChild(card);
+            });
+
+            // Обработчик кликов по кнопкам "контакт"
+            container.addEventListener('click', function(e) {
+                const target = e.target;
+                if (!target.classList.contains('contact-btn')) return;
+
+                e.preventDefault();
+                const actionArea = target.closest('.card-action-area');
+                if (!actionArea) return;
+                if (actionArea.querySelector('.contact-display')) return;
+
+                const psyId = target.dataset.psyId;
+                if (!psyId) return;
+
+                const foundPerson = shuffledPsych.find(p => p.id === psyId);
+                if (!foundPerson) return;
+
+                target.remove();
+
+                const contactDiv = document.createElement('div');
+                contactDiv.className = 'contact-display';
+                contactDiv.innerHTML = formatContactDisplay(foundPerson.contact);
+
+                actionArea.appendChild(contactDiv);
+            });
+        })();
+    </script>
+    <noscript>Включите JavaScript для отображения страницы</noscript>
+</body>
+</html>
