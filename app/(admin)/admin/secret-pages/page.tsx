@@ -64,7 +64,7 @@ export default async function SecretPagesPage() {
                     Редактировать
                   </Link>
                   <Link
-                    href={`/secret-pages/${page.slug}/index.html`}
+                    href={`/secret-page/${page.slug}`}
                     target="_blank"
                     className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200"
                   >

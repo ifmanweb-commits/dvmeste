@@ -30,8 +30,8 @@ export async function createSecretPage(formData: FormData) {
     throw new Error('Необходимо загрузить HTML файл')
   }
 
-  // Создаём папку для страницы
-  const pageDir = join(process.cwd(), 'public', 'secret-pages', slug)
+  // Создаём папку для страницы в приватной директории
+  const pageDir = join(process.cwd(), 'private', 'secret-pages', slug)
   const imagesDir = join(pageDir, 'images')
 
   await mkdir(pageDir, { recursive: true })
@@ -125,7 +125,7 @@ export async function updateSecretPage(id: string, formData: FormData) {
     return { error: 'Страница не найдена' }
   }
 
-  const pageDir = join(process.cwd(), 'public', 'secret-pages', page.slug)
+  const pageDir = join(process.cwd(), 'private', 'secret-pages', page.slug)
   const imagesDir = join(pageDir, 'images')
 
   // Обновляем HTML если загружен новый файл
@@ -212,12 +212,20 @@ export async function deleteSecretPage(id: string) {
     return { error: 'Страница не найдена' }
   }
 
-  const pageDir = join(process.cwd(), 'public', 'secret-pages', page.slug)
+  const pageDir = join(process.cwd(), 'private', 'secret-pages', page.slug)
 
   // Удаляем папку рекурсивно
   if (existsSync(pageDir)) {
     await rm(pageDir, { recursive: true, force: true })
   }
+
+  // Сначала удаляем все записи о доступе к этой странице (каскад)
+  await prisma.userAccess.deleteMany({
+    where: {
+      resourceType: 'page',
+      resourceId: id
+    }
+  })
 
   // Удаляем запись из БД
   await prisma.secretPage.delete({ where: { id } })
@@ -226,7 +234,7 @@ export async function deleteSecretPage(id: string) {
 }
 
 export async function getSecretPageImages(slug: string): Promise<string[]> {
-  const imagesDir = join(process.cwd(), 'public', 'secret-pages', slug, 'images')
+  const imagesDir = join(process.cwd(), 'private', 'secret-pages', slug, 'images')
 
   if (!existsSync(imagesDir)) {
     return []
