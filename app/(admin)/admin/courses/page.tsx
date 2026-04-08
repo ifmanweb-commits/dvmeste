@@ -6,7 +6,7 @@ export default async function CoursesPage() {
   const courses = await getAllCourses();
 
   return (
-    <div className="">
+    <div>
       <div className="mb-6">
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -22,7 +22,7 @@ export default async function CoursesPage() {
         </div>
 
         {courses.length === 0 ? (
-          <div className="rounded-xl border-2 border-[#5858E2]/20 bg-white p-8 text-center shadow-sm">
+          <div className="rounded-xl border border-neutral-200 bg-white p-8 text-center shadow-sm">
             <p className="text-gray-500">Курсы ещё не созданы</p>
             <Link
               href="/admin/courses/new"
@@ -36,7 +36,7 @@ export default async function CoursesPage() {
             {courses.map((course) => (
               <div
                 key={course.id}
-                className="rounded-xl border-2 border-[#5858E2]/20 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+                className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
               >
                 <div className="mb-3">
                   <h3 className="text-lg font-bold text-gray-900">{course.title}</h3>

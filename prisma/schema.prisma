@@ -70,6 +70,7 @@ model User {
   questionnaireReviews  QuestionnaireReview[] @relation("SupervisorQuestionnaireReviews")
   reviewedQuestionnaireSubmissions QuestionnaireSubmission[] @relation("ReviewerQuestionnaireSubmissions")
   questionnaireSubmissions QuestionnaireSubmission[] @relation("UserQuestionnaireSubmissions")
+  keyUses               KeyUse[]
 
   @@index([email])
   @@index([status])
@@ -819,4 +820,62 @@ enum TransactionType {
 enum TipType {
   TOAST
   MODAL
+}
+
+model SecretPage {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  filePath  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model UserAccess {
+  id           String   @id @default(cuid())
+  userId       String
+  resourceType String
+  resourceId   String
+  grantedBy    String
+  grantedAt    DateTime @default(now())
+  expiresAt    DateTime?
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, resourceType, resourceId])
+  @@index([userId])
+  @@index([resourceType, resourceId])
+  @@index([grantedBy])
+}
+
+model Key {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  actionsJson Json
+  maxUses     Int      @default(1)
+  usedCount   Int      @default(0)
+  expiresAt   DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  uses        KeyUse[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+model KeyUse {
+  id        String   @id @default(cuid())
+  keyId     String
+  userId    String
+  usedAt    DateTime @default(now())
+  key       Key      @relation(fields: [keyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([keyId, userId])
+  @@index([keyId])
+  @@index([userId])
 }
