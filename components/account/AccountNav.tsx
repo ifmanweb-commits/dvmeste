@@ -23,7 +23,8 @@ import {
   ShieldCheck,
   GraduationCap,
   Wallet,
-  BookOpen
+  BookOpen,
+  KeyRound
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -98,6 +99,12 @@ export default function AccountNav({ user, isMobile, onNavigate }: AccountNavPro
       href: '/account/training',
       label: 'Обучение',
       icon: GraduationCap,
+      show: user.status === 'ACTIVE' || user.status === 'CANDIDATE'
+    },
+    {
+      href: '/account/key-active',
+      label: 'Ключи',
+      icon: KeyRound,
       show: user.status === 'ACTIVE' || user.status === 'CANDIDATE'
     },
     {
