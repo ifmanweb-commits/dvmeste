@@ -74,6 +74,7 @@ export default function AccessFilters({
           >
             <option value="">Все типы</option>
             <option value="page">Секретная страница</option>
+            <option value="catalog">Секретный каталог</option>
           </select>
         </div>
 
@@ -86,15 +87,18 @@ export default function AccessFilters({
             name="resourceId"
             id="resourceId"
             defaultValue={currentResourceId}
-            disabled={!currentResourceType && currentResourceType !== 'page'}
+            disabled={!currentResourceType}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2] disabled:bg-gray-100"
           >
             <option value="">Все ресурсы</option>
-            {secretPages.map((page) => (
+            {currentResourceType === 'page' && secretPages.map((page) => (
               <option key={page.id} value={page.id}>
                 {page.title}
               </option>
             ))}
+            {currentResourceType === 'catalog' && (
+              <option value="secret-catalog">Секретный каталог</option>
+            )}
           </select>
         </div>
 

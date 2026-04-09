@@ -9,10 +9,15 @@ interface GrantAccessModalProps {
   adminId: string
 }
 
+type ResourceType = 'page' | 'catalog'
+type CatalogPermission = 'read' | 'included'
+
 export default function GrantAccessModal({ secretPages, adminId }: GrantAccessModalProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [resourceType, setResourceType] = useState<ResourceType>('page')
+  const [catalogPermission, setCatalogPermission] = useState<CatalogPermission>('read')
 
   const handleSubmit = async (formData: FormData) => {
     setIsSubmitting(true)
@@ -84,39 +89,64 @@ export default function GrantAccessModal({ secretPages, adminId }: GrantAccessMo
             </p>
           </div>
 
-          {/* Тип ресурса (фиксированный) */}
+          {/* Тип ресурса */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Тип ресурса
-            </label>
-            <input
-              type="text"
-              value="Секретная страница"
-              disabled
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-100 text-gray-500"
-            />
-            <input type="hidden" name="resourceType" value="page" />
-          </div>
-
-          {/* Выбор ресурса */}
-          <div>
-            <label htmlFor="resourceId" className="block text-sm font-medium text-gray-700 mb-1">
-              Секретная страница <span className="text-red-500">*</span>
+            <label htmlFor="resourceType" className="block text-sm font-medium text-gray-700 mb-1">
+              Тип ресурса <span className="text-red-500">*</span>
             </label>
             <select
-              name="resourceId"
-              id="resourceId"
-              required
+              name="resourceType"
+              id="resourceType"
+              value={resourceType}
+              onChange={(e) => setResourceType(e.target.value as ResourceType)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
             >
-              <option value="">Выберите страницу</option>
-              {secretPages.map((page) => (
-                <option key={page.id} value={page.id}>
-                  {page.title}
-                </option>
-              ))}
+              <option value="page">Секретная страница</option>
+              <option value="catalog">Секретный каталог</option>
             </select>
           </div>
+
+          {/* Выбор ресурса - для страницы */}
+          {resourceType === 'page' && (
+            <div>
+              <label htmlFor="resourceId" className="block text-sm font-medium text-gray-700 mb-1">
+                Секретная страница <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="resourceId"
+                id="resourceId"
+                required
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+              >
+                <option value="">Выберите страницу</option>
+                {secretPages.map((page) => (
+                  <option key={page.id} value={page.id}>
+                    {page.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Права для каталога */}
+          {resourceType === 'catalog' && (
+            <div>
+              <label htmlFor="catalogPermission" className="block text-sm font-medium text-gray-700 mb-1">
+                Может <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="catalogPermission"
+                id="catalogPermission"
+                value={catalogPermission}
+                onChange={(e) => setCatalogPermission(e.target.value as CatalogPermission)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+              >
+                <option value="read">Читать</option>
+                <option value="included">Разместиться</option>
+              </select>
+              <input type="hidden" name="resourceId" value="secret-catalog" />
+            </div>
+          )}
 
           {/* Срок действия */}
           <div>

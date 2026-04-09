@@ -404,27 +404,29 @@ export function ProfileFormContainer({
                 onChange={(e) => handleBasicChange('contactInfo', e.target.value)}
               />
             </div>
-            <div className="md:col-span-2">
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={user.showCandidate || false}
-                  onChange={(e) => handleBasicChange('showCandidate', e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">
-                  Отображать в таблице непроверенных психологов
-                </span>
-              </label>
-              <a
-                href="/unverified-psychologists"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:text-blue-700 hover:underline ml-4"
-              >
-                Посмотреть таблицу ↗
-              </a>
-            </div>
+            {user.status === 'CANDIDATE' && (
+              <div className="md:col-span-2">
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={user.showCandidate || false}
+                    onChange={(e) => handleBasicChange('showCandidate', e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Отображать в таблице непроверенных психологов
+                  </span>
+                </label>
+                <a
+                  href="/unverified-psychologists"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:text-blue-700 hover:underline ml-4"
+                >
+                  Посмотреть таблицу ↗
+                </a>
+              </div>
+            )}
           </div>
           <div className="mt-8 flex justify-end">
             <button onClick={handleSaveBasic} disabled={loading} className="bg-blue-600 text-white px-8 py-2 rounded-lg">

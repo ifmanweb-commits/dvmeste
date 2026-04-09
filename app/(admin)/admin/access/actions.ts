@@ -18,6 +18,7 @@ export interface UserAccessRecord {
   grantedAt: Date
   expiresAt: Date | null
   createdAt: Date
+  metaData?: any
 }
 
 export async function getUserAccesses(params: {
@@ -93,18 +94,31 @@ export async function getUserAccesses(params: {
     })
     const pageMap = new Map(secretPages.map(p => [p.id, p.title]))
 
-    const formattedAccesses: UserAccessRecord[] = accesses.map(a => ({
-      id: a.id,
-      userId: a.userId,
-      user: userMap.get(a.userId) || { email: 'Неизвестно', fullName: null },
-      resourceType: a.resourceType,
-      resourceId: a.resourceId,
-      resourceName: a.resourceType === 'page' ? (pageMap.get(a.resourceId) || 'Неизвестно') : a.resourceId,
-      grantedBy: a.grantedBy,
-      grantedAt: a.grantedAt,
-      expiresAt: a.expiresAt,
-      createdAt: a.createdAt
-    }))
+    const formattedAccesses: UserAccessRecord[] = accesses.map(a => {
+      let resourceName = a.resourceId
+      const accessAny = a as any
+      if (a.resourceType === 'page') {
+        resourceName = pageMap.get(a.resourceId) || 'Неизвестно'
+      } else if (a.resourceType === 'catalog') {
+        const metaData = accessAny.metaData
+        const permission = metaData?.permission
+        resourceName = `Секретный каталог (${permission === 'read' ? 'Читать' : permission === 'included' ? 'Разместиться' : permission})`
+      }
+
+      return {
+        id: a.id,
+        userId: a.userId,
+        user: userMap.get(a.userId) || { email: 'Неизвестно', fullName: null },
+        resourceType: a.resourceType,
+        resourceId: a.resourceId,
+        resourceName,
+        grantedBy: a.grantedBy,
+        grantedAt: a.grantedAt,
+        expiresAt: a.expiresAt,
+        createdAt: a.createdAt,
+        metaData: accessAny.metaData
+      }
+    })
 
     return {
       success: true,
@@ -130,12 +144,23 @@ export async function grantAccess(formData: FormData) {
   try {
     const email = formData.get('email') as string
     const resourceType = formData.get('resourceType') as string
-    const resourceId = formData.get('resourceId') as string
+    let resourceId = formData.get('resourceId') as string
     const expiresAt = formData.get('expiresAt') as string
     const adminId = formData.get('adminId') as string
+    const catalogPermission = formData.get('catalogPermission') as string
 
-    if (!email || !resourceType || !resourceId || !adminId) {
+    // Для каталога resourceId может быть пустым - используем значение по умолчанию
+    if (resourceType === 'catalog') {
+      resourceId = 'secret-catalog'
+    }
+
+    if (!email || !resourceType || !adminId) {
       return { error: 'Не все поля заполнены' }
+    }
+
+    // Для страницы resourceId обязателен
+    if (resourceType === 'page' && !resourceId) {
+      return { error: 'Выберите секретную страницу' }
     }
 
     const emailHash = hashEmail(email.trim())
@@ -162,14 +187,21 @@ export async function grantAccess(formData: FormData) {
       return { error: 'Доступ уже выдан' }
     }
 
+    const accessData: any = {
+      userId: user.id,
+      resourceType,
+      resourceId,
+      grantedBy: `admin_${adminId}`,
+      expiresAt: expiresAt ? new Date(expiresAt) : null
+    }
+
+    // Для каталога сохраняем права в metaData
+    if (resourceType === 'catalog' && catalogPermission) {
+      accessData.metaData = { permission: catalogPermission }
+    }
+
     await prisma.userAccess.create({
-      data: {
-        userId: user.id,
-        resourceType,
-        resourceId,
-        grantedBy: `admin_${adminId}`,
-        expiresAt: expiresAt ? new Date(expiresAt) : null
-      }
+      data: accessData
     })
 
     revalidatePath('/admin/access')

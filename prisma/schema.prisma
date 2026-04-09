@@ -7,6 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+//metaData: {
+//  "secretCatalog": {
+//    "optIn": true,
+//    "freeSessions": 1,
+//    "price": 3000,
+//  }
+//}
 model User {
   id                    String               @id @default(cuid())
   /// @encrypted
@@ -17,6 +24,8 @@ model User {
   isManager             Boolean              @default(false)
   status                PsychologistStatus   @default(PENDING)
   isPublished           Boolean              @default(false)
+  wantPublished         Boolean              @default(false)
+  metaData              Json                 @default("{}") @db.Json
   slug                  String?              @unique
   gender                String?
   birthDate             DateTime?
@@ -836,6 +845,7 @@ model SecretPage {
   @@index([isActive])
 }
 
+// resourceType: page / catalog 
 model UserAccess {
   id           String   @id @default(cuid())
   userId       String
@@ -845,6 +855,7 @@ model UserAccess {
   grantedAt    DateTime @default(now())
   expiresAt    DateTime?
   createdAt    DateTime @default(now())
+  metaData     Json     @default("{}") @db.Json
 
   @@unique([userId, resourceType, resourceId])
   @@index([userId])
