@@ -119,81 +119,87 @@ export default async function SecretCatalogPage() {
         </div>
 
         {/* Два информационных блока */}
-        <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="mb-8 grid grid-cols-1 items-start gap-6 md:grid-cols-2">
           {/* Для учащихся */}
-          <div className="relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+          <details className="group relative overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 open:p-6">
             <div className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-[#5858E2] to-[#7a7af0]" />
-            <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-[#5858E2]">
+            <summary className="flex cursor-pointer list-none items-center gap-2 p-6 text-xl font-semibold text-[#5858E2]">
               <span>🎓</span> Для учащихся
-            </h2>
-            <p className="mb-3 text-gray-700">
-              На этой странице — психологи, прошедшие обучение на курсе{' '}
-              <span className="rounded bg-[#f0f3fe] px-1.5 py-0.5 font-medium text-[#5858E2]">
-                «Психолог-практик»
-              </span>{' '}
-              и других курсах школы. Они дали согласие на размещение контактов для участников курса.
-            </p>
-            <p className="mb-3 text-gray-700">
-              <span className="font-semibold text-[#5858E2]">Вы можете выбрать любого</span>{' '}
-              специалиста, связаться по указанным контактам и получить консультации. Количество{' '}
-              <span className="rounded bg-[#f0f3fe] px-1.5 py-0.5 font-medium text-[#5858E2]">
-                бесплатных консультаций
-              </span>{' '}
-              указано в карточке.
-            </p>
-            <p className="text-gray-700">
-              После завершения бесплатных сессий психолог может предложить продолжить работу на новых условиях, в том числе платно. Решение всегда за вами.
-            </p>
-            <div className="mt-4 rounded-lg bg-[#f8f9fc] p-4 text-sm text-gray-600">
-              ✦ Таким образом, вы можете получить первичную личную терапию бесплатно в практически неограниченных количествах — обращаться к разным психологам никто не запрещает. Однако помните, что каждый новый психолог будет вынужден узнавать ваши особенности заново.
+              <span className="ml-auto transition-transform group-open:rotate-180">▼</span>
+            </summary>
+            <div className="-mt-4 pb-6 pl-6 pr-6">
+              <p className="mb-3 text-gray-700">
+                На этой странице — психологи, прошедшие обучение на курсе{' '}
+                <span className="rounded bg-[#f0f3fe] px-1.5 py-0.5 font-medium text-[#5858E2]">
+                  «Психолог-практик»
+                </span>{' '}
+                и других курсах школы. Они дали согласие на размещение контактов для участников курса.
+              </p>
+              <p className="mb-3 text-gray-700">
+                <span className="font-semibold text-[#5858E2]">Вы можете выбрать любого</span>{' '}
+                специалиста, связаться по указанным контактам и получить консультации. Количество{' '}
+                <span className="rounded bg-[#f0f3fe] px-1.5 py-0.5 font-medium text-[#5858E2]">
+                  бесплатных консультаций
+                </span>{' '}
+                указано в карточке.
+              </p>
+              <p className="text-gray-700">
+                После завершения бесплатных сессий психолог может предложить продолжить работу на новых условиях, в том числе платно. Решение всегда за вами.
+              </p>
+              <div className="mt-4 rounded-lg bg-[#f8f9fc] p-4 text-sm text-gray-600">
+                ✦ Таким образом, вы можете получить первичную личную терапию бесплатно в практически неограниченных количествах — обращаться к разным психологам никто не запрещает. Однако помните, что каждый новый психолог будет вынужден узнавать ваши особенности заново.
+              </div>
+              <div className="mt-4 inline-flex items-center rounded-full border border-[#5858E2]/20 bg-[#f0f3fe] px-4 py-2 text-sm font-medium text-[#5858E2]">
+                Каждый психолог в каталоге предоставляет от 1 до {maxFreeSessions} бесплатных сессий
+              </div>
+              <p className="mt-3 text-sm text-gray-500">
+                * Психологи на странице выводятся в случайном порядке.
+              </p>
             </div>
-            <div className="mt-4 inline-flex items-center rounded-full border border-[#5858E2]/20 bg-[#f0f3fe] px-4 py-2 text-sm font-medium text-[#5858E2]">
-              Каждый психолог в каталоге предоставляет от 1 до {maxFreeSessions} бесплатных сессий
-            </div>
-            <p className="mt-3 text-sm text-gray-500">
-              * Психологи на странице выводятся в случайном порядке.
-            </p>
-          </div>
+          </details>
 
           {/* Для выпускников */}
-          <div className="relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+          <details className="group relative overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 open:p-6">
             <div className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-[#A7FF5A] to-[#7acc3c]" />
-            <h2 className="mb-4 flex items-center gap-2 text-xl font-semibold text-[#3d8b1c]">
+            <summary className="flex cursor-pointer list-none items-center gap-2 p-6 text-xl font-semibold text-[#3d8b1c]">
               <span>⭐</span> Для выпускников
-            </h2>
-            <p className="mb-3 text-gray-700">
-              <span className="font-semibold text-[#3d8b1c]">Сдавшие экзамен</span> могут разместить свои данные в этом каталоге. Это отличная возможность:
-            </p>
-            <ul className="mb-4 ml-4 space-y-1 text-gray-700">
-              <li>• получать первых клиентов для тренировки навыков;</li>
-              <li>• повышать профессионализм в реальной практике;</li>
-              <li>• набирать материал для супервизий;</li>
-              <li>• находить клиентов для платной работы, если ваша помощь понравится обратившимся.</li>
-            </ul>
-            <div className="my-3 border-t border-dashed border-gray-200" />
-            <p className="mb-3 text-gray-700">
-              <span className="font-semibold text-[#3d8b1c]">Условия размещения:</span> успешная сдача экзаменов и обязательство предоставить минимум{' '}
-              <span className="rounded bg-[#e5f9d4] px-1.5 py-0.5 font-medium text-[#2d6e1a]">
-                1 бесплатную сессию
-              </span>{' '}
-              для каждого из обратившихся учеников школы.
-            </p>
-            <p className="text-gray-700">
-              Если ваша работа понравится клиенту, вы сможете продолжить на платной основе. Каталог может стать одним из источников платных клиентов.
-            </p>
-            <div className="mt-4 inline-flex items-center rounded-full border border-[#A7FF5A]/30 bg-[#e5f9d4] px-4 py-2 text-sm font-medium text-[#2d6e1a]">
-              Получайте клиентов для старта практики бесплатно. Набирайтесь опыта, переходите к платным консультациям.
-            </div>
+              <span className="ml-auto transition-transform group-open:rotate-180">▼</span>
+            </summary>
+            <div className="-mt-4 pb-6 pl-6 pr-6">
+              <p className="mb-3 text-gray-700">
+                <span className="font-semibold text-[#3d8b1c]">Сдавшие экзамен</span> могут разместить свои данные в этом каталоге. Это отличная возможность:
+              </p>
+              <ul className="mb-4 ml-4 space-y-1 text-gray-700">
+                <li>• получать первых клиентов для тренировки навыков;</li>
+                <li>• повышать профессионализм в реальной практике;</li>
+                <li>• набирать материал для супервизий;</li>
+                <li>• находить клиентов для платной работы, если ваша помощь понравится обратившимся.</li>
+              </ul>
+              <div className="my-3 border-t border-dashed border-gray-200" />
+              <p className="mb-3 text-gray-700">
+                <span className="font-semibold text-[#3d8b1c]">Условия размещения:</span> успешная сдача экзаменов и обязательство предоставить минимум{' '}
+                <span className="rounded bg-[#e5f9d4] px-1.5 py-0.5 font-medium text-[#2d6e1a]">
+                  1 бесплатную сессию
+                </span>{' '}
+                для каждого из обратившихся учеников школы.
+              </p>
+              <p className="text-gray-700">
+                Если ваша работа понравится клиенту, вы сможете продолжить на платной основе. Каталог может стать одним из источников платных клиентов.
+              </p>
+              <div className="mt-4 inline-flex items-center rounded-full border border-[#A7FF5A]/30 bg-[#e5f9d4] px-4 py-2 text-sm font-medium text-[#2d6e1a]">
+                Получайте клиентов для старта практики бесплатно. Набирайтесь опыта, переходите к платным консультациям.
+              </div>
 
-            {/* Форма для пользователей с permission: 'included' */}
-            {userPermission === 'included' && userSettings && (
-              <SecretCatalogForm
-                initialOptIn={userSettings.optIn}
-                initialFreeSessions={userSettings.freeSessions}
-                initialPrice={userSettings.price}
-              />
-            )}
-          </div>
+              {/* Форма для пользователей с permission: 'included' */}
+              {userPermission === 'included' && userSettings && (
+                <SecretCatalogForm
+                  initialOptIn={userSettings.optIn}
+                  initialFreeSessions={userSettings.freeSessions}
+                  initialPrice={userSettings.price}
+                />
+              )}
+            </div>
+          </details>
         </div>
 
         {/* Сетка психологов */}
