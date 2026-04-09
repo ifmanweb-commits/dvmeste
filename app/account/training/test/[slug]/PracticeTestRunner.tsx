@@ -198,7 +198,7 @@ export default function PracticeTestRunner({ challenge, userId }: PracticeTestRu
 
   // Возврат к обучению
   const handleBackToTraining = () => {
-    router.push("/account/training");
+    router.push("/account/key-active");
   };
 
   const currentQuestion = questions[currentQuestionIndex];
@@ -276,7 +276,7 @@ export default function PracticeTestRunner({ challenge, userId }: PracticeTestRu
                   onClick={handleBackToTraining}
                   className="rounded-lg bg-gray-100 px-6 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
                 >
-                  К обучению
+                  Закончить тренировку
                 </button>
               </div>
             </div>

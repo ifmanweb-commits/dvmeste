@@ -1,211 +1,101 @@
-'use client';
+import { Suspense } from 'react';
+import { getSession } from '@/lib/auth/session';
+import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
+import { getUserCourses, getAllCoursesForSelect } from '@/lib/actions/courses';
+import KeyActivePageClient from './KeyActivePageClient';
 
-import { useState } from 'react';
+export default async function KeyActivePage() {
+  const session = await getSession();
 
-interface PreviewAction {
-  type: string;
-  label: string;
-  description: string;
-}
+  if (!session?.user?.id) {
+    redirect('/auth/login');
+  }
 
-export default function KeyActivePage() {
-  const [code, setCode] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState<{
-    actions: PreviewAction[];
-    keyId: string;
-  } | null>(null);
-  const [previewError, setPreviewError] = useState<string | null>(null);
-  const [activating, setActivating] = useState(false);
-  const [result, setResult] = useState<{
-    success?: boolean;
-    message?: string;
-    error?: string;
-    executedActions?: string[];
-  } | null>(null);
+  const userId = session.user.id;
 
-  const handlePreview = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setPreview(null);
-    setPreviewError(null);
-    setResult(null);
+  // Получаем данные параллельно
+  const [userCoursesResult, allCourses, userAccesses, secretPages] = await Promise.all([
+    getUserCourses(userId),
+    getAllCoursesForSelect(),
+    // Получаем все доступы пользователя
+    prisma.userAccess.findMany({
+      where: { userId },
+      orderBy: { grantedAt: 'desc' },
+    }),
+    // Получаем все секретные страницы
+    prisma.secretPage.findMany({
+      select: { id: true, title: true, slug: true },
+    }),
+  ]);
 
-    try {
-      const response = await fetch('/api/key-preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
+  // Преобразуем userCourses в нужный формат
+  const userCourses = userCoursesResult.map((uc) => ({
+    courseId: uc.courseId,
+    status: uc.status as 'enrolled' | 'graduated',
+    course: uc.course,
+  }));
 
-      const data = await response.json();
+  // Получаем все связи курсов с испытаниями
+  const courseAccesses = await prisma.courseChallengeAccess.findMany({
+    where: {
+      courseId: {
+        in: userCourses.map((uc) => uc.courseId),
+      },
+    },
+    include: {
+      challenge: {
+        include: {
+          test: true,
+        },
+      },
+    },
+    orderBy: { order: 'asc' },
+  });
 
-      if (response.ok) {
-        setPreview({
-          actions: data.actions,
-          keyId: data.keyId,
-        });
-      } else {
-        setPreviewError(data.error || 'Ошибка проверки ключа');
-      }
-    } catch (error) {
-      setPreviewError('Произошла ошибка при проверке ключа');
-    } finally {
-      setLoading(false);
+  // Группируем испытания по курсам и статусам
+  const challengesByCourse: Record<string, { enrolled: string[]; graduated: string[] }> = {};
+  for (const access of courseAccesses) {
+    if (!challengesByCourse[access.courseId]) {
+      challengesByCourse[access.courseId] = { enrolled: [], graduated: [] };
     }
-  };
+    const status = access.status as 'enrolled' | 'graduated';
+    challengesByCourse[access.courseId][status].push(access.challengeId);
+  }
 
-  const handleActivate = async () => {
-    setActivating(true);
-    setResult(null);
+  // Получаем данные о тестах
+  const allChallengeIds = courseAccesses.map((a) => a.challengeId);
+  const challenges = await prisma.challenge.findMany({
+    where: { id: { in: allChallengeIds } },
+    include: {
+      test: true,
+    },
+  });
 
-    try {
-      const response = await fetch('/api/key-activate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
+  // Создаём мапу challengeId -> challenge
+  const challengesMap = new Map(challenges.map((c) => [c.id, c]));
 
-      const data = await response.json();
+  // Фильтруем секретные страницы, к которым есть доступ
+  const accessibleSecretPages = secretPages.filter((page) =>
+    userAccesses.some((access) => access.resourceType === 'page' && access.resourceId === page.id)
+  );
 
-      if (response.ok) {
-        setResult({
-          success: true,
-          message: data.message,
-          executedActions: data.executedActions,
-        });
-        setCode('');
-        setPreview(null);
-      } else {
-        setResult({
-          success: false,
-          error: data.error || 'Ошибка активации ключа',
-        });
-      }
-    } catch (error) {
-      setResult({
-        success: false,
-        error: 'Произошла ошибка при активации ключа',
-      });
-    } finally {
-      setActivating(false);
-    }
-  };
+  // Проверяем доступ к секретному каталогу
+  const hasSecretCatalogAccess = userAccesses.some(
+    (access) => access.resourceType === 'catalog' && access.resourceId === 'secret-catalog'
+  );
 
   return (
-    <div className="max-w-md mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Активация ключа</h1>
-
-      <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-        {!preview ? (
-          <form onSubmit={handlePreview} className="space-y-4">
-            <div>
-              <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-1">
-                Код ключа
-              </label>
-              <input
-                type="text"
-                id="code"
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="KEY-XXXX-XXXX"
-                className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
-                required
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Введите код ключа, который вы получили
-              </p>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || !code.trim()}
-              className="w-full rounded-lg bg-[#5858E2] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading ? 'Проверка...' : 'Проверить ключ'}
-            </button>
-          </form>
-        ) : (
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm font-medium text-gray-900 mb-3">
-                Этот ключ выполнит следующие действия:
-              </p>
-              <ul className="space-y-2">
-                {preview.actions.map((action, index) => (
-                  <li
-                    key={index}
-                    className="flex items-start gap-3 rounded-lg bg-gray-50 px-3 py-2"
-                  >
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#5858E2]/10 text-[#5858E2] text-xs font-medium">
-                      {index + 1}
-                    </span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{action.label}</p>
-                      {action.description && (
-                        <p className="text-xs text-gray-500 mt-0.5">{action.description}</p>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setPreview(null);
-                  setCode('');
-                }}
-                className="flex-1 rounded-lg border border-neutral-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-              >
-                Назад
-              </button>
-              <button
-                type="button"
-                onClick={handleActivate}
-                disabled={activating}
-                className="flex-1 rounded-lg bg-[#5858E2] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {activating ? 'Активация...' : 'Активировать'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {(previewError || result) && (
-          <div
-            className={`mt-6 rounded-lg p-4 ${
-              result?.success
-                ? 'bg-green-50 border border-green-200'
-                : 'bg-red-50 border border-red-200'
-            }`}
-          >
-            {result?.success ? (
-              <>
-                <p className="text-sm font-medium text-green-800">{result.message}</p>
-                {result.executedActions && result.executedActions.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-xs font-medium text-green-700 mb-1">
-                      Выполненные действия:
-                    </p>
-                    <ul className="text-xs text-green-600 space-y-1">
-                      {result.executedActions.map((action, index) => (
-                        <li key={index}>• {action}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </>
-            ) : (
-              <p className="text-sm font-medium text-red-800">
-                {result?.error || previewError}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 p-4 md:p-6"><div className="animate-pulse h-8 bg-gray-200 rounded w-1/3 mb-4"></div><div className="animate-pulse h-64 bg-gray-200 rounded"></div></div>}>
+      <KeyActivePageClient
+        userId={userId}
+        initialUserCourses={userCourses}
+        allCourses={allCourses}
+        challengesByCourse={challengesByCourse}
+        challengesMap={JSON.stringify(Array.from(challengesMap.entries()))}
+        accessibleSecretPages={accessibleSecretPages}
+        hasSecretCatalogAccess={hasSecretCatalogAccess}
+      />
+    </Suspense>
   );
 }
