@@ -29,6 +29,9 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             fullName: true,
+            firstName: true,
+            lastName: true,
+            middleName: true,
             email: true,
             isPublished: true,
           }
@@ -54,6 +57,9 @@ export async function GET(request: NextRequest) {
         template: certificate.template,
         user: {
           fullName: certificate.user.fullName,
+          firstName: certificate.user.firstName,
+          lastName: certificate.user.lastName,
+          middleName: certificate.user.middleName,
           isPublished: certificate.user.isPublished,
         }
       }

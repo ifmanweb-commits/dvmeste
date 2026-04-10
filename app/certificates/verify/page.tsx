@@ -16,6 +16,9 @@ interface CertificateData {
   };
   user: {
     fullName: string | null;
+    firstName: string | null;
+    lastName: string | null;
+    middleName: string | null;
     isPublished: boolean;
   };
 }
@@ -57,6 +60,24 @@ export default function VerifyCertificatePage() {
       month: 'long',
       day: 'numeric',
     });
+  };
+
+  // Получение полного ФИО
+  const getFullFio = () => {
+    if (!certificate?.user) return 'Не указан';
+    const { firstName, lastName, middleName, fullName } = certificate.user;
+    
+    // Если есть firstName и lastName, используем их
+    if (lastName && firstName) {
+      const parts = [lastName, firstName];
+      if (middleName) {
+        parts.push(middleName);
+      }
+      return parts.join(' ');
+    }
+    
+    // Фоллбэк на fullName
+    return fullName || 'Не указан';
   };
 
   return (
@@ -137,14 +158,9 @@ export default function VerifyCertificatePage() {
               {/* Информация */}
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-500">Шаблон сертификата</p>
-                  <p className="text-lg font-semibold text-gray-900">{certificate.template.name}</p>
-                </div>
-
-                <div>
                   <p className="text-sm text-gray-500">Владелец</p>
                   <p className="text-lg font-semibold text-gray-900">
-                    {certificate.user.fullName || 'Не указан'}
+                    {getFullFio()}
                   </p>
                 </div>
 
