@@ -94,15 +94,32 @@ async function generateCertificateInternal(
     
     // Загружаем изображение
     const background = await loadImage(backgroundBuffer);
-    const width = background.width;
-    const height = background.height;
+    const originalWidth = background.width;
+    const originalHeight = background.height;
     
-    // Создаём canvas
+    // Определяем наибольшее измерение и ограничиваем до 2339px
+    const MAX_SIZE = 2339;
+    const maxDimension = Math.max(originalWidth, originalHeight);
+    
+    // Если ни одно измерение не превышает 2339, оставляем как есть
+    let width: number;
+    let height: number;
+    if (maxDimension <= MAX_SIZE) {
+      width = originalWidth;
+      height = originalHeight;
+    } else {
+      // Уменьшаем пропорционально
+      const scale = MAX_SIZE / maxDimension;
+      width = Math.round(originalWidth * scale);
+      height = Math.round(originalHeight * scale);
+    }
+    
+    // Создаём canvas с рассчитанными размерами
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
     
-    // Рисуем фон
-    ctx.drawImage(background, 0, 0);
+    // Рисуем фон с масштабированием
+    ctx.drawImage(background, 0, 0, width, height);
     
     // Получаем поля из fieldsJson
     const fieldsConfig = (template.fieldsJson as any)?.fields || [];
@@ -408,15 +425,32 @@ export async function generateCertificatePreview(templateId: string, fieldValues
     
     // Загружаем изображение
     const background = await loadImage(backgroundBuffer);
-    const width = background.width;
-    const height = background.height;
+    const originalWidth = background.width;
+    const originalHeight = background.height;
     
-    // Создаём canvas
+    // Определяем наибольшее измерение и ограничиваем до 2339px
+    const MAX_SIZE = 2339;
+    const maxDimension = Math.max(originalWidth, originalHeight);
+    
+    // Если ни одно измерение не превышает 2339, оставляем как есть
+    let width: number;
+    let height: number;
+    if (maxDimension <= MAX_SIZE) {
+      width = originalWidth;
+      height = originalHeight;
+    } else {
+      // Уменьшаем пропорционально
+      const scale = MAX_SIZE / maxDimension;
+      width = Math.round(originalWidth * scale);
+      height = Math.round(originalHeight * scale);
+    }
+    
+    // Создаём canvas с рассчитанными размерами
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
     
-    // Рисуем фон
-    ctx.drawImage(background, 0, 0);
+    // Рисуем фон с масштабированием
+    ctx.drawImage(background, 0, 0, width, height);
     
     // Получаем поля из fieldsJson
     const fieldsConfig = (template.fieldsJson as any)?.fields || [];
@@ -598,15 +632,32 @@ export async function generateAndSaveCertificate(
     
     // Загружаем изображение
     const background = await loadImage(backgroundBuffer);
-    const width = background.width;
-    const height = background.height;
+    const originalWidth = background.width;
+    const originalHeight = background.height;
     
-    // Создаём canvas
+    // Определяем наибольшее измерение и ограничиваем до 2339px
+    const MAX_SIZE = 2339;
+    const maxDimension = Math.max(originalWidth, originalHeight);
+    
+    // Если ни одно измерение не превышает 2339, оставляем как есть
+    let width: number;
+    let height: number;
+    if (maxDimension <= MAX_SIZE) {
+      width = originalWidth;
+      height = originalHeight;
+    } else {
+      // Уменьшаем пропорционально
+      const scale = MAX_SIZE / maxDimension;
+      width = Math.round(originalWidth * scale);
+      height = Math.round(originalHeight * scale);
+    }
+    
+    // Создаём canvas с рассчитанными размерами
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
     
-    // Рисуем фон
-    ctx.drawImage(background, 0, 0);
+    // Рисуем фон с масштабированием
+    ctx.drawImage(background, 0, 0, width, height);
     
     // Получаем поля из fieldsJson
     const fieldsConfig = (template.fieldsJson as any)?.fields || [];
