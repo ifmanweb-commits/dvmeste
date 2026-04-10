@@ -45,18 +45,19 @@ function calculateExperience(firstDiplomaDate: Date | null): string | null {
       monthsDiff += 12;
     }
 
+    // Округление: если месяцев < 6 - в меньшую сторону, если >= 6 - в большую
     if (yearsDiff === 0) {
-      if (monthsDiff === 0) return "менее месяца";
-      return `${monthsDiff} ${getMonthWord(monthsDiff)}`;
+      if (monthsDiff < 6) return "менее года";
+      return "1 год";
     } else if (yearsDiff === 1) {
-      if (monthsDiff === 0) return "1 год";
-      return `1 год ${monthsDiff} ${getMonthWord(monthsDiff)}`;
-    } else if (yearsDiff < 5) {
-      if (monthsDiff === 0) return `${yearsDiff} года`;
-      return `${yearsDiff} года ${monthsDiff} ${getMonthWord(monthsDiff)}`;
+      if (monthsDiff < 6) return "1 год";
+      return "2 года";
+    } else if (yearsDiff >= 2 && yearsDiff < 5) {
+      if (monthsDiff < 6) return `${yearsDiff} года`;
+      return `${yearsDiff + 1} года`;
     } else {
-      if (monthsDiff === 0) return `${yearsDiff} лет`;
-      return `${yearsDiff} лет ${monthsDiff} ${getMonthWord(monthsDiff)}`;
+      if (monthsDiff < 6) return `${yearsDiff} лет`;
+      return `${yearsDiff + 1} лет`;
     }
   } catch (error) {
     console.error("Ошибка при расчете опыта работы:", error);
@@ -104,6 +105,28 @@ function formatWorkFormat(workFormat: string): string {
   }
 }
 
+// Формирование полного ФИО с отчеством
+function getFullFio(user: {
+  fullName: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  middleName: string | null;
+}): string {
+  const { firstName, lastName, middleName, fullName } = user;
+  
+  // Если есть firstName и lastName, используем их
+  if (lastName && firstName) {
+    const parts = [lastName, firstName];
+    if (middleName) {
+      parts.push(middleName);
+    }
+    return parts.join(' ');
+  }
+  
+  // Фоллбэк на fullName
+  return fullName || 'Психолог';
+}
+
 function looksLikeHtml(value: string): boolean {
   return /<\s*[a-z][^>]*>/i.test(value);
 }
@@ -115,11 +138,18 @@ export async function generateMetadata({ params }: PageProps) {
   try {
     const user = await prisma.user.findUnique({
       where: { slug },
-      select: { fullName: true, shortBio: true },
+      select: { 
+        fullName: true, 
+        firstName: true,
+        lastName: true,
+        middleName: true,
+        shortBio: true 
+      },
     });
     if (!user) return buildMetadata({ title: "Психолог", path: `/catalog/${slug}` });
+    const fullFio = getFullFio(user);
     return buildMetadata({
-      title: user.fullName || 'Психолог',
+      title: fullFio,
       description: user.shortBio?.slice(0, 160) || "",
       path: `/catalog/${slug}`,
     });
@@ -136,6 +166,29 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
   // 1. Получаем пользователя
   const user = await prisma.user.findUnique({
     where: { slug },
+    select: {
+      id: true,
+      slug: true,
+      isPublished: true,
+      status: true,
+      fullName: true,
+      firstName: true,
+      lastName: true,
+      middleName: true,
+      avatarUrl: true,
+      city: true,
+      workFormat: true,
+      mainParadigm: true,
+      certificationLevel: true,
+      birthDate: true,
+      firstDiplomaDate: true,
+      price: true,
+      createdAt: true,
+      shortBio: true,
+      longBio: true,
+      contactInfo: true,
+      freeSession: true,
+    },
   });
 
   if (!user || !user.isPublished || user.status !== "ACTIVE") notFound();
@@ -257,27 +310,19 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
                 <div className="sm:w-3/5">
                   <div className="mb-2 pb-2 border-b border-gray-100">
                     <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
-                      {user.fullName}
+                      {getFullFio(user)}
                     </h1>
                     <p className="mt-2 inline-flex w-fit items-center rounded-full bg-[#A7FF5A] px-3 py-1 text-xs font-bold text-[#111a33] sm:text-sm">
                       Уровень квалификации: {user.certificationLevel}
                     </p>
                   </div>
 
-                  <div className="space-y-1 mb-3">
-                    {user.city && (
-                      <p className="text-sm text-gray-700">{user.city}</p>
-                    )}
-                    {user.workFormat && (
-                      <p className="text-sm text-gray-600">{formatWorkFormat(user.workFormat)}</p>
-                    )}
-                  </div>
-
-                  <div className="mb-3 space-y-2">
+                  {/* Теги модальностей - сразу после горизонтальной отбивки */}
+                  <div className="mb-3">
                     <div className="flex flex-wrap gap-1">
                       {mainParadigm.length > 0 ? (
                         mainParadigm.map((p, index) => (
-                          <Badge key={`${p}-${index}`} variant="primary">
+                          <Badge key={`${p}-${index}`} variant="neutral">
                             {p}
                           </Badge>
                         ))
@@ -285,41 +330,47 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
                         <Badge variant="neutral">Нет парадигм</Badge>
                       )}
                     </div>
+                  </div>
 
-                    {/* Возраст */}
-                    {user.birthDate && (
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-1.5">
-                          <svg className="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <span className="text-sm font-medium text-purple-700">
-                            Возраст: {calculateAge(user.birthDate)} лет
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                  {/* Город и формат работы */}
+                  <div className="mb-3">
+                    <div className="flex flex-wrap items-center gap-3 text-sm">
+                      {user.city && (
+                        <p className="text-gray-700">Город: {user.city}</p>
+                      )}
+                      {user.workFormat && (
+                        <>
+                          <span className="hidden sm:inline text-gray-300">|</span>
+                          <p className="text-gray-600">Формат работы: {formatWorkFormat(user.workFormat)}</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
 
-                    {experience && (
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5">
-                          <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span className="text-sm font-medium text-blue-700">
-                            Опыт работы: {experience}
-                          </span>
-                        </div>
-                        {user.firstDiplomaDate && (
-                          <span className="text-xs text-gray-500">
-                            (с {new Date(user.firstDiplomaDate).toLocaleDateString("ru-RU", {
-                              year: "numeric",
-                              month: "long"
-                            })})
-                          </span>
-                        )}
-                      </div>
-                    )}
+                  {/* Возраст, опыт работы, на сайте с... - в одной строке с разделителями */}
+                  <div className="mb-3">
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700">
+                      {user.birthDate && (
+                        <p>
+                          Возраст: {calculateAge(user.birthDate)} лет
+                        </p>
+                      )}
+                      {experience && (
+                        <>
+                          <span className="hidden sm:inline text-gray-300">|</span>
+                          <p>Опыт работы: {experience}</p>
+                        </>
+                      )}
+                      <>
+                        <span className="hidden sm:inline text-gray-300">|</span>
+                        <p className="text-xs text-gray-500">
+                          На сайте с {new Date(user.createdAt).toLocaleDateString("ru-RU", {
+                            year: "numeric",
+                            month: "long",
+                          })}
+                        </p>
+                      </>
+                    </div>
                   </div>
 
                   <div className="space-y-1">
@@ -327,12 +378,11 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
                       {user.price} ₽
                       <span className="ml-1 text-sm font-normal text-gray-500">/ сессия</span>
                     </p>
-                    <p className="text-xs text-gray-500">
-                      На сайте с {new Date(user.createdAt).toLocaleDateString("ru-RU", {
-                        year: "numeric",
-                        month: "long",
-                      })}
-                    </p>
+                    {(user.freeSession ?? 0) > 0 && (
+                      <div className="inline-flex items-center rounded-full bg-[#A7FF5A] px-3 py-1 text-xs font-bold text-[#111a33]">
+                        {user.freeSession} бесплатн{user.freeSession === 1 ? 'ая' : user.freeSession >= 2 && user.freeSession <= 4 ? 'ые' : 'ых'} сесси{user.freeSession === 1 ? 'я' : user.freeSession >= 2 && user.freeSession <= 4 ? 'и' : 'й'}
+                      </div>
+                    )}
                     <div className="mt-2 flex flex-wrap gap-2">
                       <LeadFormModal
                         psychologistId={user.id}
