@@ -640,6 +640,8 @@ model Certification {
   slug                  String                     @unique
   title                 String
   description           String?
+  // Текст для сертификата (что присваивается, например "уровень квалификации 1")
+  awardText             String?
   level                 Int?
   isActive              Boolean                    @default(true)
   order                 Int                        @default(0)

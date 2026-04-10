@@ -38,6 +38,7 @@ export default function NewCertificationPage() {
   const [slug, setSlug] = useState('');
   const [isSlugEdited, setIsSlugEdited] = useState(false);
   const [description, setDescription] = useState('');
+  const [awardText, setAwardText] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [level, setLevel] = useState<number | ''>('');
   const [order, setOrder] = useState(0);
@@ -209,6 +210,7 @@ export default function NewCertificationPage() {
       formData.append('slug', slug);
       formData.append('title', title);
       formData.append('description', description);
+      formData.append('awardText', awardText);
       formData.append('isActive', isActive ? 'on' : 'off');
       formData.append('level', level === '' ? '' : String(level));
       formData.append('order', String(order));
@@ -299,25 +301,43 @@ export default function NewCertificationPage() {
                 </div>
 
                 {rewardType === 'certificate' ? (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Шаблон сертификата
-                    </label>
-                    <select
-                      value={certificateTemplateId}
-                      onChange={(e) => setCertificateTemplateId(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
-                    >
-                      <option value="">Выберите шаблон</option>
-                      {certificateTemplates.map((template) => (
-                        <option key={template.id} value={template.id}>
-                          {template.name}
-                        </option>
-                      ))}
-                    </select>
-                    {isLoadingTemplates && (
-                      <p className="mt-1 text-xs text-gray-500">Загрузка шаблонов...</p>
-                    )}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Шаблон сертификата
+                      </label>
+                      <select
+                        value={certificateTemplateId}
+                        onChange={(e) => setCertificateTemplateId(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                      >
+                        <option value="">Выберите шаблон</option>
+                        {certificateTemplates.map((template) => (
+                          <option key={template.id} value={template.id}>
+                            {template.name}
+                          </option>
+                        ))}
+                      </select>
+                      {isLoadingTemplates && (
+                        <p className="mt-1 text-xs text-gray-500">Загрузка шаблонов...</p>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Текст для сертификата
+                      </label>
+                      <textarea
+                        value={awardText}
+                        onChange={(e) => setAwardText(e.target.value)}
+                        rows={2}
+                        placeholder="Например: уровень квалификации 1"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Текст, который будет подставлен в сертификат после слова "Присваивается"
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   <div>

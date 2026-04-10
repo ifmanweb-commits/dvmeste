@@ -503,6 +503,9 @@ async function resolveVariableValue(
     case 'certification.name': {
       return certificationData?.certification?.title || '';
     }
+    case 'certification.awardText': {
+      return certificationData?.certification?.awardText || '';
+    }
     case 'certification.level': {
       const level = certificationData?.certification?.level;
       return level !== null && level !== undefined ? String(level) : '';
@@ -552,6 +555,7 @@ export async function generateAndSaveCertificate(
   certificationData?: {
     certification: {
       title: string;
+      awardText?: string | null;
       level: number | null;
     };
     award: {

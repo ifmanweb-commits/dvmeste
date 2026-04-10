@@ -27,6 +27,9 @@ export async function checkCertificationCompletion(
       (req) => req.challengeId === challengeId
     );
 
+    // Пропускаем если нет awardText (для обратной совместимости)
+    const awardText = (cert as any).awardText || cert.title;
+
     // Если этого испытания нет в требованиях — пропускаем
     if (!hasCurrentChallenge) {
       continue;
@@ -122,6 +125,7 @@ export async function checkCertificationCompletion(
               {
                 certification: {
                   title: cert.title,
+                  awardText: awardText,
                   level: cert.level,
                 },
                 award: {

@@ -36,6 +36,15 @@ export default async function CertificationDetailPage({ params }: PageProps) {
       awards: {
         where: { userId: user.id },
       },
+      certificateTemplate: true,
+    },
+  });
+
+  // Получаем сгенерированные сертификаты пользователя
+  const userCertificates = await prisma.certificate.findMany({
+    where: { userId: user.id },
+    include: {
+      template: true,
     },
   });
 
@@ -158,26 +167,64 @@ export default async function CertificationDetailPage({ params }: PageProps) {
             <div className="flex h-full items-center justify-center rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm">
               <div className="text-center">
                 <div className="relative inline-block">
-                  <Image
-                    src="/images/icons/award-gold-500-tp.png"
-                    alt={isCertified ? "Сертификат получен" : "Сертификат ещё не получен"}
-                    width={200}
-                    height={200}
-                    className={`mx-auto h-40 w-40 object-contain ${
-                      !isCertified ? 'opacity-20 grayscale' : ''
-                    }`}
-                  />
+                  {(() => {
+                    // Определяем изображение для отображения
+                    let imageUrl = '/images/icons/award-gold-500-tp.png';
+                    let imageAlt = isCertified ? "Сертификат получен" : "Сертификат ещё не получен";
+                    let certificateUrl: string | null = null;
+                    
+                    if (isCertified) {
+                      if (certification.rewardType === 'badge' && certification.badgeUrl) {
+                        // Для ачивки используем badgeUrl
+                        imageUrl = certification.badgeUrl;
+                        imageAlt = `Ачивка: ${certification.title}`;
+                      } else if (certification.rewardType === 'certificate' && certification.certificateTemplateId) {
+                        // Для сертификата ищем сгенерированный сертификат
+                        const generatedCert = userCertificates.find(
+                          (gc) => gc.templateId === certification.certificateTemplateId
+                        );
+                        if (generatedCert && generatedCert.imageUrl) {
+                          imageUrl = generatedCert.imageUrl;
+                          imageAlt = `Сертификат: ${certification.title}`;
+                          certificateUrl = generatedCert.imageUrl;
+                        }
+                      }
+                    }
+                    
+                    return (
+                      <>
+                        <Image
+                          src={imageUrl}
+                          alt={imageAlt}
+                          width={0}
+                          height={0}
+                          sizes="100vw"
+                          className={`mx-auto h-auto w-full object-contain ${
+                            !isCertified ? 'opacity-20 grayscale' : ''
+                          }`}
+                        />
+                        {isCertified && certificateUrl && (
+                          <div className="mt-4">
+                            <a
+                              href={certificateUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white hover:bg-[#4a4ac9]"
+                            >
+                              Скачать сертификат
+                            </a>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
-                {isCertified ? (
-                  <>
-                    <p className="mt-4 text-lg font-semibold text-gray-900">
-                      Сертификат получен!
-                    </p>
-                    <p className="mt-1 text-sm text-gray-500">
-                      {awardedYear}
-                    </p>
-                  </>
-                ) : (
+                {isCertified && certification.rewardType === 'badge' && (
+                  <p className="mt-4 text-lg font-semibold text-gray-900">
+                    Награда получена!
+                  </p>
+                )}
+                {!isCertified && (
                   <>
                     <p className="mt-4 text-lg font-semibold text-gray-400">
                       Сертификат ещё не получен

@@ -121,6 +121,7 @@ async function main() {
       {
         certification: {
           title: certification.title,
+          awardText: (certification as any).awardText || certification.title,
           level: certification.level,
         },
         award: {

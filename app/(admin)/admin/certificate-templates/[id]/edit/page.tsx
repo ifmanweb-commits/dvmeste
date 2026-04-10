@@ -15,6 +15,7 @@ const AVAILABLE_VARIABLES = [
   { value: 'user.fullName', label: 'ФИО пользователя' },
   { value: 'user.email', label: 'Email пользователя' },
   { value: 'certification.name', label: 'Название сертификации' },
+  { value: 'certification.awardText', label: 'Текст для сертификата' },
   { value: 'certification.level', label: 'Уровень сертификации' },
   { value: 'award.issuedAt', label: 'Дата выдачи награды' },
   { value: 'award.id', label: 'ID награды' },

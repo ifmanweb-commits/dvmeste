@@ -73,6 +73,7 @@ export async function PUT(
     let slug: string | undefined;
     let title: string | undefined;
     let description: string | undefined;
+    let awardText: string | null | undefined;
     let isActive: boolean | undefined;
     let level: number | null | undefined;
     let order: number | undefined;
@@ -86,6 +87,7 @@ export async function PUT(
       slug = formData.get('slug') as string || undefined;
       title = formData.get('title') as string || undefined;
       description = formData.get('description') as string;
+      awardText = formData.get('awardText') as string || null;
       isActive = formData.get('isActive') === 'on';
       level = formData.get('level') === '' ? null : parseInt(formData.get('level') as string);
       order = parseInt(formData.get('order') as string) || 0;
@@ -109,6 +111,7 @@ export async function PUT(
       slug = body.slug;
       title = body.title;
       description = body.description;
+      awardText = body.awardText;
       isActive = body.isActive;
       level = body.level;
       order = body.order;
@@ -168,6 +171,7 @@ export async function PUT(
         slug: slug || existing.slug,
         title: title || existing.title,
         description: description !== undefined ? description : existing.description,
+        awardText: awardText !== undefined ? awardText : (existing as any).awardText,
         isActive: isActive !== undefined ? isActive : existing.isActive,
         level: level !== undefined ? level : existing.level,
         order: order !== undefined ? order : existing.order,

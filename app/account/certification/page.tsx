@@ -26,8 +26,17 @@ export default async function CertificationPage() {
       awards: {
         where: { userId: user.id },
       },
+      certificateTemplate: true,
     },
     orderBy: { createdAt: 'asc' },
+  });
+
+  // Получаем сгенерированные сертификаты пользователя
+  const userCertificates = await prisma.certificate.findMany({
+    where: { userId: user.id },
+    include: {
+      template: true,
+    },
   });
 
   // Разделяем на полученные и доступные
@@ -123,15 +132,34 @@ export default async function CertificationPage() {
         {/* Навигационная панель */}
         <CertificationHorNav activeTab="certifications" />
 
-        {/* РАЗДЕЛ 1 — Полученные сертификаты */}
+        {/* РАЗДЕЛ 1 — Полученные награды */}
         {awardedCertifications.length > 0 && (
           <section className="mb-10">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              Полученные сертификаты
+              Полученные награды
             </h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {awardedCertifications.map((cert) => {
                 const awardedYear = new Date(cert.awards[0].awardedAt).getFullYear();
+                
+                // Определяем изображение для отображения
+                let imageUrl = '/images/icons/award-gold-500-tp.png';
+                let imageAlt = 'Сертификат получен';
+                
+                if (cert.rewardType === 'badge' && cert.badgeUrl) {
+                  // Для ачивки используем badgeUrl
+                  imageUrl = cert.badgeUrl;
+                  imageAlt = `Ачивка: ${cert.title}`;
+                } else if (cert.rewardType === 'certificate' && cert.certificateTemplateId) {
+                  // Для сертификата ищем сгенерированный сертификат
+                  const generatedCert = userCertificates.find(
+                    (gc) => gc.templateId === cert.certificateTemplateId
+                  );
+                  if (generatedCert && generatedCert.imageUrl) {
+                    imageUrl = generatedCert.imageUrl;
+                    imageAlt = `Сертификат: ${cert.title}`;
+                  }
+                }
                 
                 return (
                   <Link
@@ -143,8 +171,8 @@ export default async function CertificationPage() {
                     <div className="mb-2 flex justify-center">
                       <div className="transition-transform group-hover:scale-105">
                         <Image
-                          src="/images/icons/award-gold-500-tp.png"
-                          alt="Сертификат получен"
+                          src={imageUrl}
+                          alt={imageAlt}
                           width={200}
                           height={200}
                           className="h-56 w-56 object-contain"

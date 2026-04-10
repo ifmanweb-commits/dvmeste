@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
     let slug: string = '';
     let title: string = '';
     let description: string = '';
+    let awardText: string | null = null;
     let isActive: boolean = true;
     let level: number | null = null;
     let order: number = 0;
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
       slug = formData.get('slug') as string;
       title = formData.get('title') as string;
       description = formData.get('description') as string || '';
+      awardText = formData.get('awardText') as string || null;
       isActive = formData.get('isActive') === 'on';
       level = formData.get('level') === '' ? null : parseInt(formData.get('level') as string);
       order = parseInt(formData.get('order') as string) || 0;
@@ -96,6 +98,7 @@ export async function POST(request: NextRequest) {
       slug = body.slug;
       title = body.title;
       description = body.description || '';
+      awardText = body.awardText || null;
       isActive = body.isActive ?? true;
       level = body.level ?? null;
       order = body.order ?? 0;
@@ -149,6 +152,7 @@ export async function POST(request: NextRequest) {
         slug,
         title,
         description,
+        awardText,
         isActive,
         level,
         order,
