@@ -9,43 +9,70 @@ export type CertificateWithUser = Certificate & {
   template: { name: string; slug: string } | null;
 };
 
+export interface CertificatesListResult {
+  items: CertificateWithUser[];
+  total: number;
+  pages: number;
+  currentPage: number;
+}
+
 /**
- * Получить список всех выданных сертификатов
+ * Получить список всех выданных сертификатов с пагинацией
  */
-export async function getCertificatesList(): Promise<CertificateWithUser[]> {
+export async function getCertificatesList(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<CertificatesListResult> {
   await requireAdmin();
   
-  if (!prisma) return [];
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 20;
+  
+  if (!prisma) {
+    return { items: [], total: 0, pages: 0, currentPage: page };
+  }
   
   try {
-    const certificates = await prisma.certificate.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            middleName: true,
+    const [certificates, total] = await Promise.all([
+      prisma.certificate.findMany({
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              middleName: true,
+            }
+          },
+          template: {
+            select: {
+              name: true,
+              slug: true,
+            }
           }
         },
-        template: {
-          select: {
-            name: true,
-            slug: true,
-          }
-        }
-      },
-      orderBy: {
-        issuedAt: 'desc'
-      }
-    });
+        orderBy: {
+          issuedAt: 'desc'
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.certificate.count(),
+    ]);
     
-    return certificates;
+    const pages = Math.ceil(total / limit);
+    
+    return {
+      items: certificates,
+      total,
+      pages,
+      currentPage: page,
+    };
   } catch (error) {
     console.error('Error fetching certificates:', error);
-    return [];
+    return { items: [], total: 0, pages: 0, currentPage: page };
   }
 }
 

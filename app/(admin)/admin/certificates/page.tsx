@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getCertificatesList, deleteCertificate } from '@/lib/actions/certificates';
+import { getCertificatesList, deleteCertificate, CertificatesListResult } from '@/lib/actions/certificates';
 import { CertificateWithUser } from '@/lib/actions/certificates';
 import { User } from '@prisma/client';
 
@@ -26,18 +26,21 @@ function getFullFio(user: Pick<User, 'fullName' | 'firstName' | 'lastName' | 'mi
 }
 
 export default function CertificatesPage() {
-  const [certificates, setCertificates] = useState<CertificateWithUser[]>([]);
+  const [data, setData] = useState<CertificatesListResult>({ items: [], total: 0, pages: 0, currentPage: 1 });
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const currentPage = data.currentPage;
+  const totalPages = data.pages;
+
   useEffect(() => {
-    loadCertificates();
+    loadCertificates(1);
   }, []);
 
-  async function loadCertificates() {
+  async function loadCertificates(page: number = 1) {
     setLoading(true);
-    const result = await getCertificatesList();
-    setCertificates(result || []);
+    const result = await getCertificatesList({ page, limit: 20 });
+    setData(result);
     setLoading(false);
   }
 
@@ -96,14 +99,14 @@ export default function CertificatesPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {certificates.length === 0 ? (
+            {data.items.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                   Сертификаты ещё не выдавались.
                 </td>
               </tr>
             ) : (
-              certificates.map((certificate) => (
+              data.items.map((certificate) => (
                 <tr key={certificate.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
@@ -156,6 +159,31 @@ export default function CertificatesPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Пагинация */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <div className="text-sm text-gray-600">
+            Страница {currentPage} из {totalPages} (всего: {data.total})
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => loadCertificates(currentPage - 1)}
+              disabled={currentPage <= 1}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Назад
+            </button>
+            <button
+              onClick={() => loadCertificates(currentPage + 1)}
+              disabled={currentPage >= totalPages}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Вперёд
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
