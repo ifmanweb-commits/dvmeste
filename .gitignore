@@ -20,6 +20,7 @@
 # production
 /build
 /public/files
+public/images/certificates-tmpl/
 /private/
 
 # misc
