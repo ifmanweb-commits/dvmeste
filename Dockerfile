@@ -3,6 +3,16 @@ FROM node:20 AS base
 
 # Устанавливаем зависимости только для production
 FROM base AS deps
+
+# Установка системных зависимостей для canvas
+RUN apt-get update && apt-get install -y \
+  libcairo2-dev \
+  libpango1.0-dev \
+  libjpeg-dev \
+  libgif-dev \
+  librsvg2-dev \
+  && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
@@ -30,8 +40,16 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Установка fontconfig для работы со шрифтами
+RUN apt-get update && apt-get install -y fontconfig && rm -rf /var/lib/apt/lists/*
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
+
+# Копируем шрифты в системную папку
+COPY private/PT-Serif/PT_Serif-Web-Regular.ttf /usr/share/fonts/truetype/
+COPY private/PT-Serif/PT_Serif-Web-Bold.ttf /usr/share/fonts/truetype/
+RUN fc-cache -fv
 
 # Копируем standalone сборку
 COPY --from=builder /app/public ./public

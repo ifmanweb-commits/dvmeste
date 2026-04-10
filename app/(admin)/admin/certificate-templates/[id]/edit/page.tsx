@@ -19,6 +19,7 @@ interface FieldConfig {
   fontColor: string;
   fontFamily: string;
   textAlign: 'left' | 'center' | 'right';
+  fontWeight: 'normal' | 'bold';
 }
 
 interface FieldsJson {
@@ -40,6 +41,7 @@ const DEFAULT_FIELD: FieldConfig = {
   fontColor: '#333333',
   fontFamily: 'PT Serif',
   textAlign: 'center',
+  fontWeight: 'normal',
 };
 
 export default function EditCertificateTemplatePage() {
@@ -61,6 +63,10 @@ export default function EditCertificateTemplatePage() {
   const [testValues, setTestValues] = useState<Record<string, string>>({});
   const [showTestBlock, setShowTestBlock] = useState(false);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  
+  // Drag-n-drop состояние
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -176,6 +182,54 @@ export default function EditCertificateTemplatePage() {
       formData.append('background', file);
       handleSaveBasicInfo(formData);
     }
+  }
+
+  // Drag-n-drop обработчики
+  function handleMarkerMouseDown(e: React.MouseEvent<HTMLDivElement>, index: number) {
+    e.stopPropagation();
+    e.preventDefault();
+    setSelectedFieldIndex(index);
+    setIsDragging(true);
+    
+    const marker = e.currentTarget;
+    const rect = marker.getBoundingClientRect();
+    const clickX = e.clientX;
+    const clickY = e.clientY;
+    
+    // Вычисляем смещение клика относительно центра маркера
+    const offsetX = clickX - (rect.left + rect.width / 2);
+    const offsetY = clickY - (rect.top + rect.height / 2);
+    
+    setDragOffset({ x: offsetX, y: offsetY });
+  }
+
+  function handleCanvasMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (!isDragging || selectedFieldIndex === null || !imgRef.current) return;
+    
+    const rect = imgRef.current.getBoundingClientRect();
+    
+    // Получаем координаты мыши относительно изображения
+    const x = e.clientX - rect.left - dragOffset.x;
+    const y = e.clientY - rect.top - dragOffset.y;
+    
+    // Конвертируем в проценты
+    const xPercent = (x / rect.width) * 100;
+    const yPercent = (y / rect.height) * 100;
+    
+    // Ограничиваем в пределах 0-100%
+    const clampedX = Math.max(0, Math.min(100, xPercent));
+    const clampedY = Math.max(0, Math.min(100, yPercent));
+    
+    handleUpdateField(selectedFieldIndex, { xPercent: clampedX, yPercent: clampedY });
+  }
+
+  function handleCanvasMouseUp() {
+    setIsDragging(false);
+  }
+
+  function handleMarkerMouseUp(e: React.MouseEvent<HTMLDivElement>) {
+    e.stopPropagation();
+    setIsDragging(false);
   }
 
   if (loading) {
@@ -352,6 +406,17 @@ export default function EditCertificateTemplatePage() {
                 />
               </div>
               <div>
+                <label className="block text-xs text-gray-600">Начертание шрифта</label>
+                <select
+                  value={fieldsJson.fields[selectedFieldIndex].fontWeight}
+                  onChange={(e) => handleUpdateField(selectedFieldIndex, { fontWeight: e.target.value as 'normal' | 'bold' })}
+                  className="w-full px-2 py-1 border rounded text-sm"
+                >
+                  <option value="normal">Обычный (Regular)</option>
+                  <option value="bold">Жирный (Bold)</option>
+                </select>
+              </div>
+              <div>
                 <label className="block text-xs text-gray-600">Выравнивание</label>
                 <select
                   value={fieldsJson.fields[selectedFieldIndex].textAlign}
@@ -392,6 +457,9 @@ export default function EditCertificateTemplatePage() {
               ref={canvasRef}
               className="relative border border-gray-300 overflow-hidden inline-block"
               onClick={handleCanvasClick}
+              onMouseMove={handleCanvasMouseMove}
+              onMouseUp={handleCanvasMouseUp}
+              onMouseLeave={handleCanvasMouseUp}
             >
               <img
                 ref={imgRef}
@@ -399,28 +467,32 @@ export default function EditCertificateTemplatePage() {
                 alt="Background"
                 className="max-w-full max-h-[70vh] w-auto h-auto object-contain"
                 onLoad={handleImageLoad}
+                draggable={false}
               />
               {fieldsJson.fields.map((field, index) => (
                 <div
                   key={index}
-                  className={`absolute transform -translate-x-1/2 -translate-y-1/2 border-2 cursor-pointer ${
+                  className={`absolute transform -translate-x-1/2 -translate-y-1/2 border-2 ${
                     selectedFieldIndex === index
                       ? 'border-blue-500 bg-blue-500/30'
                       : 'border-red-500 bg-red-500/30'
-                  }`}
+                  } ${isDragging && selectedFieldIndex === index ? 'cursor-grabbing' : 'cursor-grab'}`}
                   style={{
                     left: `${field.xPercent}%`,
                     top: `${field.yPercent}%`,
                     fontSize: `${Math.min(field.fontSize / 10, 2)}px`,
                     minWidth: '80px',
                     minHeight: '20px',
+                    zIndex: isDragging && selectedFieldIndex === index ? 10 : 1,
                   }}
+                  onMouseDown={(e) => handleMarkerMouseDown(e, index)}
+                  onMouseUp={handleMarkerMouseUp}
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedFieldIndex(index);
                   }}
                 >
-                  <span className="text-white text-xs whitespace-nowrap px-1">{field.label || field.name}</span>
+                  <span className="text-white text-xs whitespace-nowrap px-1 select-none">{field.label || field.name}</span>
                 </div>
               ))}
             </div>

@@ -2,19 +2,48 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { writeFile, mkdir, readFile, unlink } from 'fs/promises';
+import { writeFile, mkdir, readFile, unlink, access } from 'fs/promises';
 import { join } from 'path';
-import sharp from 'sharp';
+import { createCanvas, loadImage, registerFont } from 'canvas';
+import { getCurrentUser } from '@/lib/auth/session';
 
 const CERTIFICATES_DIR = join(process.cwd(), 'public', 'images', 'certificates-tmpl');
-const FONT_PATH = join(process.cwd(), 'private', 'PT-Serif', 'PT_Serif-Web-Regular.ttf');
+const FONT_REGULAR_PATH = join(process.cwd(), 'private', 'PT-Serif', 'PT_Serif-Web-Regular.ttf');
+const FONT_BOLD_PATH = join(process.cwd(), 'private', 'PT-Serif', 'PT_Serif-Web-Bold.ttf');
 const PREVIEW_DIR = join(process.cwd(), 'public', 'certificates');
 
 // Проверка прав доступа (админ или менеджер)
 async function checkAdminOrManagerAccess() {
-  // В реальной реализации здесь будет проверка сессии
-  // Пока возвращаем true для разработки
-  return true;
+  const user = await getCurrentUser();
+  
+  if (!user) {
+    throw new Error('Требуется авторизация');
+  }
+  
+  // Проверяем, является ли пользователь админом или менеджером
+  if (!user.isAdmin && !user.isManager && !user.isSuperAdmin) {
+    throw new Error('Требуется роль администратора или менеджера');
+  }
+}
+
+// Зарегистрировать шрифты (вызывается внутри функций генерации)
+async function ensureFontsRegistered() {
+  try {
+    // Проверяем существование файлов
+    await access(FONT_REGULAR_PATH);
+    await access(FONT_BOLD_PATH);
+    
+    // Регистрируем шрифты с разными именами семейств для корректного использования
+    registerFont(FONT_REGULAR_PATH, { family: 'PT Serif' });
+    registerFont(FONT_BOLD_PATH, { family: 'PT Serif Bold' });
+    
+    console.log('Шрифты успешно зарегистрированы:', FONT_REGULAR_PATH, FONT_BOLD_PATH);
+  } catch (error) {
+    console.error('Ошибка регистрации шрифтов:', error);
+    console.error('Пути к шрифтам:', FONT_REGULAR_PATH, FONT_BOLD_PATH);
+    console.error('process.cwd():', process.cwd());
+    throw new Error('Не удалось загрузить шрифты PT Serif');
+  }
 }
 
 // Получить список всех шаблонов
@@ -84,13 +113,13 @@ export async function createCertificateTemplate(formData: FormData) {
     // Создаём директорию если не существует
     await mkdir(CERTIFICATES_DIR, { recursive: true });
     
-    // Обработка изображения через sharp для получения размеров и сохранения
-    const metadata = await sharp(buffer).metadata();
-    const originalWidth = metadata.width || 0;
-    const originalHeight = metadata.height || 0;
+    // Получаем размеры изображения через loadImage
+    const img = await loadImage(buffer);
+    const originalWidth = img.width;
+    const originalHeight = img.height;
     
     // Сохраняем оригинал
-    await sharp(buffer).toFile(filepath);
+    await writeFile(filepath, buffer);
     
     backgroundUrl = `/images/certificates-tmpl/${filename}`;
     fieldsJson = {
@@ -166,11 +195,11 @@ export async function updateCertificateTemplate(id: string, formData: FormData) 
     
     await mkdir(CERTIFICATES_DIR, { recursive: true });
     
-    const metadata = await sharp(buffer).metadata();
-    const originalWidth = metadata.width || 0;
-    const originalHeight = metadata.height || 0;
+    const img = await loadImage(buffer);
+    const originalWidth = img.width;
+    const originalHeight = img.height;
     
-    await sharp(buffer).toFile(filepath);
+    await writeFile(filepath, buffer);
     
     updateData.backgroundUrl = `/images/certificates-tmpl/${filename}`;
     // Сохраняем существующие поля, но обновляем размеры фона
@@ -246,96 +275,59 @@ export async function generateCertificatePreview(templateId: string, fieldValues
   }
   
   try {
+// Регистрируем шрифты перед генерацией
+    await ensureFontsRegistered();
+    
     // Читаем фоновое изображение
     const bgPath = join(process.cwd(), 'public', template.backgroundUrl);
-    const background = await readFile(bgPath);
+    const backgroundBuffer = await readFile(bgPath);
     
-    // Создаём sharp изображение
-    const image = sharp(background);
-    const metadata = await image.metadata();
-    const width = metadata.width || 1200;
-    const height = metadata.height || 800;
+    // Загружаем изображение
+    const background = await loadImage(backgroundBuffer);
+    const width = background.width;
+    const height = background.height;
+    
+    // Создаём canvas
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+    
+    // Рисуем фон
+    ctx.drawImage(background, 0, 0);
     
     // Получаем поля из fieldsJson
     const fieldsConfig = (template.fieldsJson as any)?.fields || [];
     
-    // Создаём SVG с текстом для наложения
-    const svgOverlays = fieldsConfig
+    // Рисуем текст для каждого поля
+    fieldsConfig
       .filter((field: any) => fieldValues[field.name])
-      .map((field: any) => {
+      .forEach((field: any) => {
         const value = fieldValues[field.name];
         const x = (field.xPercent / 100) * width;
         const y = (field.yPercent / 100) * height;
         const fontSize = field.fontSize || 24;
         const fontColor = field.fontColor || '#333333';
-        const fontFamily = field.fontFamily || 'PT Serif';
+        const fontWeight = field.fontWeight || 'normal';
         const textAlign = field.textAlign || 'center';
         
-        let textAnchor = 'start';
-        let textX = x;
+        // Выбираем шрифт в зависимости от начертания
+        const fontFamily = fontWeight === 'bold' ? 'PT Serif Bold' : 'PT Serif';
         
-        if (textAlign === 'center') {
-          textAnchor = 'middle';
-          textX = x;
-        } else if (textAlign === 'right') {
-          textAnchor = 'end';
-          textX = x;
-        }
+        ctx.font = `${fontSize}px "${fontFamily}"`;
+        ctx.fillStyle = fontColor;
+        ctx.textAlign = textAlign as CanvasTextAlign;
+        ctx.textBaseline = 'middle';
         
-        return `
-          <text
-            x="${textX}"
-            y="${y}"
-            font-size="${fontSize}"
-            fill="${fontColor}"
-            font-family="${fontFamily}"
-            text-anchor="${textAnchor}"
-          >${escapeXml(value)}</text>
-        `;
-      })
-      .join('');
-    
-    const svg = `
-      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        <style>
-          @font-face {
-            font-family: "PT Serif";
-            src: url("file://${FONT_PATH}");
-          }
-        </style>
-        ${svgOverlays}
-      </svg>
-    `;
-    
-    // Накладываем SVG на изображение
-    const result = await image
-      .composite([{
-        input: Buffer.from(svg),
-        top: 0,
-        left: 0
-      }])
-      .png()
-      .toBuffer();
+        ctx.fillText(value, x, y);
+      });
     
     // Конвертируем в base64
-    const base64 = result.toString('base64');
-    const dataUrl = `data:image/png;base64,${base64}`;
+    const dataUrl = canvas.toDataURL('image/png');
     
     return { success: true, dataUrl, width, height };
   } catch (error) {
     console.error('Ошибка генерации превью:', error);
     return { error: 'Ошибка генерации превью: ' + (error as Error).message };
   }
-}
-
-// Экранирование XML специальных символов
-function escapeXml(text: string): string {
-  return text
-    .replace(/&/g, '\u0026amp;')
-    .replace(/</g, '\u003Clt;')
-    .replace(/>/g, '\u003Egt;')
-    .replace(/"/g, '\u0022quot;')
-    .replace(/'/g, '\u0027apos;');
 }
 
 // Сгенерировать сертификат и сохранить (для выдачи пользователю)
@@ -356,72 +348,53 @@ export async function generateAndSaveCertificate(
   }
   
   try {
+// Регистрируем шрифты перед генерацией
+    await ensureFontsRegistered();
+    
     // Читаем фоновое изображение
     const bgPath = join(process.cwd(), 'public', template.backgroundUrl);
-    const background = await readFile(bgPath);
+    const backgroundBuffer = await readFile(bgPath);
     
-    const image = sharp(background);
-    const metadata = await image.metadata();
-    const width = metadata.width || 1200;
-    const height = metadata.height || 800;
+    // Загружаем изображение
+    const background = await loadImage(backgroundBuffer);
+    const width = background.width;
+    const height = background.height;
     
+    // Создаём canvas
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+    
+    // Рисуем фон
+    ctx.drawImage(background, 0, 0);
+    
+    // Получаем поля из fieldsJson
     const fieldsConfig = (template.fieldsJson as any)?.fields || [];
     
-    const svgOverlays = fieldsConfig
+    // Рисуем текст для каждого поля
+    fieldsConfig
       .filter((field: any) => fieldValues[field.name])
-      .map((field: any) => {
+      .forEach((field: any) => {
         const value = fieldValues[field.name];
         const x = (field.xPercent / 100) * width;
         const y = (field.yPercent / 100) * height;
         const fontSize = field.fontSize || 24;
         const fontColor = field.fontColor || '#333333';
-        const fontFamily = field.fontFamily || 'PT Serif';
+        const fontWeight = field.fontWeight || 'normal';
         const textAlign = field.textAlign || 'center';
         
-        let textAnchor = 'start';
-        let textX = x;
+        // Выбираем шрифт в зависимости от начертания
+        const fontFamily = fontWeight === 'bold' ? 'PT Serif Bold' : 'PT Serif';
         
-        if (textAlign === 'center') {
-          textAnchor = 'middle';
-          textX = x;
-        } else if (textAlign === 'right') {
-          textAnchor = 'end';
-          textX = x;
-        }
+        ctx.font = `${fontSize}px "${fontFamily}"`;
+        ctx.fillStyle = fontColor;
+        ctx.textAlign = textAlign as CanvasTextAlign;
+        ctx.textBaseline = 'middle';
         
-        return `
-          <text
-            x="${textX}"
-            y="${y}"
-            font-size="${fontSize}"
-            fill="${fontColor}"
-            font-family="${fontFamily}"
-            text-anchor="${textAnchor}"
-          >${escapeXml(value)}</text>
-        `;
-      })
-      .join('');
+        ctx.fillText(value, x, y);
+      });
     
-    const svg = `
-      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        <style>
-          @font-face {
-            font-family: "PT Serif";
-            src: url("file://${FONT_PATH}");
-          }
-        </style>
-        ${svgOverlays}
-      </svg>
-    `;
-    
-    const result = await image
-      .composite([{
-        input: Buffer.from(svg),
-        top: 0,
-        left: 0
-      }])
-      .png()
-      .toBuffer();
+    // Конвертируем в буфер
+    const result = canvas.toBuffer('image/png');
     
     // Сохраняем в public/certificates
     await mkdir(PREVIEW_DIR, { recursive: true });
