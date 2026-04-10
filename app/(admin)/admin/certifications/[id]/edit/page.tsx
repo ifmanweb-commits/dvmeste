@@ -19,6 +19,13 @@ interface Requirement {
   challenge?: Challenge;
 }
 
+interface CertificateTemplate {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+}
+
 interface Certification {
   id: string;
   slug: string;
@@ -27,6 +34,10 @@ interface Certification {
   isActive: boolean;
   level: number | null;
   order: number;
+  rewardType: string;
+  badgeUrl: string | null;
+  certificateTemplateId: string | null;
+  certificateTemplate: CertificateTemplate | null;
   requirements: Requirement[];
 }
 
@@ -48,6 +59,17 @@ export default function EditCertificationPage() {
   const [isActive, setIsActive] = useState(true);
   const [level, setLevel] = useState<number | ''>('');
   const [order, setOrder] = useState(0);
+
+  // Настройки награды
+  const [rewardType, setRewardType] = useState<'certificate' | 'badge'>('certificate');
+  const [certificateTemplateId, setCertificateTemplateId] = useState<string>('');
+  const [badgeFile, setBadgeFile] = useState<File | null>(null);
+  const [badgePreview, setBadgePreview] = useState<string | null>(null);
+  const [existingBadgeUrl, setExistingBadgeUrl] = useState<string | null>(null);
+
+  // Шаблоны сертификатов
+  const [certificateTemplates, setCertificateTemplates] = useState<CertificateTemplate[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
 
   // Требования
   const [requirements, setRequirements] = useState<Requirement[]>([]);
@@ -72,6 +94,42 @@ export default function EditCertificationPage() {
     fetchChallenges();
   }, []);
 
+  // Загрузка списка шаблонов сертификатов
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const response = await fetch('/api/admin/certificate-templates');
+        if (!response.ok) {
+          throw new Error('Ошибка при загрузке шаблонов');
+        }
+        const data = await response.json();
+        setCertificateTemplates(data);
+      } catch (err: any) {
+        console.error('Error fetching certificate templates:', err);
+      } finally {
+        setIsLoadingTemplates(false);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
+
+  // Обработка загрузки файла ачивки
+  const handleBadgeFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setBadgeFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBadgePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setBadgeFile(null);
+      setBadgePreview(null);
+    }
+  };
+
   // Загрузка данных сертификации
   useEffect(() => {
     const fetchCertification = async () => {
@@ -88,6 +146,12 @@ export default function EditCertificationPage() {
         setIsActive(data.isActive);
         setLevel(data.level ?? '');
         setOrder(data.order ?? 0);
+        setRewardType((data.rewardType as 'certificate' | 'badge') || 'certificate');
+        setCertificateTemplateId(data.certificateTemplateId || '');
+        setExistingBadgeUrl(data.badgeUrl || null);
+        if (data.badgeUrl) {
+          setBadgePreview(data.badgeUrl);
+        }
         setRequirements(data.requirements || []);
 
         setIsLoading(false);
@@ -163,19 +227,28 @@ export default function EditCertificationPage() {
     setIsSubmitting(true);
     setError(null);
 
+    // Создаем FormData для отправки файла ачивки
+    const formData = new FormData();
+    formData.append('slug', slug);
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('isActive', isActive ? 'on' : 'off');
+    formData.append('level', level === '' ? '' : String(level));
+    formData.append('order', String(order));
+    formData.append('rewardType', rewardType);
+    formData.append('certificateTemplateId', certificateTemplateId || '');
+    if (badgeFile) {
+      formData.append('badge', badgeFile);
+    }
+    requirements.filter(r => r.challengeId).forEach((req, index) => {
+      formData.append(`requirements[${index}][challengeId]`, req.challengeId);
+      formData.append(`requirements[${index}][order]`, String(req.order));
+    });
+
     try {
       const response = await fetch(`/api/admin/certifications/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            slug,
-            title,
-            description,
-            isActive,
-            level: level === '' ? null : level,
-            order,
-            requirements: requirements.filter(r => r.challengeId),
-          }),
+        body: formData,
       });
 
       const data = await response.json();
@@ -222,6 +295,94 @@ export default function EditCertificationPage() {
             </h2>
 
             <div className="space-y-4">
+              {/* Настройки награды */}
+              <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+                <h3 className="mb-3 text-sm font-semibold text-gray-700">Настройки награды</h3>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Тип награды
+                  </label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="rewardType"
+                        value="certificate"
+                        checked={rewardType === 'certificate'}
+                        onChange={(e) => setRewardType(e.target.value as 'certificate' | 'badge')}
+                        className="h-4 w-4 text-[#5858E2] focus:ring-[#5858E2]"
+                      />
+                      <span className="text-sm text-gray-700">Сертификат</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="rewardType"
+                        value="badge"
+                        checked={rewardType === 'badge'}
+                        onChange={(e) => setRewardType(e.target.value as 'certificate' | 'badge')}
+                        className="h-4 w-4 text-[#5858E2] focus:ring-[#5858E2]"
+                      />
+                      <span className="text-sm text-gray-700">Ачивка</span>
+                    </label>
+                  </div>
+                </div>
+
+                {rewardType === 'certificate' ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Шаблон сертификата
+                    </label>
+                    <select
+                      value={certificateTemplateId}
+                      onChange={(e) => setCertificateTemplateId(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                    >
+                      <option value="">Выберите шаблон</option>
+                      {certificateTemplates.map((template) => (
+                        <option key={template.id} value={template.id}>
+                          {template.name}
+                        </option>
+                      ))}
+                    </select>
+                    {isLoadingTemplates && (
+                      <p className="mt-1 text-xs text-gray-500">Загрузка шаблонов...</p>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Изображение ачивки
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={handleBadgeFileChange}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                    />
+                    {badgePreview && (
+                      <div className="mt-3">
+                        <img
+                          src={badgePreview}
+                          alt="Preview"
+                          className="h-24 w-24 object-contain rounded-lg border border-gray-200"
+                        />
+                      </div>
+                    )}
+                    {existingBadgeUrl && !badgePreview && (
+                      <div className="mt-3">
+                        <p className="text-xs text-gray-500 mb-2">Текущее изображение:</p>
+                        <img
+                          src={existingBadgeUrl}
+                          alt="Current badge"
+                          className="h-24 w-24 object-contain rounded-lg border border-gray-200"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
                   Название *

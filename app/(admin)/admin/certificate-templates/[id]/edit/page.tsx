@@ -10,9 +10,29 @@ import {
 } from '@/lib/actions/certificate-templates';
 import { CertificateTemplate } from '@prisma/client';
 
+// Предопределённые переменные для шаблонов
+const AVAILABLE_VARIABLES = [
+  { value: 'user.fullName', label: 'ФИО пользователя' },
+  { value: 'user.email', label: 'Email пользователя' },
+  { value: 'certification.name', label: 'Название сертификации' },
+  { value: 'certification.level', label: 'Уровень сертификации' },
+  { value: 'award.issuedAt', label: 'Дата выдачи награды' },
+  { value: 'award.id', label: 'ID награды' },
+  { value: 'award.verificationCode', label: 'Проверочный код сертификата' },
+] as const;
+
+const DATE_FORMATS = [
+  { value: 'DD.MM.YYYY', label: 'ДД.ММ.ГГГГ' },
+  { value: 'DD/MM/YYYY', label: 'ДД/ММ/ГГГГ' },
+  { value: 'MM.DD.YYYY', label: 'ММ.ДД.ГГГГ' },
+  { value: 'YYYY-MM-DD', label: 'ГГГГ-ММ-ДД' },
+  { value: 'DD Month YYYY', label: 'ДД Месяц ГГГГ' },
+] as const;
+
 interface FieldConfig {
   name: string;
   label: string;
+  variable: string;
   xPercent: number;
   yPercent: number;
   fontSize: number;
@@ -20,6 +40,8 @@ interface FieldConfig {
   fontFamily: string;
   textAlign: 'left' | 'center' | 'right';
   fontWeight: 'normal' | 'bold';
+  formatDate: boolean;
+  dateFormat: string;
 }
 
 interface FieldsJson {
@@ -35,6 +57,7 @@ interface FieldsJson {
 const DEFAULT_FIELD: FieldConfig = {
   name: '',
   label: '',
+  variable: '',
   xPercent: 50,
   yPercent: 50,
   fontSize: 24,
@@ -42,6 +65,8 @@ const DEFAULT_FIELD: FieldConfig = {
   fontFamily: 'PT Serif',
   textAlign: 'center',
   fontWeight: 'normal',
+  formatDate: false,
+  dateFormat: 'DD.MM.YYYY',
 };
 
 export default function EditCertificateTemplatePage() {
@@ -63,10 +88,40 @@ export default function EditCertificateTemplatePage() {
   const [testValues, setTestValues] = useState<Record<string, string>>({});
   const [showTestBlock, setShowTestBlock] = useState(false);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [fieldNameError, setFieldNameError] = useState<string | null>(null);
   
   // Drag-n-drop состояние
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  // Валидация имени поля (латиница, без пробелов)
+  function validateFieldName(value: string): string | null {
+    if (!value) return null;
+    const latinPattern = /^[a-zA-Z0-9_]+$/;
+    if (!latinPattern.test(value)) {
+      return 'Имя поля должно содержать только латинские буквы, цифры и подчёркивание';
+    }
+    if (value.includes(' ')) {
+      return 'Имя поля не должно содержать пробелов';
+    }
+    return null;
+  }
+
+  function handleFieldNameChange(index: number, value: string) {
+    const error = validateFieldName(value);
+    setFieldNameError(error);
+    handleUpdateField(index, { name: value });
+  }
+
+  function handleVariableChange(index: number, variable: string) {
+    // Автоматически устанавливаем label на основе выбранной переменной
+    const varInfo = AVAILABLE_VARIABLES.find(v => v.value === variable);
+    if (varInfo) {
+      handleUpdateField(index, { variable, label: varInfo.label });
+    } else {
+      handleUpdateField(index, { variable });
+    }
+  }
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -314,53 +369,101 @@ export default function EditCertificateTemplatePage() {
       {/* Редактор полей */}
       <div className="grid grid-cols-3 gap-6 mb-6">
         {/* Список полей */}
-        <div className="col-span-1 bg-white rounded-lg shadow p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Поля</h2>
-            <button
-              onClick={handleAddField}
-              className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-            >
-              + Добавить
-            </button>
-          </div>
-
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {fieldsJson.fields.map((field, index) => (
-              <div
-                key={index}
-                className={`p-3 border rounded cursor-pointer ${
-                  selectedFieldIndex === index ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                }`}
-                onClick={() => setSelectedFieldIndex(index)}
+          <div className="col-span-1 bg-white rounded-lg shadow p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Поля</h2>
+              <button
+                onClick={handleAddField}
+                className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
               >
-                <div className="font-medium text-sm">{field.label || field.name}</div>
-                <div className="text-xs text-gray-500">{field.name}</div>
-              </div>
-            ))}
-          </div>
+                + Добавить
+              </button>
+            </div>
 
-          {selectedFieldIndex !== null && fieldsJson.fields[selectedFieldIndex] && (
-            <div className="mt-4 pt-4 border-t space-y-3">
-              <h3 className="font-medium">Настройки поля</h3>
-              <div>
-                <label className="block text-xs text-gray-600">Имя поля</label>
-                <input
-                  type="text"
-                  value={fieldsJson.fields[selectedFieldIndex].name}
-                  onChange={(e) => handleUpdateField(selectedFieldIndex, { name: e.target.value })}
-                  className="w-full px-2 py-1 border rounded text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-600">Метка</label>
-                <input
-                  type="text"
-                  value={fieldsJson.fields[selectedFieldIndex].label}
-                  onChange={(e) => handleUpdateField(selectedFieldIndex, { label: e.target.value })}
-                  className="w-full px-2 py-1 border rounded text-sm"
-                />
-              </div>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {fieldsJson.fields.map((field, index) => (
+                <div
+                  key={index}
+                  className={`p-3 border rounded cursor-pointer ${
+                    selectedFieldIndex === index ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                  }`}
+                  onClick={() => setSelectedFieldIndex(index)}
+                >
+                  <div className="font-medium text-sm">{field.label || field.name}</div>
+                  <div className="text-xs text-gray-500">{field.variable || field.name}</div>
+                </div>
+              ))}
+            </div>
+
+            {selectedFieldIndex !== null && fieldsJson.fields[selectedFieldIndex] && (
+              <div className="mt-4 pt-4 border-t space-y-3">
+                <h3 className="font-medium">Настройки поля</h3>
+                
+                <div>
+                  <label className="block text-xs text-gray-600">Переменная *</label>
+                  <select
+                    value={fieldsJson.fields[selectedFieldIndex].variable}
+                    onChange={(e) => handleVariableChange(selectedFieldIndex, e.target.value)}
+                    className="w-full px-2 py-1 border rounded text-sm"
+                  >
+                    <option value="">Выберите переменную</option>
+                    {AVAILABLE_VARIABLES.map((v) => (
+                      <option key={v.value} value={v.value}>{v.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-600">Имя поля (латиница, без пробелов)</label>
+                  <input
+                    type="text"
+                    value={fieldsJson.fields[selectedFieldIndex].name}
+                    onChange={(e) => handleFieldNameChange(selectedFieldIndex, e.target.value)}
+                    className={`w-full px-2 py-1 border rounded text-sm ${fieldNameError ? 'border-red-500 bg-red-50' : ''}`}
+                    placeholder="Например: fullName, studentName"
+                  />
+                  {fieldNameError && (
+                    <p className="text-xs text-red-600 mt-1">{fieldNameError}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-600">Метка</label>
+                  <input
+                    type="text"
+                    value={fieldsJson.fields[selectedFieldIndex].label}
+                    onChange={(e) => handleUpdateField(selectedFieldIndex, { label: e.target.value })}
+                    className="w-full px-2 py-1 border rounded text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-600">Форматировать как дату</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="checkbox"
+                      checked={fieldsJson.fields[selectedFieldIndex].formatDate}
+                      onChange={(e) => handleUpdateField(selectedFieldIndex, { formatDate: e.target.checked })}
+                      className="h-4 w-4"
+                    />
+                    <span className="text-xs text-gray-600">Применить форматирование даты</span>
+                  </div>
+                </div>
+
+                {fieldsJson.fields[selectedFieldIndex].formatDate && (
+                  <div>
+                    <label className="block text-xs text-gray-600">Формат даты</label>
+                    <select
+                      value={fieldsJson.fields[selectedFieldIndex].dateFormat}
+                      onChange={(e) => handleUpdateField(selectedFieldIndex, { dateFormat: e.target.value })}
+                      className="w-full px-2 py-1 border rounded text-sm"
+                    >
+                      {DATE_FORMATS.map((f) => (
+                        <option key={f.value} value={f.value}>{f.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs text-gray-600">X %</label>

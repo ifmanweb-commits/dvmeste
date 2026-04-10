@@ -54,16 +54,55 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const {
-      slug,
-      title,
-      description,
-      isActive = true,
-      level = null,
-      order = 0,
-      requirements = [], // массив { challengeId, order }
-    } = body;
+    // Проверяем тип контента для обработки FormData
+    const contentType = request.headers.get('content-type') || '';
+    
+    let slug: string = '';
+    let title: string = '';
+    let description: string = '';
+    let isActive: boolean = true;
+    let level: number | null = null;
+    let order: number = 0;
+    let rewardType: string = 'certificate';
+    let certificateTemplateId: string | null = null;
+    let badgeFile: File | null = null;
+    let requirements: Array<{ challengeId: string; order: number }> = [];
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      slug = formData.get('slug') as string;
+      title = formData.get('title') as string;
+      description = formData.get('description') as string || '';
+      isActive = formData.get('isActive') === 'on';
+      level = formData.get('level') === '' ? null : parseInt(formData.get('level') as string);
+      order = parseInt(formData.get('order') as string) || 0;
+      rewardType = (formData.get('rewardType') as string) || 'certificate';
+      certificateTemplateId = formData.get('certificateTemplateId') as string || null;
+      badgeFile = formData.get('badge') as File | null || null;
+
+      // Парсим требования из FormData
+      const reqKeys = Array.from(formData.keys()).filter(k => k.startsWith('requirements['));
+      const reqIndices = new Set(reqKeys.map(k => k.match(/requirements\[(\d+)\]/)?.[1]).filter(Boolean));
+      
+      for (const index of reqIndices) {
+        const challengeId = formData.get(`requirements[${index}][challengeId]`) as string;
+        const orderVal = parseInt(formData.get(`requirements[${index}][order]`) as string) || 0;
+        if (challengeId) {
+          requirements.push({ challengeId, order: orderVal });
+        }
+      }
+    } else {
+      const body = await request.json();
+      slug = body.slug;
+      title = body.title;
+      description = body.description || '';
+      isActive = body.isActive ?? true;
+      level = body.level ?? null;
+      order = body.order ?? 0;
+      rewardType = body.rewardType || 'certificate';
+      certificateTemplateId = body.certificateTemplateId || null;
+      requirements = body.requirements || [];
+    }
 
     // Валидация
     if (!slug || !title) {
@@ -85,6 +124,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let badgeUrl: string | null = null;
+
+    // Если есть файл ачивки, сохраняем его
+    if (badgeFile && badgeFile.size > 0) {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      
+      const uploadDir = path.join(process.cwd(), 'public', 'images', 'certification-badges');
+      await fs.mkdir(uploadDir, { recursive: true });
+      
+      const fileBuffer = await badgeFile.arrayBuffer();
+      const ext = badgeFile.name.split('.').pop() || 'png';
+      const filename = `${slug}-${Date.now()}.${ext}`;
+      const filepath = path.join(uploadDir, filename);
+      
+      await fs.writeFile(filepath, Buffer.from(fileBuffer));
+      badgeUrl = `/images/certification-badges/${filename}`;
+    }
+
     // Создаём сертификацию
     const certification = await prisma.certification.create({
       data: {
@@ -92,8 +150,11 @@ export async function POST(request: NextRequest) {
         title,
         description,
         isActive,
-        level: level !== null ? parseInt(level) : null,
-        order: parseInt(order) || 0,
+        level,
+        order,
+        rewardType,
+        badgeUrl,
+        certificateTemplateId: certificateTemplateId || undefined,
         requirements: {
           create: requirements.map((req: { challengeId: string; order: number }) => ({
             challengeId: req.challengeId,

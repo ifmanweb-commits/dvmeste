@@ -66,16 +66,56 @@ export async function PUT(
     }
 
     const { id } = await params;
-    const body = await request.json();
-    const {
-      slug,
-      title,
-      description,
-      isActive,
-      level,
-      order,
-      requirements = [], // массив { challengeId, order }
-    } = body;
+    
+    // Проверяем тип контента для обработки FormData
+    const contentType = request.headers.get('content-type') || '';
+    
+    let slug: string | undefined;
+    let title: string | undefined;
+    let description: string | undefined;
+    let isActive: boolean | undefined;
+    let level: number | null | undefined;
+    let order: number | undefined;
+    let rewardType: string | undefined;
+    let certificateTemplateId: string | null | undefined;
+    let badgeFile: File | null = null;
+    let requirements: Array<{ challengeId: string; order: number }> = [];
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      slug = formData.get('slug') as string || undefined;
+      title = formData.get('title') as string || undefined;
+      description = formData.get('description') as string;
+      isActive = formData.get('isActive') === 'on';
+      level = formData.get('level') === '' ? null : parseInt(formData.get('level') as string);
+      order = parseInt(formData.get('order') as string) || 0;
+      rewardType = (formData.get('rewardType') as string) || 'certificate';
+      certificateTemplateId = formData.get('certificateTemplateId') as string || null;
+      badgeFile = formData.get('badge') as File | null || null;
+
+      // Парсим требования из FormData
+      const reqKeys = Array.from(formData.keys()).filter(k => k.startsWith('requirements['));
+      const reqIndices = new Set(reqKeys.map(k => k.match(/requirements\[(\d+)\]/)?.[1]).filter(Boolean));
+      
+      for (const index of reqIndices) {
+        const challengeId = formData.get(`requirements[${index}][challengeId]`) as string;
+        const orderVal = parseInt(formData.get(`requirements[${index}][order]`) as string) || 0;
+        if (challengeId) {
+          requirements.push({ challengeId, order: orderVal });
+        }
+      }
+    } else {
+      const body = await request.json();
+      slug = body.slug;
+      title = body.title;
+      description = body.description;
+      isActive = body.isActive;
+      level = body.level;
+      order = body.order;
+      rewardType = body.rewardType;
+      certificateTemplateId = body.certificateTemplateId;
+      requirements = body.requirements || [];
+    }
 
     // Проверка существования
     const existing = await prisma.certification.findUnique({
@@ -102,6 +142,25 @@ export async function PUT(
       }
     }
 
+    let badgeUrl: string | null | undefined = undefined;
+
+    // Если есть новый файл ачивки, сохраняем его
+    if (badgeFile && badgeFile.size > 0) {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      
+      const uploadDir = path.join(process.cwd(), 'public', 'images', 'certification-badges');
+      await fs.mkdir(uploadDir, { recursive: true });
+      
+      const fileBuffer = await badgeFile.arrayBuffer();
+      const ext = badgeFile.name.split('.').pop() || 'png';
+      const filename = `${existing.slug}-${Date.now()}.${ext}`;
+      const filepath = path.join(uploadDir, filename);
+      
+      await fs.writeFile(filepath, Buffer.from(fileBuffer));
+      badgeUrl = `/images/certification-badges/${filename}`;
+    }
+
     // Обновляем сертификацию
     const certification = await prisma.certification.update({
       where: { id },
@@ -110,8 +169,11 @@ export async function PUT(
         title: title || existing.title,
         description: description !== undefined ? description : existing.description,
         isActive: isActive !== undefined ? isActive : existing.isActive,
-        level: level !== undefined ? (level === null ? null : parseInt(level)) : existing.level,
-        order: order !== undefined ? parseInt(order) : existing.order,
+        level: level !== undefined ? level : existing.level,
+        order: order !== undefined ? order : existing.order,
+        rewardType: rewardType !== undefined ? rewardType : existing.rewardType,
+        badgeUrl: badgeUrl !== undefined ? badgeUrl : existing.badgeUrl,
+        certificateTemplateId: certificateTemplateId !== undefined ? certificateTemplateId : existing.certificateTemplateId,
         requirements: {
           deleteMany: {},
           create: requirements.map((req: { challengeId: string; order: number }) => ({

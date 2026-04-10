@@ -46,6 +46,130 @@ async function ensureFontsRegistered() {
   }
 }
 
+// Внутренняя функция генерации сертификата (без проверки доступа)
+// Используется внутри check-certification-completion.ts и скриптов
+async function generateCertificateInternal(
+  templateId: string,
+  userId: string,
+  certificationData: {
+    certification: {
+      title: string;
+      level: number | null;
+    };
+    award: {
+      id: string;
+      issuedAt: string;
+    };
+  }
+) {
+  const template = await prisma.certificateTemplate.findUnique({ where: { id: templateId } });
+  if (!template) {
+    return { error: 'Шаблон не найден' };
+  }
+  
+  if (!template.backgroundUrl) {
+    return { error: 'Фон шаблона не загружен' };
+  }
+  
+    try {
+    // Регистрируем шрифты перед генерацией
+    await ensureFontsRegistered();
+    
+    // Генерируем проверочный код
+    const verificationCode = await generateUniqueVerificationCode();
+    
+    // Добавляем verificationCode в certificationData для resolveVariableValue
+    const dataForTemplate = certificationData ? {
+      ...certificationData,
+      verificationCode,
+      award: {
+        ...certificationData.award,
+        verificationCode,
+      }
+    } : { verificationCode, award: { verificationCode } };
+    
+    // Читаем фоновое изображение
+    const bgPath = join(process.cwd(), 'public', template.backgroundUrl);
+    const backgroundBuffer = await readFile(bgPath);
+    
+    // Загружаем изображение
+    const background = await loadImage(backgroundBuffer);
+    const width = background.width;
+    const height = background.height;
+    
+    // Создаём canvas
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+    
+    // Рисуем фон
+    ctx.drawImage(background, 0, 0);
+    
+    // Получаем поля из fieldsJson
+    const fieldsConfig = (template.fieldsJson as any)?.fields || [];
+    
+    // Рисуем текст для каждого поля
+    for (const field of fieldsConfig) {
+      const variable = field.variable as string;
+      if (!variable) continue;
+      
+      // Получаем значение переменной
+      let value = await resolveVariableValue(variable, userId, dataForTemplate);
+      
+      // Форматируем дату если нужно
+      if (field.formatDate && variable.includes('issuedAt')) {
+        const dateFormat = field.dateFormat || 'DD.MM.YYYY';
+        value = formatDateValue(value, dateFormat);
+      }
+      
+      if (!value) continue;
+      
+      const x = (field.xPercent / 100) * width;
+      const y = (field.yPercent / 100) * height;
+      const fontSize = field.fontSize || 24;
+      const fontColor = field.fontColor || '#333333';
+      const fontWeight = field.fontWeight || 'normal';
+      const textAlign = field.textAlign || 'center';
+      
+      // Выбираем шрифт в зависимости от начертания
+      const fontFamily = fontWeight === 'bold' ? 'PT Serif Bold' : 'PT Serif';
+      
+      ctx.font = `${fontWeight === 'bold' ? 'bold' : ''} ${fontSize}px ${fontFamily}`;
+      ctx.fillStyle = fontColor;
+      ctx.textAlign = textAlign as CanvasTextAlign;
+      ctx.textBaseline = 'middle';
+      
+      ctx.fillText(value, x, y);
+    }
+    
+    // Генерируем уникальное имя файла
+    const timestamp = Date.now();
+    const filename = `certificate-${template.slug}-${userId}-${timestamp}.png`;
+    const outputPath = join(PREVIEW_DIR, filename);
+    const imageUrl = `/certificates/${filename}`;
+    
+    // Сохраняем файл
+    await mkdir(PREVIEW_DIR, { recursive: true });
+    const buffer = canvas.toBuffer('image/png');
+    await writeFile(outputPath, buffer);
+    
+    // Сохраняем запись в БД
+    const certificate = await prisma.certificate.create({
+      data: {
+        templateId,
+        userId,
+        dataJson: certificationData,
+        imageUrl,
+        verificationCode,
+      },
+    });
+    
+    return { success: true, certificate };
+  } catch (error) {
+    console.error('Ошибка генерации сертификата:', error);
+    return { error: 'Ошибка при генерации сертификата' };
+  }
+}
+
 // Получить список всех шаблонов
 export async function getCertificateTemplates() {
   await checkAdminOrManagerAccess();
@@ -330,14 +454,114 @@ export async function generateCertificatePreview(templateId: string, fieldValues
   }
 }
 
+// Генерация проверочного кода (8 символов: кириллические заглавные буквы кроме З, О и цифры кроме 0, 3)
+function generateVerificationCode(): string {
+  const chars = 'АБВГДЕЁЖИЙКЛМНПРСТУФХЦЧШЩЪЫЬЭЮЯ12456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+// Проверка уникальности кода
+async function isVerificationCodeUnique(code: string): Promise<boolean> {
+  const existing = await prisma.certificate.findUnique({
+    where: { verificationCode: code }
+  });
+  return !existing;
+}
+
+// Генерация уникального проверочного кода
+async function generateUniqueVerificationCode(): Promise<string> {
+  let code = generateVerificationCode();
+  let attempts = 0;
+  while (!(await isVerificationCodeUnique(code)) && attempts < 10) {
+    code = generateVerificationCode();
+    attempts++;
+  }
+  return code;
+}
+
+// Маппинг предопределённых переменных к значениям
+async function resolveVariableValue(
+  variable: string,
+  userId: string,
+  certificationData?: any
+): Promise<string> {
+  const prisma = (await import('@/lib/prisma')).prisma;
+  
+  switch (variable) {
+    case 'user.fullName': {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { fullName: true } });
+      return user?.fullName || '';
+    }
+    case 'user.email': {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+      return user?.email || '';
+    }
+    case 'certification.name': {
+      return certificationData?.certification?.title || '';
+    }
+    case 'certification.level': {
+      const level = certificationData?.certification?.level;
+      return level !== null && level !== undefined ? String(level) : '';
+    }
+    case 'award.issuedAt': {
+      return certificationData?.award?.issuedAt ? new Date(certificationData.award.issuedAt).toISOString() : '';
+    }
+    case 'award.id': {
+      return certificationData?.award?.id || '';
+    }
+    case 'award.verificationCode': {
+      return certificationData?.verificationCode || '';
+    }
+    default:
+      return '';
+  }
+}
+
+// Форматирование даты
+function formatDateValue(dateString: string, format: string = 'DD.MM.YYYY'): string {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+  
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  
+  switch (format) {
+    case 'DD.MM.YYYY': return `${day}.${month}.${year}`;
+    case 'DD/MM/YYYY': return `${day}/${month}/${year}`;
+    case 'MM.DD.YYYY': return `${month}.${day}.${year}`;
+    case 'YYYY-MM-DD': return `${year}-${month}-${day}`;
+    case 'DD Month YYYY': {
+      const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+      return `${day} ${months[date.getMonth()]} ${year}`;
+    }
+    default: return `${day}.${month}.${year}`;
+  }
+}
+
 // Сгенерировать сертификат и сохранить (для выдачи пользователю)
 export async function generateAndSaveCertificate(
   templateId: string,
   userId: string,
-  fieldValues: Record<string, string>
+  customValues: Record<string, string> = {},
+  certificationData?: {
+    certification: {
+      title: string;
+      level: number | null;
+    };
+    award: {
+      id: string;
+      issuedAt: string;
+    };
+  }
 ) {
-  await checkAdminOrManagerAccess();
-  
+  // Проверка доступа только для серверных действий
+  // Для внутреннего использования (скрипты, автоматическая генерация) используется generateCertificateInternal
   const template = await prisma.certificateTemplate.findUnique({ where: { id: templateId } });
   if (!template) {
     return { error: 'Шаблон не найден' };
@@ -348,8 +572,21 @@ export async function generateAndSaveCertificate(
   }
   
   try {
-// Регистрируем шрифты перед генерацией
+    // Регистрируем шрифты перед генерацией
     await ensureFontsRegistered();
+    
+    // Генерируем проверочный код
+    const verificationCode = await generateUniqueVerificationCode();
+    
+    // Добавляем verificationCode в certificationData для resolveVariableValue
+    const dataForTemplate = certificationData ? {
+      ...certificationData,
+      verificationCode,
+      award: {
+        ...certificationData.award,
+        verificationCode,
+      }
+    } : { verificationCode, award: { verificationCode } };
     
     // Читаем фоновое изображение
     const bgPath = join(process.cwd(), 'public', template.backgroundUrl);
@@ -371,27 +608,38 @@ export async function generateAndSaveCertificate(
     const fieldsConfig = (template.fieldsJson as any)?.fields || [];
     
     // Рисуем текст для каждого поля
-    fieldsConfig
-      .filter((field: any) => fieldValues[field.name])
-      .forEach((field: any) => {
-        const value = fieldValues[field.name];
-        const x = (field.xPercent / 100) * width;
-        const y = (field.yPercent / 100) * height;
-        const fontSize = field.fontSize || 24;
-        const fontColor = field.fontColor || '#333333';
-        const fontWeight = field.fontWeight || 'normal';
-        const textAlign = field.textAlign || 'center';
-        
-        // Выбираем шрифт в зависимости от начертания
-        const fontFamily = fontWeight === 'bold' ? 'PT Serif Bold' : 'PT Serif';
-        
-        ctx.font = `${fontSize}px "${fontFamily}"`;
-        ctx.fillStyle = fontColor;
-        ctx.textAlign = textAlign as CanvasTextAlign;
-        ctx.textBaseline = 'middle';
-        
-        ctx.fillText(value, x, y);
-      });
+    for (const field of fieldsConfig) {
+      const variable = field.variable as string;
+      if (!variable) continue;
+      
+      // Получаем значение переменной
+      let value = await resolveVariableValue(variable, userId, dataForTemplate);
+      
+      // Форматируем дату если нужно
+      if (field.formatDate && variable.includes('issuedAt')) {
+        const dateFormat = field.dateFormat || 'DD.MM.YYYY';
+        value = formatDateValue(value, dateFormat);
+      }
+      
+      if (!value) continue;
+      
+      const x = (field.xPercent / 100) * width;
+      const y = (field.yPercent / 100) * height;
+      const fontSize = field.fontSize || 24;
+      const fontColor = field.fontColor || '#333333';
+      const fontWeight = field.fontWeight || 'normal';
+      const textAlign = field.textAlign || 'center';
+      
+      // Выбираем шрифт в зависимости от начертания
+      const fontFamily = fontWeight === 'bold' ? 'PT Serif Bold' : 'PT Serif';
+      
+      ctx.font = `${fontSize}px "${fontFamily}"`;
+      ctx.fillStyle = fontColor;
+      ctx.textAlign = textAlign as CanvasTextAlign;
+      ctx.textBaseline = 'middle';
+      
+      ctx.fillText(value, x, y);
+    }
     
     // Конвертируем в буфер
     const result = canvas.toBuffer('image/png');
@@ -404,13 +652,14 @@ export async function generateAndSaveCertificate(
     
     const imageUrl = `/certificates/${filename}`;
     
-    // Создаём запись в БД
+    // Создаём запись в БД с проверочным кодом
     const certificate = await prisma.certificate.create({
       data: {
         templateId,
         userId,
-        dataJson: fieldValues,
-        imageUrl
+        dataJson: { ...customValues, verificationCode },
+        imageUrl,
+        verificationCode
       }
     });
     

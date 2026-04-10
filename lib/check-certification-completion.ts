@@ -1,8 +1,10 @@
 import { prisma } from '@/lib/prisma';
+import { generateAndSaveCertificate } from './actions/certificate-templates';
 
 /**
  * Проверяет, завершена ли сертификация после прохождения испытания.
  * Если все требования сертификации выполнены — выдаёт награду.
+ * Если у сертификации rewardType = "certificate" и есть certificateTemplateId — генерирует сертификат.
  * 
  * @param userId - ID пользователя
  * @param challengeId - ID пройденного испытания
@@ -103,12 +105,36 @@ export async function checkCertificationCompletion(
 
       if (!existingAward) {
         // Выдаём награду
-        await prisma.certificationAward.create({
+        const award = await prisma.certificationAward.create({
           data: {
             certificationId: cert.id,
             userId,
           },
         });
+
+        // Проверяем тип награды и генерируем сертификат если нужно
+        if (cert.rewardType === 'certificate' && cert.certificateTemplateId) {
+          try {
+            await generateAndSaveCertificate(
+              cert.certificateTemplateId,
+              userId,
+              {},
+              {
+                certification: {
+                  title: cert.title,
+                  level: cert.level,
+                },
+                award: {
+                  id: award.id,
+                  issuedAt: new Date().toISOString(),
+                },
+              }
+            );
+          } catch (error) {
+            console.error('Ошибка генерации сертификата:', error);
+            // Не прерываем процесс, награда уже выдана
+          }
+        }
 
         // Обновляем уровень сертификации пользователя
         // Если level не null и больше текущего — присваиваем, иначе не меняем

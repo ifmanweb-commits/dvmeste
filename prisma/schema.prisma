@@ -636,20 +636,26 @@ model WorkReview {
 }
 
 model Certification {
-  id           String                     @id @default(cuid())
-  slug         String                     @unique
-  title        String
-  description  String?
-  level        Int?
-  isActive     Boolean                    @default(true)
-  order        Int                        @default(0)
-  createdAt    DateTime                   @default(now())
-  updatedAt    DateTime                   @updatedAt
-  awards       CertificationAward[]
-  requirements CertificationRequirement[]
+  id                    String                     @id @default(cuid())
+  slug                  String                     @unique
+  title                 String
+  description           String?
+  level                 Int?
+  isActive              Boolean                    @default(true)
+  order                 Int                        @default(0)
+  // Тип награды: "certificate" — сертификат (генерируется PNG), "badge" — ачивка (картинка badgeUrl)
+  rewardType            String                     @default("certificate")
+  badgeUrl              String?
+  certificateTemplateId String?
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  awards                CertificationAward[]
+  requirements          CertificationRequirement[]
+  certificateTemplate   CertificateTemplate?       @relation(fields: [certificateTemplateId], references: [id], onDelete: SetNull)
 
   @@index([slug])
   @@index([isActive])
+  @@index([certificateTemplateId])
 }
 
 model CertificationRequirement {
@@ -904,21 +910,24 @@ model CertificateTemplate {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   certificates  Certificate[]
+  certifications Certification[]
 
   @@index([slug])
   @@index([isActive])
 }
 
 model Certificate {
-  id          String   @id @default(cuid())
-  templateId  String
-  userId      String   // кому выдан
-  dataJson    Json     @default("{}") @db.Json // заполненные значения полей
-  imageUrl    String   // путь к сгенерированному PNG
-  issuedAt    DateTime @default(now())
-  template    CertificateTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  user        User     @relation("UserCertificates", fields: [userId], references: [id], onDelete: Cascade)
+  id               String   @id @default(cuid())
+  templateId       String
+  userId           String   // кому выдан
+  dataJson         Json     @default("{}") @db.Json // заполненные значения полей
+  imageUrl         String   // путь к сгенерированному PNG
+  verificationCode String   @unique // 8 символов, проверочный код
+  issuedAt         DateTime @default(now())
+  template         CertificateTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  user             User     @relation("UserCertificates", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([templateId])
   @@index([userId])
+  @@index([verificationCode])
 }
