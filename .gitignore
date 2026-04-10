@@ -21,6 +21,7 @@
 /build
 /public/files
 public/images/certificates-tmpl/
+public/images/certification-badges/
 /private/
 
 # misc
