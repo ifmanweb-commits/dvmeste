@@ -291,18 +291,22 @@ export default function EditCertificateTemplatePage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse h-8 w-48 bg-gray-200 rounded mb-4"></div>
+      <div className="w-full">
+        <div className="mb-6">
+          <div className="animate-pulse h-8 w-48 bg-gray-200 rounded mb-2"></div>
+          <div className="animate-pulse h-4 w-64 bg-gray-200 rounded"></div>
+        </div>
         <div className="animate-pulse h-64 bg-gray-200 rounded"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
+    <div className="w-full">
+      {/* Заголовок раздела */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">Редактирование шаблона</h1>
-        <p className="text-gray-600">{template?.name}</p>
+        <h1 className="text-3xl font-bold text-gray-900">Редактирование шаблона</h1>
+        <p className="text-gray-500 mt-1">{template?.name}</p>
       </div>
 
       {error && (
@@ -360,7 +364,7 @@ export default function EditCertificateTemplatePage() {
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-[#5858E2] text-white rounded-lg hover:bg-[#4a4ac7] disabled:opacity-50 transition-colors font-medium"
             >
               {saving ? 'Сохранение...' : 'Сохранить'}
             </button>
@@ -376,7 +380,7 @@ export default function EditCertificateTemplatePage() {
               <h2 className="text-lg font-semibold">Поля</h2>
               <button
                 onClick={handleAddField}
-                className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                className="px-3 py-1 bg-[#5858E2] text-white text-sm rounded-lg hover:bg-[#4a4ac7] transition-colors font-medium"
               >
                 + Добавить
               </button>
@@ -546,7 +550,7 @@ export default function EditCertificateTemplatePage() {
             <button
               onClick={handleSaveFields}
               disabled={saving}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="w-full px-4 py-2 bg-[#5858E2] text-white rounded-lg hover:bg-[#4a4ac7] disabled:opacity-50 transition-colors font-medium"
             >
               {saving ? 'Сохранение...' : 'Сохранить поля'}
             </button>
@@ -635,7 +639,7 @@ export default function EditCertificateTemplatePage() {
                 <button
                   onClick={handleGeneratePreview}
                   disabled={generatingPreview || fieldsJson.fields.length === 0}
-                  className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                  className="px-4 py-2 bg-[#5858E2] text-white rounded-lg hover:bg-[#4a4ac7] disabled:opacity-50 transition-colors font-medium"
                 >
                   {generatingPreview ? 'Генерация...' : 'Сгенерировать превью'}
                 </button>
@@ -655,7 +659,7 @@ export default function EditCertificateTemplatePage() {
       <div className="flex gap-4">
         <button
           onClick={() => router.push('/admin/certificate-templates')}
-          className="px-6 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+          className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
         >
           Назад к списку
         </button>

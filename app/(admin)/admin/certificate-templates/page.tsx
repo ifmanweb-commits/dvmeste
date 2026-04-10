@@ -32,26 +32,39 @@ export default function CertificateTemplatesPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse h-8 w-48 bg-gray-200 rounded mb-4"></div>
+      <div className="w-full">
+        <div className="mb-6">
+          <div className="animate-pulse h-8 w-48 bg-gray-200 rounded mb-2"></div>
+          <div className="animate-pulse h-4 w-64 bg-gray-200 rounded"></div>
+        </div>
         <div className="animate-pulse h-64 bg-gray-200 rounded"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Шаблоны сертификатов</h1>
+    <div className="w-full">
+      {/* Заголовок раздела */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Шаблоны сертификатов</h1>
+        <p className="text-gray-500 mt-1">Управление шаблонами сертификатов</p>
+      </div>
+
+      {/* Кнопка создания */}
+      <div className="mb-6">
         <Link
           href="/admin/certificate-templates/new"
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[#5858E2] text-white rounded-lg hover:bg-[#4a4ac7] transition-colors font-medium"
         >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
           Создать шаблон
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Таблица шаблонов */}
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -81,7 +94,7 @@ export default function CertificateTemplatesPage() {
               </tr>
             ) : (
               templates.map((template) => (
-                <tr key={template.id}>
+                <tr key={template.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{template.name}</div>
                   </td>
@@ -105,14 +118,14 @@ export default function CertificateTemplatesPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <Link
                       href={`/admin/certificate-templates/${template.id}/edit`}
-                      className="text-blue-600 hover:text-blue-900 mr-4"
+                      className="text-[#5858E2] hover:text-[#4a4ac7] font-medium mr-4"
                     >
                       Редактировать
                     </Link>
                     <button
                       onClick={() => handleDelete(template.id)}
                       disabled={deletingId === template.id}
-                      className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                      className="text-red-600 hover:text-red-700 disabled:opacity-50 font-medium"
                     >
                       {deletingId === template.id ? 'Удаление...' : 'Удалить'}
                     </button>
