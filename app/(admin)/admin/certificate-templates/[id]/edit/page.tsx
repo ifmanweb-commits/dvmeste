@@ -60,8 +60,10 @@ export default function EditCertificateTemplatePage() {
   const [generatingPreview, setGeneratingPreview] = useState(false);
   const [testValues, setTestValues] = useState<Record<string, string>>({});
   const [showTestBlock, setShowTestBlock] = useState(false);
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
 
   const canvasRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -77,6 +79,15 @@ export default function EditCertificateTemplatePage() {
       setFieldsJson(fj || { fields: [], background: { width: 0, height: 0, previewWidth: 0, previewHeight: 0 } });
     }
     setLoading(false);
+  }
+
+  function handleImageLoad() {
+    if (imgRef.current) {
+      setImageDimensions({
+        width: imgRef.current.naturalWidth,
+        height: imgRef.current.naturalHeight
+      });
+    }
   }
 
   async function handleSaveBasicInfo(formData: FormData) {
@@ -142,11 +153,10 @@ export default function EditCertificateTemplatePage() {
   }
 
   function handleCanvasClick(e: React.MouseEvent<HTMLDivElement>) {
-    if (selectedFieldIndex === null) return;
+    if (selectedFieldIndex === null || !imgRef.current) return;
 
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
+    const rect = imgRef.current.getBoundingClientRect();
+    
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
@@ -380,15 +390,15 @@ export default function EditCertificateTemplatePage() {
           {template?.backgroundUrl ? (
             <div
               ref={canvasRef}
-              className="relative border border-gray-300 overflow-hidden"
-              style={{ maxHeight: '600px' }}
+              className="relative border border-gray-300 overflow-hidden inline-block"
               onClick={handleCanvasClick}
             >
               <img
+                ref={imgRef}
                 src={template.backgroundUrl}
                 alt="Background"
-                className="w-full h-auto"
-                style={{ maxWidth: '100%' }}
+                className="max-w-full max-h-[70vh] w-auto h-auto object-contain"
+                onLoad={handleImageLoad}
               />
               {fieldsJson.fields.map((field, index) => (
                 <div
