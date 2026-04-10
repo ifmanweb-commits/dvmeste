@@ -33,6 +33,7 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
     { href: '/admin/keys', label: 'Ключи', roles: ['admin', 'manager'] },
     { href: '/admin/secret-pages', label: 'Секретные страницы', roles: ['admin', 'manager'] },
     { href: '/admin/certifications', label: 'Сертификации', roles: ['admin', 'manager'] },
+    { href: '/admin/certificates', label: 'Сертификаты', roles: ['admin'] },
     { href: '/admin/payments', label: 'Платежи', roles: ['admin'] },
     { href: '/admin/onboarding', label: 'Советы', roles: ['admin', 'manager'] },
     { href: '/admin/pages', label: 'Страницы', roles: ['admin'] },

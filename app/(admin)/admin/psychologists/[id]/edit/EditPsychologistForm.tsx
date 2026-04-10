@@ -290,9 +290,17 @@ function EditPsychologistForm() {
               </h2>
             </div>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">ФИО <DraftIndicator fieldName="fullName" /></label>
-                <input name="fullName" defaultValue={user.fullName || ""} className={inputClasses("fullName")} />
+              <div>
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">Фамилия <DraftIndicator fieldName="lastName" /></label>
+                <input name="lastName" defaultValue={user.lastName || user.fullName?.split(' ')[1] || ""} className={inputClasses("lastName")} />
+              </div>
+              <div>
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">Имя <DraftIndicator fieldName="firstName" /></label>
+                <input name="firstName" defaultValue={user.firstName || user.fullName?.split(' ')[0] || ""} className={inputClasses("firstName")} />
+              </div>
+              <div>
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">Отчество (опционально) <DraftIndicator fieldName="middleName" /></label>
+                <input name="middleName" defaultValue={user.middleName || ""} className={inputClasses("middleName")} />
               </div>
 
               <div>

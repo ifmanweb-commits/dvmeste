@@ -12,7 +12,8 @@ import { CertificateTemplate } from '@prisma/client';
 
 // Предопределённые переменные для шаблонов
 const AVAILABLE_VARIABLES = [
-  { value: 'user.fullName', label: 'ФИО пользователя' },
+  { value: 'user.fullName', label: 'ФИО пользователя (Фамилия Имя)' },
+  { value: 'user.fullFio', label: 'Полное ФИО пользователя (Фамилия Имя Отчество)' },
   { value: 'user.email', label: 'Email пользователя' },
   { value: 'certification.name', label: 'Название сертификации' },
   { value: 'certification.awardText', label: 'Текст для сертификата' },

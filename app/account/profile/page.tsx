@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ProfileFormContainer } from "@/components/account/ProfileFormContainer";
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
+import ProfileNav from '@/components/account/ProfileNav';
 
 type PageProps = {
   searchParams: Promise<{ tab?: string }>;
@@ -46,13 +47,21 @@ export default async function ProfilePage({ searchParams }: PageProps) {
   const availableParadigms = (paradigmsData?.items as string[]) || [];
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Личный кабинет</h1>
-        <p className="text-gray-500 mt-2">Управление профилем и квалификацией</p>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        {/* Заголовок страницы */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+            Профиль
+          </h1>
+        </div>
 
-      <ProfileFormContainer user={user} availableParadigms={availableParadigms} activeTab={activeTab} />
+        {/* Навигационная панель */}
+        <ProfileNav activeTab={activeTab} />
+
+        {/* Контент формы */}
+        <ProfileFormContainer user={user} availableParadigms={availableParadigms} activeTab={activeTab} />
+      </div>
     </div>
   );
 }

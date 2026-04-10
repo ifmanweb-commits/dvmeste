@@ -530,6 +530,16 @@ async function resolveVariableValue(
       const user = await prisma.user.findUnique({ where: { id: userId }, select: { fullName: true } });
       return user?.fullName || '';
     }
+    case 'user.fullFio': {
+      const user = await prisma.user.findUnique({ 
+        where: { id: userId }, 
+        select: { firstName: true, lastName: true, middleName: true } 
+      });
+      if (!user) return '';
+      // Формат: "Фамилия Имя Отчество" (отчество опционально)
+      const parts = [user.lastName, user.firstName, user.middleName].filter(Boolean);
+      return parts.join(' ');
+    }
     case 'user.email': {
       const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
       return user?.email || '';

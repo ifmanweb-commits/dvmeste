@@ -243,8 +243,19 @@ export async function updatePsychologist(formData: FormData) {
       mainParadigm = [];
     }
 
+    // Получаем новые поля имени и генерируем fullName
+    const firstName = (formData.get("firstName") as string) || null;
+    const lastName = (formData.get("lastName") as string) || null;
+    const middleName = (formData.get("middleName") as string) || null;
+    
+    // Генерируем fullName как "Фамилия Имя" (без отчества)
+    const fullName = lastName && firstName ? `${lastName} ${firstName}` : null;
+
     const data: Prisma.UserUpdateInput = {
-      fullName: (formData.get("fullName") as string) || null,
+      firstName,
+      lastName,
+      middleName,
+      fullName,
       email: (formData.get("email") as string) || undefined,
       slug: (formData.get("slug") as string) || null,
       city: (formData.get("city") as string) || null,

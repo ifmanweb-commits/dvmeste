@@ -29,15 +29,6 @@ export function ProfileFormContainer({
   availableParadigms,
   activeTab: initialActiveTab
 }: ProfileFormProps) {
-  const router = useRouter();
-  
-  // Синхронизация с URL через searchParams
-  const setActiveTab = (tab: string) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('tab', tab);
-    router.push(url.toString());
-  };
-  
   const activeTab = initialActiveTab;
   const isCandidate = initialUser.status === 'CANDIDATE' || initialUser.status === 'PENDING'
   const [loading, setLoading] = useState(false);
@@ -283,11 +274,11 @@ export function ProfileFormContainer({
   ]
 
   return (
-    <div className="bg-transparent sm:bg-white sm:rounded-xl sm:border sm:border-gray-200 sm:shadow-sm overflow-hidden">
-      {/* Блок сообщений - общий для всех вкладок */}
+    <div className="space-y-6">
+      {/* Блок сообщений */}
       {message && (
         <div className={cn(
-          "mx-4 sm:mx-6 mt-6 p-4 rounded-lg text-sm flex items-start gap-3",
+          "p-4 rounded-lg text-sm flex items-start gap-3",
           message.type === 'success' && "bg-green-50 text-green-800 border border-green-200",
           message.type === 'error' && "bg-red-50 text-red-800 border border-red-200"
         )}>
@@ -305,54 +296,25 @@ export function ProfileFormContainer({
         </div>
       )}
 
-      {/* Десктопная навигация (скрыта на мобильных) */}
-      <div className="hidden sm:flex border-b border-gray-200 bg-gray-50/50">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as Tab)}
-            className={cn(
-              "flex items-center px-6 py-4 text-sm font-medium transition-all relative",
-              activeTab === tab.id ? "text-blue-600 bg-white" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100/50"
-            )}
-          >
-            <tab.icon className={cn("w-4 h-4 mr-2", tab.locked && "text-gray-400")} />
-            {tab.label}
-            {tab.locked && <Lock className="w-3 h-3 ml-2 text-gray-400" />}
-            {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />}
-          </button>
-        ))}
-      </div>
-
-      {/* Мобильная навигация (bottom navigation) */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 pb-safe">
-        <div className="flex justify-around items-center h-16">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as Tab)}
-              className={cn(
-                "flex flex-col items-center justify-center w-full h-full transition-colors",
-                activeTab === tab.id ? "text-blue-600" : "text-gray-400"
-              )}
-            >
-              <tab.icon className={cn("w-5 h-5", tab.locked && "text-gray-300")} />
-              <span className={cn("text-[10px] mt-0.5 font-medium", activeTab === tab.id ? "text-blue-600" : "text-gray-400")}>
-                {tab.label.split(' ')[0]}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="px-4 sm:px-6 pb-20 sm:pb-6 sm:pt-6">
+      <div>
         {/* Вкладка 1: Личные данные */}
         <div className={cn(activeTab !== 'basic' && "hidden")}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 -mx-4 sm:mx-0">
+          <div className="rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input
-              label="Имя и фамилия"
-              value={user.fullName || ''}
-              onChange={(e) => handleBasicChange('fullName', e.target.value)}
+              label="Фамилия"
+              value={user.lastName || ''}
+              onChange={(e) => handleBasicChange('lastName', e.target.value)}
+            />
+            <Input
+              label="Имя"
+              value={user.firstName || ''}
+              onChange={(e) => handleBasicChange('firstName', e.target.value)}
+            />
+            <Input
+              label="Отчество (опционально)"
+              value={user.middleName || ''}
+              onChange={(e) => handleBasicChange('middleName', e.target.value)}
             />
             <Select
               label="Пол"
@@ -427,19 +389,19 @@ export function ProfileFormContainer({
                 </a>
               </div>
             )}
-          </div>
-          <div className="mt-8 flex justify-end">
-            <button onClick={handleSaveBasic} disabled={loading} className="bg-blue-600 text-white px-8 py-2 rounded-lg">
-              {loading ? "Сохранение..." : "Сохранить изменения"}
-            </button>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button onClick={handleSaveBasic} disabled={loading} className="bg-[#5858E2] text-white px-8 py-2 rounded-lg hover:bg-[#4a4ac9] transition-colors">
+                {loading ? "Сохранение..." : "Сохранить изменения"}
+              </button>
+            </div>
           </div>
         </div>
-        {/* Убрали дублирующее сообщение из вкладки Basic */}
 
         {/* Вкладка 2: Подробно */}
         <div className={cn(activeTab !== 'detailed' && "hidden")}>
           {isCandidate ? <LockedFeature title="Раздел закрыт" description="Доступно участникам каталога." /> : (
-            <div className="space-y-8">
+            <div className="rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm space-y-6">
 
               {/* Индикатор статуса черновика */}
               {(user as any).draftStatus === 'PENDING' && (
@@ -487,8 +449,8 @@ export function ProfileFormContainer({
                   onChange={(e) => handleDetailedChange('longBio', e.target.value)}
                 />
               </div>
-              <div className="mt-8 flex justify-end">
-                <button onClick={handleSaveDetailed} disabled={loading} className="bg-blue-600 text-white px-8 py-2 rounded-lg">
+              <div className="mt-6 flex justify-end">
+                <button onClick={handleSaveDetailed} disabled={loading} className="bg-[#5858E2] text-white px-8 py-2 rounded-lg hover:bg-[#4a4ac9] transition-colors">
                   {loading ? "Сохранение..." : (user as any).draftStatus === 'PENDING' ? "Обновить черновик" : "Сохранить черновик"}
                 </button>
               </div>
@@ -499,13 +461,16 @@ export function ProfileFormContainer({
         {/* Вкладка 3: Фотографии */}
         <div className={cn(activeTab !== 'photos' && "hidden")}>
           {isCandidate ? (
-            <LockedFeature 
-              title="Загрузка фото недоступна" 
-              description="Вы сможете добавить фотографии профиля после того, как ваша анкета пройдет предварительную проверку." 
-            />
+            <div className="rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm">
+              <LockedFeature 
+                title="Загрузка фото недоступна" 
+                description="Вы сможете добавить фотографии профиля после того, как ваша анкета пройдет предварительную проверку." 
+              />
+            </div>
           ) : (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {photos.map(photo => (
                   <div key={photo.id} className="relative aspect-square rounded-xl overflow-hidden group border border-gray-100 bg-gray-50">
                     <img src={photo.url} className="w-full h-full object-cover" alt="Фото профиля" />
@@ -562,10 +527,11 @@ export function ProfileFormContainer({
                     />
                   </label>
                 )}
+                </div>
+                <p className="text-[11px] text-gray-400 italic">
+                  * Вы можете загрузить до 5 фотографий. Первое фото будет основным в поиске.
+                </p>
               </div>
-              <p className="text-[11px] text-gray-400 italic">
-                * Вы можете загрузить до 5 фотографий. Первое фото будет основным в поиске.
-              </p>
             </div>
           )}
         </div>
@@ -573,18 +539,22 @@ export function ProfileFormContainer({
         {/* Вкладка 4: Документы */}
         <div className={cn(activeTab !== 'docs' && "hidden")}>
           {isCandidate ? (
-            <LockedFeature 
-              title="Документы недоступны" 
-              description="Вы сможете загрузить дипломы и сертификаты после прохождения предварительной модерации. Сейчас они не требуются." 
-            />
+            <div className="rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm">
+              <LockedFeature 
+                title="Документы недоступны" 
+                description="Вы сможете загрузить дипломы и сертификаты после прохождения предварительной модерации. Сейчас они не требуются." 
+              />
+            </div>
           ) : (
-            <DocumentsTab 
-              documents={user.documents}
-              loading={loading}
-              onUpload={handleDocUpload} 
-              onDelete={handleDeleteDoc}
-              onUpdateMetadata={handleUpdateDocData}
-            />
+            <div className="rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm">
+              <DocumentsTab 
+                documents={user.documents}
+                loading={loading}
+                onUpload={handleDocUpload} 
+                onDelete={handleDeleteDoc}
+                onUpdateMetadata={handleUpdateDocData}
+              />
+            </div>
           )}
         </div>
       </div>

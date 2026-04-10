@@ -14,10 +14,18 @@ export async function updateBasicProfile(values: any) {
   if (!user) return { error: "Не авторизован" }
 
   try {
+    // Генерируем fullName как "Фамилия Имя" (без отчества)
+    const fullName = values.lastName && values.firstName 
+      ? `${values.lastName} ${values.firstName}` 
+      : values.fullName;
+
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        fullName: values.fullName,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        middleName: values.middleName,
+        fullName: fullName,
         city: values.city,
         price: Number(values.price),
         freeSession: Number(values.freeSession ?? 0),
