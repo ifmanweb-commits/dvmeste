@@ -20,9 +20,38 @@ interface PsychologistItem {
   // Не хватает полей, которые могут использоваться:
   email?: string;           // возможно нужен для контактов
   contactInfo?: string | null; // контактные данные
-  status?: string;          // статус (ACTIVE, REJECTED...)
+  status?: string;          // статус (pending, candidate, active, rejected, inactive)
   mainParadigm?: string[];  // парадигмы
   createdAt?: Date;         // дата регистрации
+}
+
+// Преобразование статуса в читаемый формат
+function getStatusLabel(status?: string): string {
+  if (!status) return "Статус не указан";
+  switch (status.toLowerCase()) {
+    case 'pending': return "Регистрируется";
+    case 'candidate': return "Не проверен";
+    case 'active': return "Проверен";
+    case 'rejected': return "Отклонён";
+    case 'inactive': return "Неактивен";
+    case 'blocked': return "Заблокирован";
+    case 'banned': return "Заблокирован";
+    default: return status;
+  }
+}
+
+// Цвет статуса для бейджа
+function getStatusColor(status?: string): string {
+  if (!status) return "bg-gray-100 text-gray-700";
+  switch (status.toLowerCase()) {
+    case 'pending': return "bg-blue-100 text-blue-700";
+    case 'candidate': return "bg-amber-100 text-amber-700";
+    case 'active': return "bg-emerald-100 text-emerald-700";
+    case 'rejected': return "bg-red-100 text-red-700";
+    case 'inactive': return "bg-gray-100 text-gray-700";
+    case 'banned': return "bg-purple-100 text-purple-700";
+    default: return "bg-gray-100 text-gray-700";
+  }
 }
 
 interface Props {
@@ -570,15 +599,10 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
               >
                 {/* ВЕРХНЯЯ ЧАСТЬ: Данные психолога */}
                 <div className="p-5 flex-1">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex flex-col gap-1 min-w-0">
-                      <h3 className="font-bold text-gray-900 leading-tight truncate">
-                        <HighlightText text={p.fullName} highlight={searchQuery} />
-                      </h3>
-                      <p className="text-[10px] text-gray-400 font-mono uppercase tracking-tighter">
-                        ID: {p.id}
-                      </p>
-                    </div>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-bold text-gray-900 leading-tight truncate">
+                      <HighlightText text={p.fullName} highlight={searchQuery} />
+                    </h3>
                     {getSafeCertificationLevel(p.certificationLevel) && (
                       <div className="shrink-0 flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-md text-[10px] font-bold uppercase tracking-wider">
                         <Award className="w-3 h-3" />
@@ -586,52 +610,45 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
                       </div>
                     )}
                   </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                      <span className="bg-gray-100 p-1 rounded">📍</span>
-                      <span className="truncate">{p.city || "Город не указан"}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                      <span className="bg-gray-100 p-1 rounded">💰</span>
-                      <span className="font-bold text-[#5858E2]">
-                        {p.price ? `${p.price} ₽` : "Цена не указана"}
-                      </span>
-                    </div>
-                  </div>
                 </div>
 
-                {/* СРЕДНЯЯ ЧАСТЬ: Управление видимостью */}
-                <div className={`px-5 py-3 border-t transition-colors duration-300 flex items-center justify-between ${
+                {/* СРЕДНЯЯ ЧАСТЬ: Статус и управление видимостью */}
+                <div className={`px-5 py-2.5 border-t transition-colors duration-300 flex items-center gap-3 ${
                   p.isPublished 
                     ? 'bg-emerald-100/100 border-emerald-100' // Бледно-зеленая для опубликованных
                     : 'bg-gray-50 border-gray-100'          // Серая для черновиков
                 }`}>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] uppercase text-gray-400 font-bold tracking-widest">Статус</span>
-                    {p.isPublished ? (
-                      <span className="text-xs font-bold text-emerald-600">Опубликован</span>
-                    ) : (
-                      <span className="text-xs font-bold text-gray-400">Черновик</span>
-                    )}
-                  </div>
+                  {/* Статус психолога */}
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${getStatusColor(p.status)}`}>
+                    {getStatusLabel(p.status)}
+                  </span>
+                  
+                  {/* Разделитель */}
+                  <span className={`w-px h-4 ${p.isPublished ? 'bg-emerald-200' : 'bg-gray-300'}`}></span>
+                  
+                  {/* Статус публикации */}
+                  <span className={`text-xs font-bold ${p.isPublished ? 'text-emerald-600' : 'text-gray-400'}`}>
+                    {p.isPublished ? 'Опубликован' : 'Черновик'}
+                  </span>
+
+                  <div className="flex-1"></div>
 
                   <button
                     type="button"
                     onClick={() => handleFastToggle(p.id, p.isPublished)}
                     disabled={loadingId === p.id}
-                    className={`p-2.5 rounded-xl transition-all shadow-sm border ${
+                    className={`p-2 rounded-lg transition-all shadow-sm border ${
                       p.isPublished 
                         ? 'bg-white text-emerald-600 border-emerald-100 hover:bg-emerald-50' 
                         : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50'
                     }`}
                   >
                     {loadingId === p.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-[#5858E2]" />
+                      <Loader2 className="w-4 h-4 animate-spin text-[#5858E2]" />
                     ) : p.isPublished ? (
-                      <Eye className="w-5 h-5" />
+                      <Eye className="w-4 h-4" />
                     ) : (
-                      <EyeOff className="w-5 h-5" />
+                      <EyeOff className="w-4 h-4" />
                     )}
                   </button>
                 </div>

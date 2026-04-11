@@ -5,6 +5,7 @@ interface ModerationData {
   articles: number;
   unreadMessages: number;
   psychologistComplaints: number;
+  withdrawalRequests: number;
 }
 
 interface ModerationCardsProps {
@@ -18,6 +19,7 @@ const moderationItems = [
   { key: "articles" as const, label: "Статьи", href: "/admin/moderation/articles" },
   { key: "unreadMessages" as const, label: "Требуют ответа", href: "/admin/messages" },
   { key: "psychologistComplaints" as const, label: "Жалобы на психологов", href: "/admin/complaints/psychologists" },
+  { key: "withdrawalRequests" as const, label: "Заявки на вывод", href: "/admin/withdrawal-requests" },
 ];
 
 export function ModerationCards({ data }: ModerationCardsProps) {
@@ -30,7 +32,7 @@ export function ModerationCards({ data }: ModerationCardsProps) {
   return (
     <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
       <h2 className="text-lg font-semibold text-red-900 mb-4">
-        🔴 Срочно на модерацию
+        ❗ Важно
       </h2>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {moderationItems.map((item) => {

@@ -11,6 +11,7 @@ export interface DashboardStats {
     articles: number;
     unreadMessages: number;
     psychologistComplaints: number;
+    withdrawalRequests: number;
   };
   problematicLeads: {
     noResponseOver2Days: number;
@@ -41,6 +42,11 @@ export interface DashboardStats {
       thisWeek: number;
       today: number;
     };
+  };
+  articles: {
+    total: number;
+    published: number;
+    thisMonth: number;
   };
 }
 
@@ -137,6 +143,13 @@ export async function getDashboardStats(): Promise<{ success: boolean; stats?: D
     const psychologistComplaints = allComplaints.filter(
       c => c.toPsychologist?.status === PsychologistStatus.CANDIDATE
     ).length;
+
+    // Заявки на вывод денег, которые не обработаны (processedAt = null)
+    const withdrawalRequestsCount = await prisma.withdrawalRequest.count({
+      where: {
+        processedAt: null,
+      },
+    });
 
     // ==================== ПРОБЛЕМНЫЕ ЗАЯВКИ ====================
 
@@ -301,6 +314,27 @@ export async function getDashboardStats(): Promise<{ success: boolean; stats?: D
       },
     });
 
+    // ==================== СТАТЬИ ====================
+
+    // Всего статей
+    const totalArticles = await prisma.article.count();
+
+    // Опубликовано (статус PUBLISHED)
+    const publishedArticles = await prisma.article.count({
+      where: {
+        publishedAt: {
+          not: null,
+        },
+      },
+    });
+
+    // Добавлено в этом месяце
+    const articlesThisMonth = await prisma.article.count({
+      where: {
+        createdAt: { gte: startOfMonth },
+      },
+    });
+
     // ==================== ПРОБЛЕМНЫЕ ЗАЯВКИ (старый код удалён, перенесён выше) ====================
     return {
       success: true,
@@ -312,6 +346,7 @@ export async function getDashboardStats(): Promise<{ success: boolean; stats?: D
           articles: articlesCount,
           unreadMessages: dialogsRequiringAnswer,
           psychologistComplaints,
+          withdrawalRequests: withdrawalRequestsCount,
         },
         problematicLeads: {
           noResponseOver2Days,
@@ -342,6 +377,11 @@ export async function getDashboardStats(): Promise<{ success: boolean; stats?: D
             thisWeek: leadsThisWeek,
             today: leadsToday,
           },
+        },
+        articles: {
+          total: totalArticles,
+          published: publishedArticles,
+          thisMonth: articlesThisMonth,
         },
       },
     };

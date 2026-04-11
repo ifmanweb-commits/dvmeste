@@ -37,10 +37,8 @@ export default function EditSecretPageForm({ page, images: initialImages }: Edit
   }
 
   const handleSubmit = async (formData: FormData) => {
-    // Добавляем изображения для удаления
-    if (imagesToDelete.length > 0) {
-      formData.append('deleteImages', imagesToDelete.join(','))
-    }
+    // Добавляем изображения для удаления через hidden field
+    formData.append('deleteImages', imagesToDelete.join(','))
     await updateSecretPage(page.id, formData)
   }
 
@@ -134,6 +132,8 @@ export default function EditSecretPageForm({ page, images: initialImages }: Edit
           <p className="text-sm text-gray-500">Нет изображений</p>
         )}
       </div>
+
+      <input type="hidden" name="deleteImages" value={imagesToDelete.join(',')} />
 
       <div>
         <label htmlFor="newImages" className="block text-sm font-medium text-gray-700 mb-1">

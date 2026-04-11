@@ -86,6 +86,7 @@ export async function getPsychologistsList() {
       isPublished: user.isPublished,
       price: user.price,
       certificationLevel: user.certificationLevel?.toString(),
+      status: user.status,
     }))
   } catch (error) {
     console.error('Error fetching psychologists list:', error)

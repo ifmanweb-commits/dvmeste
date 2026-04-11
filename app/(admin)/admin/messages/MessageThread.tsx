@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Send, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
+import { Send, Loader2, ChevronLeft, User, Bot } from "lucide-react"
 
 type Message = {
   id: string
@@ -108,11 +108,10 @@ export function MessageThread({
     }
   }
 
-
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div className="max-w-3xl space-y-4">
       {/* Форма ответа */}
-      <div className="border-t border-gray-200 p-4 bg-white">
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
         <div className="flex gap-3">
           <textarea
             value={newMessage}
@@ -139,11 +138,11 @@ export function MessageThread({
         </div>
       </div>
 
-      {/* Лента сообщений */}
-      <div className="p-6 space-y-4 max-h-[600px] overflow-y-auto bg-gray-50/50">
+      {/* Сообщения */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {/* Пагинация сверху */}
         {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
             <button
               onClick={() => loadPage(pagination.currentPage + 1)}
               disabled={!pagination.hasMore || loadingPage}
@@ -164,48 +163,56 @@ export function MessageThread({
           </div>
         )}
 
-        {/* Сообщения */}
-        {messages.length > 0 ? (
-          messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.direction === "to_user" ? "justify-end" : "justify-start"}`}
-            >
+        {/* Список сообщений */}
+        <div className="divide-y divide-gray-100">
+          {messages.length > 0 ? (
+            messages.map((message) => (
               <div
-                className={`max-w-[80%] rounded-xl p-3 ${
-                  message.direction === "to_user"
-                    ? "bg-[#5858E2] text-white rounded-tr-none"  // справа, синий
-                    : "bg-gray-100 text-gray-900 rounded-tl-none" // слева, серый
-                }`}
+                key={message.id}
+                className="flex items-start gap-3 p-4 hover:bg-gray-50 transition-colors"
               >
-                {/* Текст с pre-wrap и ссылками */}
-                <div
-                  className="text-sm whitespace-pre-wrap break-words"
-                  dangerouslySetInnerHTML={{ __html: message.text }}
-                />
-
-                {/* Время */}
-                <div
-                  className={`text-[10px] mt-1 flex items-center justify-end gap-1 ${
-                    message.direction === "to_moder" ? "text-white/70" : "text-gray-500"
-                  }`}
-                >
-                  {formatDate(message.createdAt)}
-                  {message.direction === "to_moder" && (
-                    <span>{message.isRead ? "✓✓" : "✓"}</span>
+                {/* Аватар */}
+                <div className="flex-shrink-0">
+                  {message.direction === "to_moder" ? (
+                    // Сообщение от клиента - аватар пользователя
+                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                      <User className="h-5 w-5 text-gray-500" />
+                    </div>
+                  ) : (
+                    // Сообщение от модератора - иконка бота
+                    <div className="w-10 h-10 rounded-full bg-[#5858E2]/10 flex items-center justify-center">
+                      <Bot className="h-5 w-5 text-[#5858E2]" />
+                    </div>
                   )}
                 </div>
+
+                {/* Контент */}
+                <div className="flex-1 min-w-0">
+                  {/* Имя отправителя и время */}
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="font-semibold text-gray-900 text-sm">
+                      {message.direction === "to_moder" ? "Клиент" : "Модератор"}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {formatDate(message.createdAt)}
+                    </span>
+                  </div>
+
+                  {/* Текст сообщения */}
+                  <div
+                    className="text-sm text-gray-700 whitespace-pre-wrap break-words"
+                    dangerouslySetInnerHTML={{ __html: message.text }}
+                  />
+                </div>
               </div>
+            ))
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500">В этом диалоге пока нет сообщений</p>
             </div>
-          ))
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500">В этом диалоге пока нет сообщений</p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-
-
     </div>
   )
 }

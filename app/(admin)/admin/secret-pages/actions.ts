@@ -30,8 +30,8 @@ export async function createSecretPage(formData: FormData) {
     throw new Error('Необходимо загрузить HTML файл')
   }
 
-  // Создаём папку для страницы в приватной директории
-  const pageDir = join(process.cwd(), 'private', 'secret-pages', slug)
+  // Создаём папку для страницы в public/files/secret-pages/
+  const pageDir = join(process.cwd(), 'public', 'files', 'secret-pages', slug)
   const imagesDir = join(pageDir, 'images')
 
   await mkdir(pageDir, { recursive: true })
@@ -71,7 +71,7 @@ export async function createSecretPage(formData: FormData) {
       const buffer = Buffer.from(await response.arrayBuffer())
       await writeFile(imagePath, buffer)
 
-      const relativePath = `/secret-pages/${slug}/images/${filename}`
+      const relativePath = `/files/secret-pages/${slug}/images/${filename}`
       downloadedImages.set(url, relativePath)
     } catch (e) {
       console.error(`Failed to download image ${url}:`, e)
@@ -94,7 +94,7 @@ export async function createSecretPage(formData: FormData) {
       const imagePath = join(imagesDir, filename)
       const buffer = Buffer.from(await file.arrayBuffer())
       await writeFile(imagePath, buffer)
-      savedImages.push(`/secret-pages/${slug}/images/${filename}`)
+      savedImages.push(`/files/secret-pages/${slug}/images/${filename}`)
     }
   }
 
@@ -104,7 +104,7 @@ export async function createSecretPage(formData: FormData) {
       slug,
       title,
       description: description || null,
-      filePath: `secret-pages/${slug}/index.html`,
+      filePath: `files/secret-pages/${slug}/index.html`,
       isActive: true,
     },
   })
@@ -125,7 +125,7 @@ export async function updateSecretPage(id: string, formData: FormData) {
     return { error: 'Страница не найдена' }
   }
 
-  const pageDir = join(process.cwd(), 'private', 'secret-pages', page.slug)
+  const pageDir = join(process.cwd(), 'public', 'files', 'secret-pages', page.slug)
   const imagesDir = join(pageDir, 'images')
 
   // Обновляем HTML если загружен новый файл
@@ -157,7 +157,7 @@ export async function updateSecretPage(id: string, formData: FormData) {
         const buffer = Buffer.from(await response.arrayBuffer())
         await writeFile(imagePath, buffer)
 
-        const relativePath = `/secret-pages/${page.slug}/images/${filename}`
+        const relativePath = `/files/secret-pages/${page.slug}/images/${filename}`
         htmlContent = htmlContent.replace(new RegExp(url, 'g'), relativePath)
       } catch (e) {
         console.error(`Failed to download image ${url}:`, e)
@@ -178,10 +178,11 @@ export async function updateSecretPage(id: string, formData: FormData) {
   }
 
   // Удаляем указанные изображения
-  if (deleteImages) {
+  if (deleteImages && deleteImages.trim() !== '') {
     const imagesToDelete = deleteImages.split(',')
     for (const imgPath of imagesToDelete) {
-      if (imgPath) {
+      if (imgPath && imgPath.trim() !== '') {
+        // Извлекаем имя файла из полного пути (например, /files/secret-pages/slug/images/filename.jpg -> filename.jpg)
         const filename = imgPath.split('/').pop()
         if (filename) {
           const imagePath = join(imagesDir, filename)
@@ -212,7 +213,7 @@ export async function deleteSecretPage(id: string) {
     return { error: 'Страница не найдена' }
   }
 
-  const pageDir = join(process.cwd(), 'private', 'secret-pages', page.slug)
+  const pageDir = join(process.cwd(), 'public', 'files', 'secret-pages', page.slug)
 
   // Удаляем папку рекурсивно
   if (existsSync(pageDir)) {
@@ -234,7 +235,7 @@ export async function deleteSecretPage(id: string) {
 }
 
 export async function getSecretPageImages(slug: string): Promise<string[]> {
-  const imagesDir = join(process.cwd(), 'private', 'secret-pages', slug, 'images')
+  const imagesDir = join(process.cwd(), 'public', 'files', 'secret-pages', slug, 'images')
 
   if (!existsSync(imagesDir)) {
     return []
@@ -244,7 +245,7 @@ export async function getSecretPageImages(slug: string): Promise<string[]> {
     const files = await readdir(imagesDir)
     return files
       .filter(f => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(f))
-      .map(f => `/secret-pages/${slug}/images/${f}`)
+      .map(f => `/files/secret-pages/${slug}/images/${f}`)
   } catch {
     return []
   }

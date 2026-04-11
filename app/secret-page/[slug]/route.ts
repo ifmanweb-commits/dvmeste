@@ -52,8 +52,8 @@ export async function GET(
     )
   }
 
-  // 4. Прочитать HTML файл из приватной папки
-  const filePath = join(process.cwd(), 'private', page.filePath)
+  // 4. Прочитать HTML файл из public/files/
+  const filePath = join(process.cwd(), 'public', page.filePath)
 
   if (!existsSync(filePath)) {
     return new NextResponse(
