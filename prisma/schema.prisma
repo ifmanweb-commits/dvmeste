@@ -84,6 +84,8 @@ model User {
   questionnaireSubmissions QuestionnaireSubmission[] @relation("UserQuestionnaireSubmissions")
   keyUses               KeyUse[]
   certificates          Certificate[] @relation("UserCertificates")
+  withdrawalRequests    WithdrawalRequest[] @relation("user_withdrawal_requests")
+  moderatedWithdrawals  WithdrawalRequest[] @relation("moderator_withdrawals")
 
   @@index([email])
   @@index([status])
@@ -942,4 +944,27 @@ model Certificate {
   @@index([templateId])
   @@index([userId])
   @@index([verificationCode])
+}
+
+model WithdrawalRequest {
+  id          String           @id @default(cuid())
+  userId      String
+  amount      Int
+  status      WithdrawalStatus @default(PENDING)
+  moderatorId String?
+  processedAt DateTime?
+  createdAt   DateTime         @default(now())
+  
+  user      User      @relation("user_withdrawal_requests", fields: [userId], references: [id], onDelete: Cascade)
+  moderator User?     @relation("moderator_withdrawals", fields: [moderatorId], references: [id])
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

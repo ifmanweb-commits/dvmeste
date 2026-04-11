@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { User } from '@prisma/client';
-import { Wallet, Search, Filter, X, ArrowRight, User as UserIcon } from 'lucide-react';
+import { Wallet, Search, Filter, X, ArrowRight, User as UserIcon, Download } from 'lucide-react';
 
 interface Transaction {
   id: string;
@@ -189,7 +189,16 @@ export function PaymentsClient({ user }: PaymentsClientProps) {
           <h1 className="text-3xl font-bold text-gray-900">Платежи</h1>
           <p className="text-gray-500 mt-1">Управление транзакциями и балансами пользователей</p>
         </div>
-        <Wallet className="h-8 w-8 text-blue-600" />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push('/admin/withdrawal-requests')}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+          >
+            <Download className="h-5 w-5" />
+            Заявки на вывод
+          </button>
+          <Wallet className="h-8 w-8 text-blue-600" />
+        </div>
       </div>
 
       {/* Поиск и фильтры */}

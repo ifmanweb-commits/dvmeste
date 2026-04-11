@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Wallet } from 'lucide-react';
+import { Wallet, X } from 'lucide-react';
 
 interface Transaction {
   id: string;
@@ -23,21 +23,42 @@ interface TransactionsResponse {
   hasMore: boolean;
 }
 
+interface WithdrawalRequest {
+  id: string;
+  amount: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+  moderator?: {
+    id: string;
+    fullName: string | null;
+    email: string;
+  } | null;
+}
+
 export default function BalancePage() {
   const [balance, setBalance] = useState<number>(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSupervisor, setIsSupervisor] = useState(false);
+  
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
 
   const limit = 20;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [balanceRes, transactionsRes] = await Promise.all([
+        const [balanceRes, transactionsRes, userRes] = await Promise.all([
           fetch('/api/account/balance'),
           fetch(`/api/account/transactions?page=${page}&limit=${limit}`),
+          fetch('/api/account/me'),
         ]);
 
         if (!balanceRes.ok || !transactionsRes.ok) {
@@ -46,9 +67,11 @@ export default function BalancePage() {
 
         const balanceData = await balanceRes.json();
         const transactionsData: TransactionsResponse = await transactionsRes.json();
+        const userData = await userRes.json();
 
         setBalance(balanceData.balance);
         setTransactions(transactionsData.items);
+        setIsSupervisor(userData.user?.isSupervisor || false);
         setError(null);
       } catch (err: any) {
         setError(err.message);
@@ -59,6 +82,20 @@ export default function BalancePage() {
 
     fetchData();
   }, [page]);
+
+  // Загрузка заявок на вывод
+  useEffect(() => {
+    if (isSupervisor) {
+      fetch('/api/account/withdrawal-requests')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.items) {
+            setWithdrawalRequests(data.items);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [isSupervisor]);
 
   const formatAmount = (amountInKopecks: number): string => {
     const rubles = Math.round(amountInKopecks / 100);
@@ -107,6 +144,71 @@ export default function BalancePage() {
     return '-';
   };
 
+  const handleWithdrawSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitError(null);
+    setIsSubmitting(true);
+
+    const amountInRubles = parseInt(withdrawAmount.replace(/\D/g, '') || '0', 10);
+    const amountInKopecks = amountInRubles * 100;
+
+    if (amountInKopecks <= 0) {
+      setSubmitError('Введите корректную сумму');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (amountInKopecks > balance) {
+      setSubmitError('Недостаточно средств на балансе');
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/account/withdrawal-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amountInKopecks }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Ошибка при создании заявки');
+      }
+
+      // Обновляем баланс
+      setBalance(data.newBalance);
+      // Добавляем заявку в список
+      setWithdrawalRequests([data.withdrawalRequest, ...withdrawalRequests]);
+      // Закрываем модалку
+      setIsModalOpen(false);
+      setWithdrawAmount('');
+    } catch (err: any) {
+      setSubmitError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getStatusLabel = (status: WithdrawalRequest['status']): string => {
+    const labels: Record<WithdrawalRequest['status'], string> = {
+      PENDING: 'Ожидает обработки',
+      APPROVED: 'Обработана',
+      REJECTED: 'Отклонена',
+    };
+    return labels[status];
+  };
+
+  const getStatusColor = (status: WithdrawalRequest['status']): string => {
+    const colors: Record<WithdrawalRequest['status'], string> = {
+      PENDING: 'text-yellow-600 bg-yellow-50',
+      APPROVED: 'text-green-600 bg-green-50',
+      REJECTED: 'text-red-600 bg-red-50',
+    };
+    return colors[status];
+  };
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -139,12 +241,56 @@ export default function BalancePage() {
                   {formatAmount(balance)}
                 </p>
               </div>
-              <div className="rounded-full bg-green-100 p-4">
-                <Wallet className="h-8 w-8 text-green-600" />
+              <div className="flex items-center gap-4">
+                {isSupervisor && (
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    Вывести деньги
+                  </button>
+                )}
+                <div className="rounded-full bg-green-100 p-4">
+                  <Wallet className="h-8 w-8 text-green-600" />
+                </div>
               </div>
             </div>
           </div>
         </section>
+
+        {/* Заявки на вывод - только для супервизоров и только если есть необработанные заявки */}
+        {isSupervisor && withdrawalRequests.some(r => r.status === 'PENDING') && (
+          <section className="mb-10">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Заявки на вывод
+            </h2>
+            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="space-y-3">
+                {withdrawalRequests
+                  .filter(r => r.status === 'PENDING')
+                  .slice(0, 5)
+                  .map((request) => (
+                    <div
+                      key={request.id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                    >
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {formatAmount(request.amount)}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {formatDate(request.createdAt)}
+                        </p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(request.status)}`}>
+                        {getStatusLabel(request.status)}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className="mb-10">
           <h2 className="mb-4 text-lg font-semibold text-gray-900">
@@ -247,6 +393,79 @@ export default function BalancePage() {
           </div>
         </section>
       </div>
+
+      {/* Модальное окно для вывода средств */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div 
+            className="absolute inset-0 bg-black bg-opacity-50"
+            onClick={() => setIsModalOpen(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              Вывод средств
+            </h2>
+
+            <p className="text-sm text-gray-600 mb-4">
+              Доступно для вывода: <span className="font-semibold">{formatAmount(balance)}</span>
+            </p>
+
+            <form onSubmit={handleWithdrawSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Сумма для вывода
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={withdrawAmount}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      setWithdrawAmount(value);
+                    }}
+                    placeholder="0 ₽"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                    autoFocus
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">
+                    ₽
+                  </span>
+                </div>
+              </div>
+
+              {submitError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                  {submitError}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !withdrawAmount}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? 'Создание заявки...' : 'Создать заявку'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
