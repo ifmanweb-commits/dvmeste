@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import HorNav from "./HorNav";
 
 export default function ManagementPage() {
   const [shuffleLoading, setShuffleLoading] = useState(false);
@@ -59,9 +60,12 @@ export default function ManagementPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Управление</h1>
         <p className="text-gray-500 mt-1">Настройки и утилиты</p>
+
+        {/* Вкладки */}
+        <HorNav />
       </div>
 
-      <div className="max-w-xl space-y-6">
+      <div className="mt-6 max-w-xl space-y-6">
         {/* Карточка 1: Каталог психологов */}
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900 mb-2">

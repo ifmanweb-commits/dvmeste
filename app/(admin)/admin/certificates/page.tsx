@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { getCertificatesList, deleteCertificate, CertificatesListResult } from '@/lib/actions/certificates';
 import { CertificateWithUser } from '@/lib/actions/certificates';
 import { User } from '@prisma/client';
+import HorNav from '../certifications/HorNav';
 
 /**
  * Получить полное ФИО пользователя
@@ -69,27 +69,22 @@ export default function CertificatesPage() {
     <div className="w-full">
       {/* Заголовок раздела */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Выданные сертификаты</h1>
-        <p className="text-gray-500 mt-1">Управление выданными сертификатами</p>
-        <div className="mt-2 text-sm text-gray-600">
-          Всего: {data.total}
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Выданные сертификаты</h1>
+            <p className="text-gray-500 mt-1">Управление выданными сертификатами</p>
+          </div>
+          <div className="text-sm text-gray-600">
+            Всего: {data.total}
+          </div>
         </div>
-      </div>
 
-      {/* Кнопка управления шаблонами */}
-      <div className="mb-6">
-        <Link
-          href="/admin/certificate-templates"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-[#5858E2] text-white rounded-lg hover:bg-[#4a4ac7] transition-colors font-medium"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-          </svg>
-          Управление шаблонами
-        </Link>
+        {/* Вкладки */}
+        <HorNav />
       </div>
 
       {/* Таблица сертификатов */}
+      <div className="mt-6">
       {data.items.length === 0 ? (
         <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
           <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -210,6 +205,7 @@ export default function CertificatesPage() {
           )}
         </>
       )}
+      </div>
     </div>
   );
 }

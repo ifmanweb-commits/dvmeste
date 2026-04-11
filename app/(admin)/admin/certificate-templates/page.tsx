@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getCertificateTemplates, deleteCertificateTemplate } from '@/lib/actions/certificate-templates';
 import { CertificateTemplate } from '@prisma/client';
+import HorNav from '../certifications/HorNav';
 
 export default function CertificateTemplatesPage() {
   const [templates, setTemplates] = useState<(CertificateTemplate & { _count: { certificates: number } })[]>([]);
@@ -46,25 +47,28 @@ export default function CertificateTemplatesPage() {
     <div className="w-full">
       {/* Заголовок раздела */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Шаблоны сертификатов</h1>
-        <p className="text-gray-500 mt-1">Управление шаблонами сертификатов</p>
-      </div>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Шаблоны сертификатов</h1>
+            <p className="text-gray-500 mt-1">Управление шаблонами сертификатов</p>
+          </div>
+          <Link
+            href="/admin/certificate-templates/new"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#5858E2] text-white rounded-lg hover:bg-[#4a4ac7] transition-colors font-medium"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Создать шаблон
+          </Link>
+        </div>
 
-      {/* Кнопка создания */}
-      <div className="mb-6">
-        <Link
-          href="/admin/certificate-templates/new"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-[#5858E2] text-white rounded-lg hover:bg-[#4a4ac7] transition-colors font-medium"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Создать шаблон
-        </Link>
+        {/* Вкладки */}
+        <HorNav />
       </div>
 
       {/* Таблица шаблонов */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      <div className="mt-6 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>

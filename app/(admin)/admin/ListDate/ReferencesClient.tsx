@@ -192,7 +192,7 @@ export default function ReferencesClient({ initialData }: ReferencesClientProps)
     <div className="">
       <div className="">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Управление списками данных</h1>
+          <h3 className="text-2xl text-gray-900">Управление списками данных</h3>
           <p className="text-gray-500 mt-1">Редактирование допустимых значений для форм. Перетаскивайте элементы для изменения порядка.</p>
         </div>
 
@@ -203,7 +203,7 @@ export default function ReferencesClient({ initialData }: ReferencesClientProps)
               <button
                 key={tab}
                 onClick={() => handleTabChange(tab)}
-                className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors cursor-pointer ${
                   activeTab === tab
                     ? 'border-[#5858E2] text-[#5858E2]'
                     : 'border-transparent text-gray-600 hover:text-gray-900'

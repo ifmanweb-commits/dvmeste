@@ -20,24 +20,19 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
   
   const menuItems = [
     { href: '/admin', label: 'Дашборд', roles: ['admin', 'manager'] },
+    { href: '/admin/psychologists', label: 'Психологи', roles: ['admin', 'manager'] },
+    { href: '/admin/moderation', label: 'Модерация', roles: ['admin', 'manager'] },
+    { href: '/admin/articles', label: 'Статьи', roles: ['admin', 'manager'] },
     { href: '/admin/messages', label: 'Сообщения', roles: ['admin', 'manager'] },
     { href: '/admin/leads', label: 'Заявки', roles: ['admin', 'manager'] },
     { href: '/admin/clients', label: 'Клиенты', roles: ['admin', 'manager'] },
     { href: '/admin/complaints', label: 'Жалобы', roles: ['admin', 'manager'] },
-    { href: '/admin/psychologists', label: 'Психологи', roles: ['admin', 'manager'] },
-    { href: '/admin/moderation', label: 'Модерация', roles: ['admin', 'manager'] },
-    { href: '/admin/articles', label: 'Статьи', roles: ['admin', 'manager'] },
-    { href: '/admin/courses', label: 'Курсы', roles: ['admin', 'manager'] },
     { href: '/admin/secrets', label: 'Секреты', roles: ['admin', 'manager'] },
     { href: '/admin/certifications', label: 'Сертификации', roles: ['admin', 'manager'] },
-    { href: '/admin/certificates', label: 'Сертификаты', roles: ['admin'] },
+    { href: '/admin/courses', label: 'Курсы', roles: ['admin', 'manager'] },
     { href: '/admin/payments', label: 'Платежи', roles: ['admin'] },
     { href: '/admin/onboarding', label: 'Советы', roles: ['admin', 'manager'] },
     { href: '/admin/pages', label: 'Страницы', roles: ['admin'] },
-    { href: '/admin/managers', label: 'Менеджеры', roles: ['admin'] },
-    { href: '/admin/blocks', label: 'Блоки', roles: ['admin'] },
-    { href: '/admin/menu', label: 'Меню', roles: ['admin'] },
-    { href: '/admin/ListDate', label: 'Справочники', roles: ['admin'] },
     { href: '/admin/management', label: 'Управление', roles: ['admin'] },
   ]
   

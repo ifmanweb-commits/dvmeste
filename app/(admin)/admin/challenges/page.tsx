@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import DeleteChallengeButton from './DeleteChallengeButton';
 import ChallengesFilters from './ChallengesFilters';
+import HorNav from '../certifications/HorNav';
 
 type SearchParams = {
   type?: string;
@@ -80,20 +81,7 @@ export default async function ChallengesPage({
         </div>
 
         {/* Вкладки */}
-        <div className="flex gap-2 border-b border-gray-200 mt-4">
-          <Link
-            href="/admin/certifications"
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
-          >
-            Сертификации
-          </Link>
-          <Link
-            href="/admin/challenges"
-            className="px-4 py-2 text-sm font-medium text-[#5858E2] border-b-2 border-[#5858E2] hover:text-[#4a4ac7]"
-          >
-            Испытания
-          </Link>
-        </div>
+        <HorNav />
       </div>
 
       {/* Фильтры */}
