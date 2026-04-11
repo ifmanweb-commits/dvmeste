@@ -24,37 +24,32 @@ export default async function TipsPage() {
   const tips: TipHistoryItem[] = result.data
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="font-display text-xl font-bold text-gray-900 sm:text-2xl">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
             Подсказки
           </h1>
-          <Link
-            href="/account"
-            className="text-sm text-gray-600 hover:text-gray-900"
-          >
-            ← Назад в дашборд
-          </Link>
-        </div>
+        </header>
 
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="border-b border-gray-200 px-6 py-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              История просмотров
-            </h2>
+        <section className="mb-10">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+            История просмотров
+          </h2>
+        
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+
+            {tips.length === 0 ? (
+              <div className="p-6">
+                <p className="text-center text-sm text-gray-500">
+                  Вы ещё не закрывали ни одной подсказки
+                </p>
+              </div>
+            ) : (
+              <TipsTable tips={tips} />
+            )}
           </div>
-
-          {tips.length === 0 ? (
-            <div className="p-6">
-              <p className="text-center text-sm text-gray-500">
-                Вы ещё не закрывали ни одной подсказки
-              </p>
-            </div>
-          ) : (
-            <TipsTable tips={tips} />
-          )}
-        </div>
+        </section>
       </div>
     </div>
   )

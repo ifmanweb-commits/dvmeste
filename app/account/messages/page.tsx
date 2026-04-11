@@ -15,15 +15,20 @@ export default async function MessagesPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Сообщения модераторам</h1>
-        <p className="text-gray-500 mt-2">
-          Здесь вы можете задать вопросы модераторам и получить ответы
-        </p>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+            Сообщения модераторам
+          </h1>
+          <p className="text-gray-600">
+            Здесь вы можете задать вопросы модераторам и получить ответы
+          </p>
+        </header>
+      
 
-      <MessagesClient />
+        <MessagesClient userAvatar={user.avatarUrl} />
+      </div>
     </div>
   )
 }

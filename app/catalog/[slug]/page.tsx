@@ -281,7 +281,7 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: personSchema }}
       />
       <div className="min-h-screen bg-white">
-        <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+        <div className="mx-auto sm:max-w-4xl px-0 sm:px-6 lg:px-8 py-4 sm:py-6">
           <Link
             href="/catalog"
             className="mb-3 inline-flex items-center gap-1 text-sm text-gray-600 hover:text-[#5858E2]"
@@ -299,7 +299,7 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
             </div>
           )}
 
-          <article className="overflow-hidden rounded-lg border-2 border-lime-500 bg-white">
+          <article className="overflow-hidden sm:rounded-lg sm:border-2 border-lime-500 bg-white">
             <div className="p-4 sm:p-5 md:p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:gap-5">
                 <div className="sm:w-2/5">
@@ -324,12 +324,17 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
                     <div className="flex flex-wrap gap-1">
                       {mainParadigm.length > 0 ? (
                         mainParadigm.map((p, index) => (
-                          <Badge key={`${p}-${index}`} variant="neutral">
+                          <span
+                            key={`${p}-${index}`}
+                            className="inline-flex items-center rounded-full px-2.5 py-0.5 text-sm border border-gray-300 text-gray-700 bg-white"
+                          >
                             {p}
-                          </Badge>
+                          </span>
                         ))
                       ) : (
-                        <Badge variant="neutral">Нет парадигм</Badge>
+                        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-sm border border-gray-300 text-gray-700 bg-white">
+                          Нет парадигм
+                        </span>
                       )}
                     </div>
                   </div>
@@ -389,7 +394,7 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
                       <LeadFormModal
                         psychologistId={user.id}
                         psychologistName={user.fullName || undefined}
-                        triggerLabel="Связаться"
+                        triggerLabel="Записаться"
                       />
                       <ComplaintModalTrigger
                         psychologistName={user.fullName || 'Без имени'}

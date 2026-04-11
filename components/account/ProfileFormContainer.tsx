@@ -299,7 +299,7 @@ export function ProfileFormContainer({
       <div>
         {/* Вкладка 1: Личные данные */}
         <div className={cn(activeTab !== 'basic' && "hidden")}>
-          <div className="rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input
               label="Фамилия"
@@ -416,7 +416,7 @@ export function ProfileFormContainer({
         {/* Вкладка 2: Подробно */}
         <div className={cn(activeTab !== 'detailed' && "hidden")}>
           {isCandidate ? <LockedFeature title="Раздел закрыт" description="Доступно участникам каталога." /> : (
-            <div className="rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm space-y-6">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-6">
 
               {/* Индикатор статуса черновика */}
               {(user as any).draftStatus === 'PENDING' && (
@@ -476,14 +476,14 @@ export function ProfileFormContainer({
         {/* Вкладка 3: Фотографии */}
         <div className={cn(activeTab !== 'photos' && "hidden")}>
           {isCandidate ? (
-            <div className="rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <LockedFeature 
                 title="Загрузка фото недоступна" 
                 description="Вы сможете добавить фотографии профиля после того, как ваша анкета пройдет предварительную проверку." 
               />
             </div>
           ) : (
-            <div className="rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <div className="space-y-4">
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {photos.map(photo => (
@@ -544,7 +544,7 @@ export function ProfileFormContainer({
                 )}
                 </div>
                 <p className="text-[11px] text-gray-400 italic">
-                  * Вы можете загрузить до 5 фотографий. Первое фото будет основным в поиске.
+                  * Вы можете загрузить до 5 фотографий. Выберите главное фото, поставив на нём "галочку"
                 </p>
               </div>
             </div>
@@ -554,14 +554,14 @@ export function ProfileFormContainer({
         {/* Вкладка 4: Документы */}
         <div className={cn(activeTab !== 'docs' && "hidden")}>
           {isCandidate ? (
-            <div className="rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <LockedFeature 
                 title="Документы недоступны" 
                 description="Вы сможете загрузить дипломы и сертификаты после прохождения предварительной модерации. Сейчас они не требуются." 
               />
             </div>
           ) : (
-            <div className="rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <DocumentsTab 
                 documents={user.documents}
                 loading={loading}

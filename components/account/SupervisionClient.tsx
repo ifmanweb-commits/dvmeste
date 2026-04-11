@@ -215,34 +215,32 @@ export default function SupervisionClient({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        {/* Header */}
+        <header className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">Супервизия</h1>
+              <p className="text-gray-600 text-sm">Панель супервизора</p>
+            </div>
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
               <ShieldCheck className="w-6 h-6 text-blue-600" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Супервизия</h1>
-              <p className="text-gray-600 text-sm">Панель супервизора</p>
-            </div>
           </div>
-        </div>
-      </div>
+        </header>
 
-      {/* Tabs */}
-      <div className="container mx-auto px-4 py-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="border-b border-gray-200">
-            <nav className="flex flex-wrap">
+        {/* Tabs */}
+        <nav className="mb-8 border-b border-gray-200">
+          <ul className="flex gap-6">
+            <li>
               <Link
                 href="/account/supervision?tab=available"
                 className={cn(
-                  "px-6 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors relative border-b-2",
+                  "inline-flex items-center gap-2 border-b-2 pb-3 text-sm font-medium transition-colors",
                   activeTab === "available"
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    ? "border-[#5858E2] text-[#5858E2]"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
                 )}
               >
                 <Inbox className="w-4 h-4" />
@@ -253,13 +251,15 @@ export default function SupervisionClient({
                   </span>
                 )}
               </Link>
+            </li>
+            <li>
               <Link
                 href="/account/supervision?tab=questionnaires"
                 className={cn(
-                  "px-6 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors relative border-b-2",
+                  "inline-flex items-center gap-2 border-b-2 pb-3 text-sm font-medium transition-colors",
                   activeTab === "questionnaires"
-                    ? "border-purple-600 bg-purple-50 text-purple-700"
-                    : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    ? "border-[#5858E2] text-[#5858E2]"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
                 )}
               >
                 <ClipboardList className="w-4 h-4" />
@@ -270,13 +270,15 @@ export default function SupervisionClient({
                   </span>
                 )}
               </Link>
+            </li>
+            <li>
               <Link
                 href="/account/supervision?tab=reviewing"
                 className={cn(
-                  "px-6 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors relative border-b-2",
+                  "inline-flex items-center gap-2 border-b-2 pb-3 text-sm font-medium transition-colors",
                   activeTab === "reviewing"
-                    ? "border-amber-600 bg-amber-50 text-amber-700"
-                    : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    ? "border-[#5858E2] text-[#5858E2]"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
                 )}
               >
                 <Clock className="w-4 h-4" />
@@ -287,52 +289,54 @@ export default function SupervisionClient({
                   </span>
                 )}
               </Link>
+            </li>
+            <li>
               <Link
                 href="/account/supervision?tab=history"
                 className={cn(
-                  "px-6 py-4 text-sm font-medium flex items-center justify-center gap-2 transition-colors relative border-b-2",
+                  "inline-flex items-center gap-2 border-b-2 pb-3 text-sm font-medium transition-colors",
                   activeTab === "history"
-                    ? "border-green-600 bg-green-50 text-green-700"
-                    : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    ? "border-[#5858E2] text-[#5858E2]"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
                 )}
               >
                 <History className="w-4 h-4" />
                 История
               </Link>
-            </nav>
-          </div>
+            </li>
+          </ul>
+        </nav>
 
-          {/* Content */}
-          <div className="p-6">
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-              </div>
-            ) : error ? (
-              <div className="text-center py-12 text-red-600">{error}</div>
-            ) : activeTab === "available" ? (
-              <AvailableTab
-                submissions={availableSubmissions}
-                onTake={handleTake}
-                loading={actionLoading}
-              />
-            ) : activeTab === "questionnaires" ? (
-              <AvailableQuestionnairesTab
-                questionnaires={availableQuestionnaires}
-                onTake={(id) => handleTake(id, true)}
-                loading={actionLoading}
-              />
-            ) : activeTab === "reviewing" ? (
-              <ReviewingTab
-                submissions={reviewingSubmissions}
-                questionnaires={reviewingQuestionnaires}
-                onCancel={handleCancel}
-                loading={actionLoading}
-              />
-            ) : (
-              <HistoryTab reviews={reviewHistory} />
-            )}
-          </div>
+        {/* Content */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+          ) : error ? (
+            <div className="text-center py-12 text-red-600">{error}</div>
+          ) : activeTab === "available" ? (
+            <AvailableTab
+              submissions={availableSubmissions}
+              onTake={handleTake}
+              loading={actionLoading}
+            />
+          ) : activeTab === "questionnaires" ? (
+            <AvailableQuestionnairesTab
+              questionnaires={availableQuestionnaires}
+              onTake={(id) => handleTake(id, true)}
+              loading={actionLoading}
+            />
+          ) : activeTab === "reviewing" ? (
+            <ReviewingTab
+              submissions={reviewingSubmissions}
+              questionnaires={reviewingQuestionnaires}
+              onCancel={handleCancel}
+              loading={actionLoading}
+            />
+          ) : (
+            <HistoryTab reviews={reviewHistory} />
+          )}
         </div>
       </div>
     </div>

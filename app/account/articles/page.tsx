@@ -76,10 +76,10 @@ export default async function MyArticlesPage() {
   const approvedArticles = formattedArticles.filter(a => a.moderationStatus === "APPROVED");
   const workArticles = formattedArticles.filter(a => a.moderationStatus !== "APPROVED");
   return (
-    <div className="min-h-screen bg-slate-50/20">
-      <div className="max-w-6xl mx-auto py-12 px-6">
-        <header className="mb-12">
-          <h1 className="text-3xl font-bold text-gray-900">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
             Мои статьи
           </h1>
         </header>
@@ -97,12 +97,12 @@ export default async function MyArticlesPage() {
         />
 
         {workArticles.length > 0 && (
-          <div className="mt-16">
-            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-6 pl-1">
+          <section className="mb-10">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
               Статьи в работе
             </h2>
             <ArticleTable articles={workArticles} />
-          </div>
+          </section>
         )}
 
         <AcApprovedArticles articles={approvedArticles} />

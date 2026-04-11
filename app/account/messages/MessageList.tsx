@@ -10,9 +10,10 @@ interface MessageListProps {
   hasMore: boolean
   onLoadMore: () => void
   loadingMore: boolean
+  userAvatar?: string | null
 }
 
-export function MessageList({ messages, hasMore, onLoadMore, loadingMore }: MessageListProps) {
+export function MessageList({ messages, hasMore, onLoadMore, loadingMore, userAvatar }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Автоскролл к последнему сообщению при загрузке
@@ -53,18 +54,15 @@ export function MessageList({ messages, hasMore, onLoadMore, loadingMore }: Mess
       )}
 
       {/* Сообщения */}
-      <div ref={containerRef} className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+      <div ref={containerRef} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         {messages.map((message) => (
-          <div
+          <MessageBubble
             key={message.id}
-            className={`flex ${message.direction === "to_moder" ? "justify-end" : "justify-start"}`}
-          >
-            <MessageBubble
-              message={message}
-              direction={message.direction}
-              timestamp={formatDate(message.createdAt)}
-            />
-          </div>
+            message={message}
+            direction={message.direction}
+            timestamp={formatDate(message.createdAt)}
+            userAvatar={userAvatar}
+          />
         ))}
       </div>
 

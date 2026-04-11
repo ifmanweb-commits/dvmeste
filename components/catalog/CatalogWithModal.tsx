@@ -85,7 +85,7 @@ function PsychologistCard({
   isCurrentUser?: boolean;
 }) {
   const {
-    slug, fullName, city, mainParadigm, certificationLevel,
+    slug, fullName, mainParadigm, certificationLevel,
     shortBio, price, images, educationCount, coursesCount, workFormat,
     freeSession
   } = psychologist;
@@ -123,47 +123,31 @@ function PsychologistCard({
 
         {/* Контент справа */}
         <div className="flex-1 p-4 sm:p-5 flex flex-col">
-          {/* Верхняя строка: имя + квалификация + формат работы */}
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href={`/catalog/${slug}`}
-                  className="text-sm font-medium text-[#5858E2] hover:underline"
-                >
-                  <h3 className="font-semibold text-lg text-gray-900">
-                    {fullName}
-                  </h3>
-                </Link>
-              </div>
-              <p className="text-sm text-gray-500 mt-0.5">{city || "Город не указан"}</p>
-              {/* Бейдж уровня квалификации - зеленый */}
-              <div className="mt-2">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#A7FF5A] text-gray-900">
-                  {certificationLevel} уровень квалификации
-                </span>
-              </div>
-            </div>
-
-            {/* Формат работы - правый верхний угол */}
-            <div className="flex flex-wrap gap-1.5 justify-end">
-              {modalities.map((m, i) => (
-                <span
-                  key={i}
-                  className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
-                >
-                  {m}
-                </span>
-              ))}
-            </div>
+          {/* Верхняя строка: имя + квалификация */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={`/catalog/${slug}`}
+              className="text-sm font-medium text-[#5858E2] hover:underline"
+            >
+              <h3 className="font-semibold text-lg text-gray-900">
+                {fullName}
+              </h3>
+            </Link>
+            {/* Бейдж уровня квалификации - зеленый */}
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#A7FF5A] text-gray-900">
+              {certificationLevel} уровень
+            </span>
           </div>
 
-          {/* Парадигмы */}
-          <div className="flex flex-wrap gap-1.5 mt-3">
+          {/* Парадигмы - белые бейджи с серым контуром */}
+          <div className="flex flex-wrap gap-1.5 mt-2">
             {mainParadigm.slice(0, 3).map((p) => (
-              <Badge key={p} variant="primary">
+              <span
+                key={p}
+                className="inline-flex items-center rounded-full px-2.5 py-0.5 text-sm border border-gray-300 text-gray-700 bg-white"
+              >
                 {p}
-              </Badge>
+              </span>
             ))}
           </div>
 
@@ -171,6 +155,13 @@ function PsychologistCard({
           <p className="text-xs text-gray-500 mt-2">
             Дипломов: {educationCount} · Курсов: {coursesCount}
           </p>
+
+          {/* Формат работы */}
+          {modalities.length > 0 && (
+            <p className="text-xs text-gray-600 mt-1">
+              Формат работы: {modalities.join(', ')}
+            </p>
+          )}
 
           {/* Краткое описание */}
           <p className="mt-2 text-sm text-gray-600 line-clamp-2 flex-1">
@@ -202,7 +193,7 @@ function PsychologistCard({
               <LeadFormModal
                 psychologistId={psychologist.id}
                 psychologistName={psychologist.fullName}
-                triggerLabel="Связаться"
+                triggerLabel="Записаться"
               />
             </div>
           </div>

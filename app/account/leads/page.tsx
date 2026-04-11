@@ -117,10 +117,10 @@ export default function LeadsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/30">
-      <div className="max-w-6xl mx-auto py-8 px-4">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
         <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Заявки</h1>
+          <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">Заявки</h1>
           <p className="text-gray-600">Управляйте заявками от клиентов</p>
         </header>
 

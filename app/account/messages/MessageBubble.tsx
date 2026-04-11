@@ -7,51 +7,50 @@ interface MessageBubbleProps {
   message: any
   direction: "to_moder" | "to_user"
   timestamp: string
+  userAvatar?: string | null
 }
 
-export function MessageBubble({ message, direction, timestamp }: MessageBubbleProps) {
+export function MessageBubble({ message, direction, timestamp, userAvatar }: MessageBubbleProps) {
   const isFromUser = direction === "to_moder"
 
   return (
-    <div className={`max-w-[80%] ${isFromUser ? "ml-auto" : "mr-auto"}`}>
-      <div className="flex items-start gap-2">
-        {/* Аватар для сообщений модератора */}
-        {!isFromUser && (
-          <div className="w-8 h-8 rounded-full bg-[#5858E2]/10 flex items-center justify-center flex-shrink-0 mt-1">
-            <Bot className="h-4 w-4 text-[#5858E2]" />
+    <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
+      {/* Аватар */}
+      <div className="flex-shrink-0">
+        {isFromUser ? (
+          userAvatar ? (
+            <img 
+              src={userAvatar} 
+              alt="Avatar" 
+              className="w-10 h-10 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+              <User className="h-5 w-5 text-gray-500" />
+            </div>
+          )
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-[#5858E2]/10 flex items-center justify-center">
+            <Bot className="h-5 w-5 text-[#5858E2]" />
           </div>
         )}
+      </div>
 
-        {/* Контент сообщения */}
-        <div
-          className={`rounded-xl p-3 ${
-            isFromUser
-              ? "bg-[#5858E2] text-white rounded-tr-none"
-              : "bg-gray-100 text-gray-900 rounded-tl-none"
-          }`}
-        >
-          {/* Текст с pre-wrap и ссылками */}
-          <div
-            className="text-sm whitespace-pre-wrap break-words"
-            dangerouslySetInnerHTML={{ __html: message.text }}
-          />
-
-          {/* Время и статус */}
-          <div
-            className={`text-[10px] mt-1 flex items-center justify-end gap-1 ${
-              isFromUser ? "text-white/70" : "text-gray-500"
-            }`}
-          >
-            {timestamp}
-          </div>
+      {/* Контент */}
+      <div className="flex-1 min-w-0">
+        {/* Имя отправителя */}
+        <div className="flex items-baseline gap-2 mb-1">
+          <span className="font-semibold text-gray-900 text-sm">
+            {isFromUser ? "Вы" : "Модератор"}
+          </span>
+          <span className="text-xs text-gray-500">{timestamp}</span>
         </div>
 
-        {/* Аватар для сообщений пользователя */}
-        {isFromUser && (
-          <div className="w-8 h-8 rounded-full bg-[#5858E2] flex items-center justify-center flex-shrink-0 mt-1">
-            <User className="h-4 w-4 text-white" />
-          </div>
-        )}
+        {/* Текст сообщения */}
+        <div
+          className="text-sm text-gray-700 whitespace-pre-wrap break-words"
+          dangerouslySetInnerHTML={{ __html: message.text }}
+        />
       </div>
     </div>
   )

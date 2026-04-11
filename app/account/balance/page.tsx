@@ -116,44 +116,42 @@ export default function BalancePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="font-display text-xl font-bold text-gray-900 sm:text-2xl">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
             Мой счёт
           </h1>
-          <Link
-            href="/account"
-            className="text-sm text-gray-600 hover:text-gray-900"
-          >
-            ← Назад в дашборд
-          </Link>
-        </div>
+        </header>
 
-        {/* Баланс */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">
-                Текущий баланс
-              </p>
-              <p className="text-3xl font-bold text-gray-900">
-                {formatAmount(balance)}
-              </p>
-            </div>
-            <div className="rounded-full bg-green-100 p-4">
-              <Wallet className="h-8 w-8 text-green-600" />
+        <section className="mb-10">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+            Баланс
+          </h2>
+        
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">
+                  Текущий баланс
+                </p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {formatAmount(balance)}
+                </p>
+              </div>
+              <div className="rounded-full bg-green-100 p-4">
+                <Wallet className="h-8 w-8 text-green-600" />
+              </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* История транзакций */}
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="border-b border-gray-200 px-6 py-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              История операций
-            </h2>
-          </div>
+        <section className="mb-10">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+            История операций
+          </h2>
+        
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
 
           {error && (
             <div className="p-6">
@@ -246,7 +244,8 @@ export default function BalancePage() {
               </div>
             </>
           )}
-        </div>
+          </div>
+        </section>
       </div>
     </div>
   );

@@ -36,7 +36,11 @@ type MessagesData = {
   dialog: DialogInfo | null
 }
 
-export function MessagesClient() {
+interface MessagesClientProps {
+  userAvatar?: string | null
+}
+
+export function MessagesClient({ userAvatar }: MessagesClientProps) {
   const [messagesData, setMessagesData] = useState<MessagesData | null>(null)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
@@ -122,8 +126,6 @@ export function MessagesClient() {
     }
   }
 
-// В MessagesClient.tsx, обновим handleSendMessage
-
   const handleSendMessage = async (text: string) => {
     setSending(true)
     setError(null)
@@ -131,8 +133,8 @@ export function MessagesClient() {
     // Создаем временное сообщение для мгновенного отображения
     const tempMessage: Message = {
       id: `temp-${Date.now()}`,
-      dialogId: messagesData?.dialog?.id || '', // нужен dialogId
-      direction: "to_moder", // пользователь -> модератору
+      dialogId: messagesData?.dialog?.id || '',
+      direction: "to_moder",
       text: text,
       isRead: false,
       createdAt: new Date()
@@ -150,13 +152,11 @@ export function MessagesClient() {
       const result = await sendMessage(text)
       
       if (result.success) {
-        // При успехе перезагружаем с сервера, чтобы получить реальные ID
         await loadMessages(1)
         setTimeout(() => {
           window.scrollTo({ top: 0, behavior: "smooth" })
         }, 100)
       } else {
-        // При ошибке удаляем временное сообщение
         if (messagesData) {
           setMessagesData({
             ...messagesData,
@@ -166,7 +166,6 @@ export function MessagesClient() {
         setError(result.error || "Ошибка отправки")
       }
     } catch (err) {
-      // При ошибке удаляем временное сообщение
       if (messagesData) {
         setMessagesData({
           ...messagesData,
@@ -215,6 +214,7 @@ export function MessagesClient() {
           hasMore={messagesData.hasMore}
           onLoadMore={handleLoadMore}
           loadingMore={loadingMore}
+          userAvatar={userAvatar || null}
         />
       ) : (
         <div className="text-center py-12 bg-gray-50 rounded-xl">
@@ -227,5 +227,5 @@ export function MessagesClient() {
 
       <div ref={messagesEndRef} />
     </div>
-  )
+   )
 }
