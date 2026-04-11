@@ -345,15 +345,36 @@ export default function PsychologistsListPage({ initialList, searchParams }: Pro
       )}
       
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Психологи</h1>
-        <p className="text-gray-500 mt-1">Управление анкетами психологов</p>
-        <div className="mt-2 text-sm text-gray-600">
-          Всего: {totalCount} {unpublishedCount > 0 && `(${unpublishedCount} неопубликованных)`}
-          {psychologistsWithCertification.length > 0 && (
-            <span className="ml-2 text-green-600">
-              ({psychologistsWithCertification.length} с указанным уровнем)
-            </span>
-          )}
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Психологи</h1>
+            <p className="text-gray-500 mt-1">Управление анкетами психологов</p>
+          </div>
+          <div className="text-sm text-gray-600 text-right">
+            <div className="font-medium">Всего: {totalCount}</div>
+            {unpublishedCount > 0 && (
+              <div className="text-gray-500">({unpublishedCount} неопубликованных)</div>
+            )}
+            {psychologistsWithCertification.length > 0 && (
+              <div className="text-green-600">({psychologistsWithCertification.length} с указанным уровнем)</div>
+            )}
+          </div>
+        </div>
+
+        {/* Вкладки */}
+        <div className="flex gap-2 border-b border-gray-200 mt-4">
+          <Link
+            href="/admin/psychologists"
+            className="px-4 py-2 text-sm font-medium text-[#5858E2] border-b-2 border-[#5858E2] hover:text-[#4a4ac7]"
+          >
+            Проверенные
+          </Link>
+          <Link
+            href="/admin/candidates"
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"
+          >
+            Непроверенные
+          </Link>
         </div>
       </div>
 

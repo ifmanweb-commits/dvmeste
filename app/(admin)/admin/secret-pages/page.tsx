@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import DeleteSecretPageButton from "./DeleteSecretPageButton";
+import SecretsTabs from "../secrets/components/SecretsTabs";
 
 export default async function SecretPagesPage() {
   const pages = await prisma.secretPage.findMany({
@@ -10,7 +11,7 @@ export default async function SecretPagesPage() {
   return (
     <div>
       <div className="mb-6">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Секретные страницы</h1>
             <p className="text-gray-500 mt-1">Управление секретными страницами</p>
@@ -23,6 +24,10 @@ export default async function SecretPagesPage() {
           </Link>
         </div>
 
+        {/* Вкладки */}
+        <SecretsTabs />
+
+        <div className="mt-6">
         {pages.length === 0 ? (
           <div className="rounded-xl border border-neutral-200 bg-white p-8 text-center shadow-sm">
             <p className="text-gray-500">Страницы ещё не созданы</p>
@@ -76,6 +81,7 @@ export default async function SecretPagesPage() {
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

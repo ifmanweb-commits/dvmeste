@@ -117,7 +117,12 @@ return (
               return (
                 <tr key={candidate.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
-                    <div className="text-m font-medium text-gray-900">{candidate.fullName || 'Имя не указано'}</div>
+                    <Link
+                      href={`/admin/candidates/${candidate.id}/edit`}
+                      className="text-m font-medium text-gray-900 hover:text-[#5858E2] transition-colors"
+                    >
+                      {candidate.fullName || 'Имя не указано'}
+                    </Link>
                     <div className="text-sm text-gray-500">{candidate.email}</div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">{getGenderDisplay(candidate.gender)}</td>
@@ -152,7 +157,12 @@ return (
             <div key={candidate.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{candidate.fullName || 'Имя не указано'}</h3>
+                  <Link
+                    href={`/admin/candidates/${candidate.id}/edit`}
+                    className="font-semibold text-gray-900 hover:text-[#5858E2] transition-colors"
+                  >
+                    {candidate.fullName || 'Имя не указано'}
+                  </Link>
                   <p className="text-sm text-gray-500">{candidate.email}</p>
                 </div>
                 {getStatusDisplay(candidate.status)}

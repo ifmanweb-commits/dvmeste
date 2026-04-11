@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Copy, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import DeleteKeyButton from "./DeleteKeyButton";
+import SecretsTabs from "../secrets/components/SecretsTabs";
 
 interface Key {
   id: string;
@@ -139,7 +140,7 @@ export default function KeysPage() {
   return (
     <div>
       <div className="mb-6">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Ключи доступа</h1>
             <p className="text-gray-500 mt-1">Управление ключами доступа</p>
@@ -152,6 +153,10 @@ export default function KeysPage() {
           </Link>
         </div>
 
+        {/* Вкладки */}
+        <SecretsTabs />
+
+        <div className="mt-6">
         {keys.length === 0 ? (
           <div className="rounded-xl border border-neutral-200 bg-white p-8 text-center shadow-sm">
             <p className="text-gray-500">Ключи ещё не созданы</p>
@@ -165,6 +170,7 @@ export default function KeysPage() {
         ) : (
           <KeysTable keys={keys} />
         )}
+        </div>
       </div>
     </div>
   );
