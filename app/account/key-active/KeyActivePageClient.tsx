@@ -151,7 +151,7 @@ export default function KeyActivePageClient({
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-7xl"> 
         {/* Заголовок страницы */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">Ключи</h1>
