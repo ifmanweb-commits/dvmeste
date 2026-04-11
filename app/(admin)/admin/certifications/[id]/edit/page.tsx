@@ -3,6 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import {
+  ArrowLeft,
+  Save,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  Award,
+  BookOpen,
+  Plus,
+  Trash2,
+  ChevronUp,
+  ChevronDown
+} from 'lucide-react';
 
 interface Challenge {
   id: string;
@@ -50,6 +63,7 @@ export default function EditCertificationPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [isLoadingChallenges, setIsLoadingChallenges] = useState(true);
 
@@ -75,6 +89,14 @@ export default function EditCertificationPage() {
 
   // Требования
   const [requirements, setRequirements] = useState<Requirement[]>([]);
+
+  // Таймер для скрытия сообщения
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
 
   // Загрузка списка испытаний
   useEffect(() => {
@@ -229,6 +251,7 @@ export default function EditCertificationPage() {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
+    setMessage(null);
 
     // Создаем FormData для отправки файла ачивки
     const formData = new FormData();
@@ -261,249 +284,285 @@ export default function EditCertificationPage() {
         throw new Error(data.error || 'Ошибка при сохранении');
       }
 
+      setMessage({ type: 'success', text: 'Сертификация успешно обновлена' });
       router.push('/admin/certifications');
     } catch (err: any) {
+      setMessage({ type: 'error', text: err.message });
       setError(err.message);
+    } finally {
       setIsSubmitting(false);
     }
   };
 
+  const inputClasses = `
+    w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 
+    transition-all outline-none focus:border-[#5858E2] focus:ring-4 focus:ring-[#5858E2]/10
+  `;
+
+  const labelClasses = "flex items-center text-sm font-medium text-gray-700 mb-1.5";
+
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-lg text-gray-500">Загрузка...</div>
+      <div className="w-full">
+        <div className="mb-6">
+          <div className="animate-pulse h-8 w-48 bg-gray-200 rounded mb-2"></div>
+          <div className="animate-pulse h-4 w-64 bg-gray-200 rounded"></div>
+        </div>
+        <div className="animate-pulse h-64 bg-gray-200 rounded-xl"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="font-display text-xl font-bold text-gray-900 sm:text-2xl">
-            Редактировать сертификацию
-          </h1>
-          <Link
-            href="/admin/certifications"
-            className="text-sm text-gray-600 hover:text-gray-900"
+    <div className="w-full">
+      {/* Заголовок раздела */}
+      <div className="mb-6 max-w-4xl">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.back()}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            type="button"
           >
-            ← Назад к списку
-          </Link>
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Редактировать сертификацию</h1>
+            <p className="text-gray-500 mt-1">Управление испытаниями и сертификациями</p>
+          </div>
         </div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Основная информация */}
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              Основная информация
+      {/* Сообщения системы */}
+      {message && (
+        <div className={`mb-6 flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium ${
+          message.type === 'success' 
+            ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
+            : 'bg-rose-50 border-rose-100 text-rose-700'
+        }`}>
+          {message.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          {message.text}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
+        {/* Основная информация */}
+        <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+              <Award className="w-4 h-4 text-gray-400" /> Основная информация
             </h2>
-
-            <div className="space-y-4">
-              {/* Настройки награды */}
-              <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
-                <h3 className="mb-3 text-sm font-semibold text-gray-700">Настройки награды</h3>
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Тип награды
+          </div>
+          <div className="p-6 space-y-6">
+            {/* Настройки награды */}
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <h3 className="mb-3 text-sm font-semibold text-gray-700">Настройки награды</h3>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Тип награды
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="rewardType"
+                      value="certificate"
+                      checked={rewardType === 'certificate'}
+                      onChange={(e) => setRewardType(e.target.value as 'certificate' | 'badge')}
+                      className="h-4 w-4 text-[#5858E2] focus:ring-[#5858E2]"
+                    />
+                    <span className="text-sm text-gray-700">Сертификат</span>
                   </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="rewardType"
-                        value="certificate"
-                        checked={rewardType === 'certificate'}
-                        onChange={(e) => setRewardType(e.target.value as 'certificate' | 'badge')}
-                        className="h-4 w-4 text-[#5858E2] focus:ring-[#5858E2]"
-                      />
-                      <span className="text-sm text-gray-700">Сертификат</span>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="rewardType"
+                      value="badge"
+                      checked={rewardType === 'badge'}
+                      onChange={(e) => setRewardType(e.target.value as 'certificate' | 'badge')}
+                      className="h-4 w-4 text-[#5858E2] focus:ring-[#5858E2]"
+                    />
+                    <span className="text-sm text-gray-700">Ачивка</span>
+                  </label>
+                </div>
+              </div>
+
+              {rewardType === 'certificate' ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className={labelClasses}>
+                      Шаблон сертификата
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="rewardType"
-                        value="badge"
-                        checked={rewardType === 'badge'}
-                        onChange={(e) => setRewardType(e.target.value as 'certificate' | 'badge')}
-                        className="h-4 w-4 text-[#5858E2] focus:ring-[#5858E2]"
-                      />
-                      <span className="text-sm text-gray-700">Ачивка</span>
+                    <select
+                      value={certificateTemplateId}
+                      onChange={(e) => setCertificateTemplateId(e.target.value)}
+                      className={inputClasses}
+                    >
+                      <option value="">Выберите шаблон</option>
+                      {certificateTemplates.map((template) => (
+                        <option key={template.id} value={template.id}>
+                          {template.name}
+                        </option>
+                      ))}
+                    </select>
+                    {isLoadingTemplates && (
+                      <p className="mt-1 text-xs text-gray-500">Загрузка шаблонов...</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label className={labelClasses}>
+                      Текст для сертификата
                     </label>
+                    <textarea
+                      value={awardText}
+                      onChange={(e) => setAwardText(e.target.value)}
+                      rows={2}
+                      placeholder="Например: уровень квалификации 1"
+                      className={inputClasses}
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Текст, который будет подставлен в сертификат после слова "Присваивается"
+                    </p>
                   </div>
                 </div>
-
-                {rewardType === 'certificate' ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Шаблон сертификата
-                      </label>
-                      <select
-                        value={certificateTemplateId}
-                        onChange={(e) => setCertificateTemplateId(e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
-                      >
-                        <option value="">Выберите шаблон</option>
-                        {certificateTemplates.map((template) => (
-                          <option key={template.id} value={template.id}>
-                            {template.name}
-                          </option>
-                        ))}
-                      </select>
-                      {isLoadingTemplates && (
-                        <p className="mt-1 text-xs text-gray-500">Загрузка шаблонов...</p>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Текст для сертификата
-                      </label>
-                      <textarea
-                        value={awardText}
-                        onChange={(e) => setAwardText(e.target.value)}
-                        rows={2}
-                        placeholder="Например: уровень квалификации 1"
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+              ) : (
+                <div>
+                  <label className={labelClasses}>
+                    Изображение ачивки
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={handleBadgeFileChange}
+                    className={inputClasses}
+                  />
+                  {badgePreview && (
+                    <div className="mt-3">
+                      <img
+                        src={badgePreview}
+                        alt="Preview"
+                        className="h-24 w-24 object-contain rounded-lg border border-gray-200"
                       />
-                      <p className="mt-1 text-xs text-gray-500">
-                        Текст, который будет подставлен в сертификат после слова "Присваивается"
-                      </p>
                     </div>
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Изображение ачивки
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      onChange={handleBadgeFileChange}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
-                    />
-                    {badgePreview && (
-                      <div className="mt-3">
-                        <img
-                          src={badgePreview}
-                          alt="Preview"
-                          className="h-24 w-24 object-contain rounded-lg border border-gray-200"
-                        />
-                      </div>
-                    )}
-                    {existingBadgeUrl && !badgePreview && (
-                      <div className="mt-3">
-                        <p className="text-xs text-gray-500 mb-2">Текущее изображение:</p>
-                        <img
-                          src={existingBadgeUrl}
-                          alt="Current badge"
-                          className="h-24 w-24 object-contain rounded-lg border border-gray-200"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                  )}
+                  {existingBadgeUrl && !badgePreview && (
+                    <div className="mt-3">
+                      <p className="text-xs text-gray-500 mb-2">Текущее изображение:</p>
+                      <img
+                        src={existingBadgeUrl}
+                        alt="Current badge"
+                        className="h-24 w-24 object-contain rounded-lg border border-gray-200"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className={labelClasses}>
                   Название *
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={handleTitleChange}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                  className={inputClasses}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className={labelClasses}>
                   Slug *
                 </label>
                 <input
                   type="text"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                  className={`font-mono ${inputClasses}`}
                   required
                 />
               </div>
+            </div>
+
+            <div>
+              <label className={labelClasses}>
+                Описание
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className={inputClasses}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className={labelClasses}>
+                  Уровень квалификации
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={level}
+                  onChange={(e) => setLevel(e.target.value === '' ? '' : parseInt(e.target.value))}
+                  className={inputClasses}
+                  placeholder="Не указано"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Оставьте пустым, если не повышает уровень
+                </p>
+              </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Описание
+                <label className={labelClasses}>
+                  Порядок
                 </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                <input
+                  type="number"
+                  min="0"
+                  value={order}
+                  onChange={(e) => setOrder(parseInt(e.target.value) || 0)}
+                  className={inputClasses}
                 />
               </div>
 
-              <div className="flex gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Уровень квалификации
-                  </label>
+              <div className="flex items-end">
+                <label className="flex items-center cursor-pointer">
                   <input
-                    type="number"
-                    min="0"
-                    value={level}
-                    onChange={(e) => setLevel(e.target.value === '' ? '' : parseInt(e.target.value))}
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
-                    placeholder="Не указано"
+                    type="checkbox"
+                    checked={isActive}
+                    onChange={(e) => setIsActive(e.target.checked)}
+                    className="mr-2 h-4 w-4 rounded border-gray-300 text-[#5858E2] focus:ring-[#5858E2]"
                   />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Оставьте пустым, если не повышает уровень
-                  </p>
-                </div>
-
-                <div className="w-32">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Порядок
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={order}
-                    onChange={(e) => setOrder(parseInt(e.target.value) || 0)}
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
-                  />
-                </div>
-
-                <div className="flex items-end">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={isActive}
-                      onChange={(e) => setIsActive(e.target.checked)}
-                      className="mr-2 h-4 w-4 rounded border-gray-300 text-[#5858E2] focus:ring-[#5858E2]"
-                    />
-                    <span className="text-sm text-gray-700">Активен</span>
-                  </label>
-                </div>
+                  <span className="text-sm text-gray-700">Активен</span>
+                </label>
               </div>
             </div>
           </div>
+        </section>
 
-          {/* Требования */}
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Требования (испытания)
-              </h2>
-              <button
-                type="button"
-                onClick={addRequirement}
-                className="rounded-lg bg-[#5858E2] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#4a4ac9]"
-              >
-                + Добавить требование
-              </button>
-            </div>
+        {/* Требования */}
+        <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+            <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-gray-400" /> Требования (испытания)
+            </h2>
+            <button
+              type="button"
+              onClick={addRequirement}
+              className="flex items-center gap-1.5 rounded-lg bg-[#5858E2]/10 px-3 py-1.5 text-xs font-medium text-[#5858E2] transition-colors hover:bg-[#5858E2]/20"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Добавить требование
+            </button>
+          </div>
 
+          <div className="p-6">
             {requirements.length === 0 ? (
               <p className="py-8 text-center text-sm text-gray-500">
                 Требования ещё не добавлены
@@ -539,24 +598,24 @@ export default function EditCertificationPage() {
                         type="button"
                         onClick={() => moveRequirement(index, 'up')}
                         disabled={index === 0}
-                        className="rounded p-1 text-gray-500 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="rounded p-1.5 text-gray-500 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       >
-                        ↑
+                        <ChevronUp className="w-4 h-4" />
                       </button>
                       <button
                         type="button"
                         onClick={() => moveRequirement(index, 'down')}
                         disabled={index === requirements.length - 1}
-                        className="rounded p-1 text-gray-500 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="rounded p-1.5 text-gray-500 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                       >
-                        ↓
+                        <ChevronDown className="w-4 h-4" />
                       </button>
                       <button
                         type="button"
                         onClick={() => removeRequirement(index)}
-                        className="rounded p-1 text-red-500 hover:bg-red-100"
+                        className="rounded p-1.5 text-red-500 hover:bg-red-100 transition-colors"
                       >
-                        ×
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -570,31 +629,36 @@ export default function EditCertificationPage() {
               </p>
             )}
           </div>
+        </section>
 
-          {/* Кнопки действий */}
-          <div className="flex items-center justify-end gap-3">
-            <Link
-              href="/admin/certifications"
-              className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
-            >
-              Отмена
-            </Link>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="rounded-lg bg-[#5858E2] px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9] disabled:opacity-50"
-            >
-              {isSubmitting ? 'Сохранение...' : 'Сохранить'}
-            </button>
-          </div>
-
-          {error && (
-            <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-        </form>
-      </div>
+        {/* Кнопки действий */}
+        <div className="flex items-center justify-between gap-4 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <Link
+            href="/admin/certifications"
+            className="px-6 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Отмена
+          </Link>
+          
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex items-center gap-2 px-8 py-2.5 rounded-lg bg-[#5858E2] text-sm font-medium text-white hover:bg-[#4a4ac9] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-[#5858E2]/20"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Сохранение...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Сохранить
+              </>
+            )}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
