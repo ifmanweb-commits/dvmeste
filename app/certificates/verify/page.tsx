@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 interface CertificateData {
@@ -25,19 +25,35 @@ interface CertificateData {
 
 export default function VerifyCertificatePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [certificate, setCertificate] = useState<CertificateData | null>(null);
+  const [hasAutoVerified, setHasAutoVerified] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Автозаполнение и автопроверка при наличии code в query params
+  useEffect(() => {
+    const codeParam = searchParams.get('code');
+    if (codeParam && !hasAutoVerified) {
+      const decodedCode = decodeURIComponent(codeParam);
+      setCode(decodedCode);
+      
+      // Автоматически запускаем проверку
+      setTimeout(() => {
+        verifyCertificate(decodedCode);
+        setHasAutoVerified(true);
+      }, 300);
+    }
+  }, [searchParams]);
+
+  const verifyCertificate = async (certificateCode: string) => {
     setIsLoading(true);
     setError(null);
     setCertificate(null);
 
     try {
-      const response = await fetch(`/api/certificates/verify?code=${encodeURIComponent(code)}`);
+      const response = await fetch(`/api/certificates/verify?code=${encodeURIComponent(certificateCode)}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -50,6 +66,11 @@ export default function VerifyCertificatePage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await verifyCertificate(code);
   };
 
   // Форматирование даты

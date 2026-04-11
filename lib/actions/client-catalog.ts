@@ -45,6 +45,7 @@ export async function getPsychologists(
   // 1. Базовые фильтры по пользователям
   const where: any = {
     isPublished: true,
+    wantPublished: true,
     status: "ACTIVE",
   };
 

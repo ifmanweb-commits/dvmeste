@@ -46,6 +46,7 @@ interface Certification {
   description: string | null;
   awardText: string | null;
   isActive: boolean;
+  isPublic: boolean;
   level: number | null;
   order: number;
   rewardType: string;
@@ -73,6 +74,7 @@ export default function EditCertificationPage() {
   const [description, setDescription] = useState('');
   const [awardText, setAwardText] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [isPublic, setIsPublic] = useState(false);
   const [level, setLevel] = useState<number | ''>('');
   const [order, setOrder] = useState(0);
 
@@ -169,6 +171,7 @@ export default function EditCertificationPage() {
         setDescription(data.description || '');
         setAwardText(data.awardText || '');
         setIsActive(data.isActive);
+        setIsPublic(data.isPublic);
         setLevel(data.level ?? '');
         setOrder(data.order ?? 0);
         setRewardType((data.rewardType as 'certificate' | 'badge') || 'certificate');
@@ -260,6 +263,7 @@ export default function EditCertificationPage() {
     formData.append('description', description);
     formData.append('awardText', awardText);
     formData.append('isActive', isActive ? 'on' : 'off');
+    formData.append('isPublic', isPublic ? 'on' : 'off');
     formData.append('level', level === '' ? '' : String(level));
     formData.append('order', String(order));
     formData.append('rewardType', rewardType);
@@ -385,6 +389,21 @@ export default function EditCertificationPage() {
                     <span className="text-sm text-gray-700">Ачивка</span>
                   </label>
                 </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isPublic}
+                    onChange={(e) => setIsPublic(e.target.checked)}
+                    className="mr-2 h-4 w-4 rounded border-gray-300 text-[#5858E2] focus:ring-[#5858E2]"
+                  />
+                  <span className="text-sm text-gray-700">Отображать на сайте</span>
+                </label>
+                <p className="mt-1 text-xs text-gray-500">
+                  Если включено, награда будет показана в профиле психолога на сайте
+                </p>
               </div>
 
               {rewardType === 'certificate' ? (

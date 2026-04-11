@@ -27,7 +27,7 @@ model User {
   isManager             Boolean              @default(false)
   status                PsychologistStatus   @default(PENDING)
   isPublished           Boolean              @default(false)
-  wantPublished         Boolean              @default(false)
+  wantPublished         Boolean              @default(true)
   metaData              Json                 @default("{}") @db.Json
   slug                  String?              @unique
   gender                String?
@@ -652,6 +652,8 @@ model Certification {
   rewardType            String                     @default("certificate")
   badgeUrl              String?
   certificateTemplateId String?
+  // Отображать ли награду этой сертификации на сайте (публично)
+  isPublic              Boolean                    @default(false)
   createdAt             DateTime                   @default(now())
   updatedAt             DateTime                   @updatedAt
   awards                CertificationAward[]
@@ -661,6 +663,7 @@ model Certification {
   @@index([slug])
   @@index([isActive])
   @@index([certificateTemplateId])
+  @@index([isPublic])
 }
 
 model CertificationRequirement {
@@ -680,12 +683,15 @@ model CertificationAward {
   certificationId String?
   userId          String
   awardedAt       DateTime       @default(now())
+  certificateId   String?
   certification   Certification? @relation(fields: [certificationId], references: [id], onDelete: SetNull)
   user            User           @relation("CertificationAwards", fields: [userId], references: [id], onDelete: Cascade)
+  certificate     Certificate?   @relation(fields: [certificateId], references: [id], onDelete: SetNull)
 
   @@unique([certificationId, userId])
   @@index([userId])
   @@index([certificationId])
+  @@index([certificateId])
 }
 
 model OnboardingTip {
@@ -922,15 +928,16 @@ model CertificateTemplate {
 }
 
 model Certificate {
-  id               String   @id @default(cuid())
+  id               String             @id @default(cuid())
   templateId       String
-  userId           String   // кому выдан
-  dataJson         Json     @default("{}") @db.Json // заполненные значения полей
-  imageUrl         String   // путь к сгенерированному PNG
-  verificationCode String   @unique // 8 символов, проверочный код
-  issuedAt         DateTime @default(now())
+  userId           String             // кому выдан
+  dataJson         Json               @default("{}") @db.Json // заполненные значения полей
+  imageUrl         String             // путь к сгенерированному PNG
+  verificationCode String             @unique // 8 символов, проверочный код
+  issuedAt         DateTime           @default(now())
   template         CertificateTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  user             User     @relation("UserCertificates", fields: [userId], references: [id], onDelete: Cascade)
+  user             User               @relation("UserCertificates", fields: [userId], references: [id], onDelete: Cascade)
+  certificationAwards CertificationAward[]
 
   @@index([templateId])
   @@index([userId])

@@ -75,6 +75,7 @@ export async function PUT(
     let description: string | undefined;
     let awardText: string | null | undefined;
     let isActive: boolean | undefined;
+    let isPublic: boolean | undefined;
     let level: number | null | undefined;
     let order: number | undefined;
     let rewardType: string | undefined;
@@ -89,6 +90,7 @@ export async function PUT(
       description = formData.get('description') as string;
       awardText = formData.get('awardText') as string || null;
       isActive = formData.get('isActive') === 'on';
+      isPublic = formData.get('isPublic') === 'on';
       level = formData.get('level') === '' ? null : parseInt(formData.get('level') as string);
       order = parseInt(formData.get('order') as string) || 0;
       rewardType = (formData.get('rewardType') as string) || 'certificate';
@@ -113,6 +115,7 @@ export async function PUT(
       description = body.description;
       awardText = body.awardText;
       isActive = body.isActive;
+      isPublic = body.isPublic;
       level = body.level;
       order = body.order;
       rewardType = body.rewardType;
@@ -173,6 +176,7 @@ export async function PUT(
         description: description !== undefined ? description : existing.description,
         awardText: awardText !== undefined ? awardText : (existing as any).awardText,
         isActive: isActive !== undefined ? isActive : existing.isActive,
+        isPublic: isPublic !== undefined ? isPublic : existing.isPublic,
         level: level !== undefined ? level : existing.level,
         order: order !== undefined ? order : existing.order,
         rewardType: rewardType !== undefined ? rewardType : existing.rewardType,

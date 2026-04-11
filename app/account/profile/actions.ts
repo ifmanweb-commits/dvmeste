@@ -34,6 +34,7 @@ export async function updateBasicProfile(values: any) {
         workFormat: values.workFormat,
         contactInfo: values.contactInfo,
         showCandidate: values.showCandidate,
+        wantPublished: values.wantPublished,
       },
     })
 

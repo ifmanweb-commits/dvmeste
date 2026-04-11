@@ -9,6 +9,7 @@ import { ComplaintModalTrigger } from "@/components/complaint/ComplaintModalTrig
 import LeadFormModal from "@/components/lead/LeadFormModal";
 import { normalizeEmbeddedLocalAssetUrls } from "@/lib/html-local-assets";
 import { EducationBlock } from "./components/EducationBlock";
+import { CertificationsBlock } from "@/components/catalog/CertificationsBlock";
 
 export const revalidate = 60;
 
@@ -170,6 +171,7 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
       id: true,
       slug: true,
       isPublished: true,
+      wantPublished: true,
       status: true,
       fullName: true,
       firstName: true,
@@ -191,7 +193,7 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
     },
   });
 
-  if (!user || !user.isPublished || user.status !== "ACTIVE") notFound();
+  if (!user || !user.isPublished || !user.wantPublished || user.status !== "ACTIVE") notFound();
 
   // 2. Получаем проверенные фото из документов
   const photos = await prisma.document.findMany({
@@ -399,6 +401,8 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
                   </div>
                 </div>
               </div>
+
+              <CertificationsBlock psychologistSlug={slug} />
 
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <div className="space-y-2 whitespace-pre-wrap">

@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
     let description: string = '';
     let awardText: string | null = null;
     let isActive: boolean = true;
+    let isPublic: boolean = false;
     let level: number | null = null;
     let order: number = 0;
     let rewardType: string = 'certificate';
@@ -76,6 +77,7 @@ export async function POST(request: NextRequest) {
       description = formData.get('description') as string || '';
       awardText = formData.get('awardText') as string || null;
       isActive = formData.get('isActive') === 'on';
+      isPublic = formData.get('isPublic') === 'on';
       level = formData.get('level') === '' ? null : parseInt(formData.get('level') as string);
       order = parseInt(formData.get('order') as string) || 0;
       rewardType = (formData.get('rewardType') as string) || 'certificate';
@@ -100,6 +102,7 @@ export async function POST(request: NextRequest) {
       description = body.description || '';
       awardText = body.awardText || null;
       isActive = body.isActive ?? true;
+      isPublic = body.isPublic ?? false;
       level = body.level ?? null;
       order = body.order ?? 0;
       rewardType = body.rewardType || 'certificate';
@@ -154,6 +157,7 @@ export async function POST(request: NextRequest) {
         description,
         awardText,
         isActive,
+        isPublic,
         level,
         order,
         rewardType,
