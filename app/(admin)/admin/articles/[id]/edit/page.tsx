@@ -2,13 +2,11 @@
 
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import ArticleForm from "@/components/articles/ArticleForm";
 import { getPsychologists } from "@/lib/actions/psychologists";
-import { Eye, Trash2, Check } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 
 interface Article {
   id: string;
@@ -36,7 +34,6 @@ export default function AdminArticleEditPage({ params }: { params: Promise<{ id:
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-                                             
   useEffect(() => {
     getPsychologists()
         .then(data => {
@@ -46,14 +43,25 @@ export default function AdminArticleEditPage({ params }: { params: Promise<{ id:
         .finally(() => setLoadingPsychologists(false));
   }, []);
 
-                               
+  // Функция форматирования HTML - добавляет перенос строки после закрывающих тегов
+  const formatHtml = (html: string): string => {
+    if (!html) return html;
+    // Добавляем перенос строки после закрывающего тега, если его там нет
+    return html.replace(/(<\/[^>]+>)(?!\n)/g, '$1\n');
+  };
+
   useEffect(() => {
     setLoading(true);
     fetch(`/api/articles/${id}`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
-            setArticle(data.article);
+            // Форматируем HTML контента для удобства чтения
+            const formattedArticle = {
+              ...data.article,
+              content: formatHtml(data.article.content)
+            };
+            setArticle(formattedArticle);
           } else {
             setError(data.error || "Failed to load article");
           }
@@ -78,7 +86,6 @@ export default function AdminArticleEditPage({ params }: { params: Promise<{ id:
         throw new Error(data.error || "Ошибка при сохранении");
       }
       
-      // Принудительно обновляем данные на сервере и клиенте
       router.refresh();
       router.push(`/admin/articles?updated=${Date.now()}`);
     } catch (error) {
@@ -124,81 +131,69 @@ export default function AdminArticleEditPage({ params }: { params: Promise<{ id:
 
   if (loading || loadingPsychologists) {
     return (
-        <Card className="mx-auto mt-8 w-full max-w-6xl">
-          <CardContent className="py-12 text-center text-lg text-neutral-400">
-            Загрузка...
-          </CardContent>
-        </Card>
+      <div className="">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Загрузка...</h1>
+        </div>
+      </div>
     );
   }
 
   if (error || !article) {
     return (
-        <Card className="mx-auto mt-8 w-full max-w-6xl">
-          <CardContent className="py-12 text-center text-lg text-red-500">
-            {error || "Статья не найдена"}
-          </CardContent>
-        </Card>
+      <div className="">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-red-500">{error || "Статья не найдена"}</h1>
+        </div>
+      </div>
     );
   }
-/*console.log('AdminArticleEditPage - article data:', {
-  id: article.id,
-  authorId: article.authorId,
-  author: article.author,
-  authorFullName: article.author?.fullName
-});*/
-  return (
-      <div className="mx-auto w-full max-w-6xl px-4 py-0 sm:px-0 lg:px-0">
-          <CardContent>
-            <div className="mb-4 flex gap-4 pt-2 pb-2 sticky top-22 bg-white z-100 border-b">
-              <div className="flex items-center gap-4">
-                {article.publishedAt ? (
-                    <Badge variant="primary"><Check size="20" className="mr-1"/> Опубликовано</Badge>
-                ) : (
-                    <Badge variant="neutral">Черновик</Badge>
-                )}
-                <div className="text-sm text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded">
-                  ID: {article.id}
-                </div>
-              </div>
-              <div className="flex gap-2 ml-auto">
-                <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => window.open(`/articles/${article.slug}`, "_blank")}
-                    className="cursor-pointer"
-                >
-                  <Eye size="20" className="mr-1"/> Просмотр
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={openDeleteModal}
-                  className="cursor-pointer bg-red-50 border-red-200 text-red-700 hover:bg-red-100 hover:border-red-300 hover:text-red-800"
-                >
-                  <Trash2 size="20" className="mr-1"/> Удалить
-                </Button>
-              </div>
-            </div>
-            
-            <ArticleForm
-                initialData={article}
-                onSubmit={handleSubmit}
-                psychologists={psychologists}
-            />
 
-            <ConfirmationModal
-              isOpen={isDeleteModalOpen}
-              onClose={closeDeleteModal}
-              onConfirm={confirmDelete}
-              title="Удаление статьи"
-              message="Вы действительно хотите безвозвратно удалить статью?"
-              confirmText="Удалить"
-              cancelText="Отмена"
-              isDestructive={true}
-              isLoading={isDeleting}
-            />
-          </CardContent>
+  return (
+    <div className="">
+      {/* Заголовок страницы */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">{article.title || "Без названия"}</h1>
+        <p className="text-gray-500 mt-1">Редактирование статьи</p>
+        
+        {/* Кнопки действий */}
+        <div className="flex gap-3 mt-4">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => window.open(`/articles/${article.slug}`, "_blank")}
+            className="cursor-pointer"
+          >
+            <Eye size="20" className="mr-1"/> Просмотр
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={openDeleteModal}
+            className="cursor-pointer bg-red-50 border-red-200 text-red-700 hover:bg-red-100 hover:border-red-300 hover:text-red-800"
+          >
+            <Trash2 size="20" className="mr-1"/> Удалить
+          </Button>
+        </div>
       </div>
+      
+      <ArticleForm
+        initialData={article}
+        onSubmit={handleSubmit}
+        psychologists={psychologists}
+      />
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+        title="Удаление статьи"
+        message="Вы действительно хотите безвозвратно удалить статью?"
+        confirmText="Удалить"
+        cancelText="Отмена"
+        isDestructive={true}
+        isLoading={isDeleting}
+      />
+    </div>
   );
 }

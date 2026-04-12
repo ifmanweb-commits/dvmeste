@@ -467,34 +467,34 @@ export default function ArticleForm({
                 required
                 disabled={isSubmitting}
             />
-            <div className="relative">
-              <FormInput
-                  label="URL (slug) *"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">URL (slug) *</label>
+              <div className="flex gap-2">
+                <input
                   value={slug}
                   onChange={handleSlugChange}
                   required
                   placeholder="my-article"
                   disabled={isSubmitting}
-              />
-              <button
-                type="button"
-                onClick={handleGenerateSlug}
-                disabled={generatingSlug || isSubmitting}
-                className="absolute right-3 top-8 text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {generatingSlug ? 'Генерация...' : 'Генерировать'}
-              </button>
-              {                                            }
+                  className="flex-1 rounded-none border border-gray-300 px-4 py-3 text-gray-900 focus:border-[#5858E2] focus:ring-2 focus:ring-[#5858E2]/20"
+                />
+                <button
+                  type="button"
+                  onClick={handleGenerateSlug}
+                  disabled={generatingSlug || isSubmitting}
+                  className="px-4 py-3 text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-300 rounded-none bg-white hover:bg-gray-50"
+                >
+                  {generatingSlug ? 'Генерация...' : 'Генерировать'}
+                </button>
+              </div>
               {slugWarning && (
                   <p className="text-sm text-amber-600 mt-1 flex items-center gap-1">
                     <span>⚠️</span> {slugWarning}
                   </p>
               )}
-              {                          }
               <p className="text-xs text-gray-500 mt-1">
                 Только латинские буквы, цифры, дефисы (-) и нижние подчеркивания (_)
               </p>
-              {                      }
               {slug && !slugWarning && (
                   <p className="text-xs text-green-600 mt-1">
                     ✓ URL: /articles/{slug}
@@ -508,7 +508,7 @@ export default function ArticleForm({
                 label="Короткий текст *"
                 value={shortText}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setShortText(e.target.value)}
-                rows={12}
+                rows={6}
                 maxLength={500}
                 required
                 disabled={isSubmitting}
@@ -529,7 +529,7 @@ export default function ArticleForm({
               label="Длинный текст"
               value={content}
               onChange={setContent}
-              rows={14}
+              rows={21}
               required
               disabled={isSubmitting}
               placeholder="Введите полный текст статьи..."

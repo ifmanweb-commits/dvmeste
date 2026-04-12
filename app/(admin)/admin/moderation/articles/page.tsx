@@ -50,9 +50,17 @@ export default async function ModerationArticlesPage() {
           </Link>
         </div>
 
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Модерация статей</h1>
-          <p className="text-gray-500 mt-1">Статьи, ожидающие проверки</p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Модерация статей</h1>
+            <p className="text-gray-500 mt-1">Статьи, ожидающие проверки</p>
+          </div>
+          <Link
+            href="/admin/articles"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#5858E2] text-white text-sm font-medium rounded-lg hover:bg-[#4a4ac9] transition-colors"
+          >
+            Перейти к статьям
+          </Link>
         </div>
 
       {articles.length === 0 ? (
