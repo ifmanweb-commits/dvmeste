@@ -56,40 +56,34 @@ export default async function EditArticlePage({ params }: { params: { id: string
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
-      <div className="max-w-5xl mx-auto py-10 px-6">
-        
-        {/* Хедер с навигацией */}
-        <header className="mb-10">
-          <Link 
-            href="/account/articles" 
-            className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors mb-4"
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        {/* Заголовок страницы */}
+        <header className="mb-8">
+          <Link
+            href="/account/articles"
+            className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#5858E2] hover:text-[#4a4ac9] transition-colors"
           >
-            <ChevronLeft size={16} /> Назад к списку
+            <ChevronLeft className="w-4 h-4" />
+            Вернуться к списку
           </Link>
-          
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div>
-              <h1 className="text-xl font-bold text-slate-800">
-                {article.title ? "Редактирование статьи" : "Новая статья"}
-              </h1>
-            </div>
-            
-            <div className="text-left md:text-right border-l md:border-l-0 md:border-r border-slate-200 pl-4 md:pl-0 md:pr-4">
-              <span className="text-xs font-medium text-slate-500 block mb-1">ID документа</span>
-              <span className="text-sm font-mono text-slate-700">{article.id}</span>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+              {article.title ? "Редактирование статьи" : "Новая статья"}
+            </h1>
+            <p className="text-gray-600 mt-1">
+              {article.title || "Создание новой статьи"}
+            </p>
           </div>
         </header>
 
         {/* Основная форма */}
-        <div className="bg-white border border-slate-200 p-8 md:p-12 shadow-sm">
+        <div className="rounded-xl bg-white shadow-sm p-6 md:p-8">
           <AcArticleEditorForm 
             initialData={formattedArticle} 
             availableTags={availableTags} 
           />
         </div>
-
       </div>
     </div>
   );

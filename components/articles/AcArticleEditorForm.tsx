@@ -2,7 +2,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import { Save, Send, MessageSquare, Image as ImageIcon, X, CheckCircle, AlertCircle } from "lucide-react";
+import { Save, Send, MessageSquare, Image as ImageIcon, X, CheckCircle, AlertCircle, FileText } from "lucide-react";
 import { ArticleTagsSelector } from "./AcArticleTagsSelector";
 import { saveArticleAction } from "@/app/account/articles/actions";
 import { useRouter } from "next/navigation";
@@ -87,53 +87,55 @@ export default function AcArticleEditorForm({ initialData, availableTags }: AcAr
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Статус-бар для правок (REVISION) */}
       {initialData.moderationStatus === 'REVISION' && initialData.moderatorComment && (
-        <div className="p-4 bg-amber-50 border-l-4 border-amber-400 rounded-r-xl flex gap-3">
-          <MessageSquare className="text-amber-600 shrink-0" size={20} />
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex gap-3">
+          <MessageSquare className="text-amber-600 shrink-0 mt-0.5" size={20} />
           <div>
-            <p className="text-xs font-semibold text-amber-700 tracking-wide">Нужны правки</p>
-            <p className="text-sm text-amber-800 italic">"{initialData.moderatorComment}"</p>
+            <p className="text-sm font-semibold text-amber-800">Нужны правки</p>
+            <p className="text-sm text-amber-700 italic mt-1">"{initialData.moderatorComment}"</p>
           </div>
         </div>
       )}
 
-      {/* Заголовок */}
+      {/* Секция: Название статьи */}
       <section>
-        <label className="text-s font-semibold tracking-wide mb-2 block">Название статьи</label>
+        <label className="text-sm font-semibold text-gray-900 block mb-2">Название статьи</label>
         <input
           type="text"
           value={title}
           disabled={isReadOnly}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full px-4 py-3 border border-slate-200 rounded-lg text-lg font-semibold text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed"
+          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-base text-gray-900 placeholder:text-gray-400 focus:border-[#5858E2] focus:ring-2 focus:ring-[#5858E2]/20 outline-none transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+          placeholder="Введите название статьи"
         />
       </section>
 
-      {/* Теги */}
-      <section className="max-w-md">
+      {/* Секция: Теги */}
+      <section>
+        <label className="text-sm font-semibold text-gray-900 block mb-2">Тематические теги</label>
         <ArticleTagsSelector
           availableTags={availableTags}
           value={tags}
           onChange={setTags}
           disabled={isReadOnly}
-          label="Тематические теги"
+          label=""
         />
       </section>
 
-      {/* Редактор */}
+      {/* Секция: Содержание */}
       <section>
-        <div className="flex justify-end mb-2">
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-sm font-semibold text-gray-900">Содержание</label>
           <button
             type="button"
             onClick={() => setIsFilesOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium hover:bg-slate-200 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
           >
-            <ImageIcon size={14} /> Управление изображениями
+            <ImageIcon size={14} /> Изображения
           </button>
         </div>
-        <label className="text-s font-semibold  tracking-wide mb-2 block">Содержание</label>
         <AcTiptapEditor
           content={content}
           onChange={setContent}
@@ -144,15 +146,15 @@ export default function AcArticleEditorForm({ initialData, availableTags }: AcAr
 
       {/* Кнопки управления */}
       {!isReadOnly && (
-        <div className="flex flex-col md:flex-row gap-4 pt-8 border-t border-slate-100 items-center">
-          <div className="flex-1 flex gap-4">
+        <div className="flex flex-col md:flex-row gap-4 pt-4 border-t border-gray-200 items-center">
+          <div className="flex-1 flex gap-4 w-full">
             {showDraftButton && (
               <button
                 onClick={() => handleSave(false)}
                 disabled={isSaving}
-                className="flex-1 flex items-center justify-center gap-2 py-4 bg-white border-2 border-slate-200 text-slate-600 rounded-xl font-semibold hover:bg-slate-50 transition-all disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-all disabled:opacity-50"
               >
-                <Save size={18} /> 
+                <Save size={16} /> 
                 {isSaving ? "Сохранение..." : "Сохранить черновик"}
               </button>
             )}
@@ -160,23 +162,23 @@ export default function AcArticleEditorForm({ initialData, availableTags }: AcAr
             <button
               onClick={() => setShowConfirmModal(true)}
               disabled={isSaving}
-              className={`flex-1 flex items-center justify-center gap-2 py-4 ${
-                showDraftButton ? 'bg-blue-600' : 'bg-blue-600 w-full'
-              } text-white rounded-xl font-semibold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all disabled:opacity-50`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 ${
+                showDraftButton ? 'bg-[#5858E2]' : 'bg-[#5858E2] w-full'
+              } text-white rounded-lg font-medium hover:bg-[#4a4ac9] transition-all disabled:opacity-50`}
             >
-              <Send size={18} /> 
+              <Send size={16} /> 
               {getSubmitButtonText()}
             </button>
           </div>
           
           {/* Сообщение о сохранении */}
           {saveMessage && (
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm ${
               saveMessage.type === 'success' 
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                : 'bg-red-50 text-red-700 border border-red-200'
+                ? 'bg-emerald-50 text-emerald-700' 
+                : 'bg-red-50 text-red-700'
             }`}>
-              {saveMessage.type === 'success' && <CheckCircle size={16} />}
+              {saveMessage.type === 'success' && <CheckCircle size={14} />}
               {saveMessage.text}
             </div>
           )}

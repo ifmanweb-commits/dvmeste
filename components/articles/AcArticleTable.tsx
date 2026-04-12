@@ -35,7 +35,7 @@ export default function AcArticleTable({ articles }: { articles: Article[] }) {
   if (articles.length === 0) return null;
 
   return (
-    <div className="w-full border-t border-slate-200 shadow-sm mb-12 relative">
+    <div className="w-full border border-slate-200 shadow-sm mb-12 relative rounded-xl overflow-hidden">
       {/* Модалка подтверждения */}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
