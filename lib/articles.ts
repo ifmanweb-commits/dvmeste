@@ -154,11 +154,6 @@ export async function getArticleById(id: string) {
       include: articleInclude,
     });
     
-    // Логируем поля
-    if (article) {
-      console.log('Article fields:', Object.keys(article));
-      console.log('excerpt value:', article.excerpt);
-    }
     
     return article ?? null;
   } catch (error) {

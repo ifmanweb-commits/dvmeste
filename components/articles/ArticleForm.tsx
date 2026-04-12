@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useRef } from "react";
-import { ArticleContentEditor, type ArticleContentEditorApi } from "@/components/articles/ArticleContentEditor";
+import AdminWysiwygEditor, { type AdminWysiwygEditorApi } from "@/app/(admin)/admin/articles/AdminWysiwygEditor";
 import FileManager from "@/components/files/FileManager";
 import { getDataListItems } from "@/lib/actions/admin-references";
 import { ArticleTagsSelector } from "@/components/articles/AcArticleTagsSelector";
@@ -113,7 +113,7 @@ export default function ArticleForm({
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const contentEditorApiRef = useRef<ArticleContentEditorApi | null>(null);
+  const contentEditorApiRef = useRef<AdminWysiwygEditorApi | null>(null);
 
                               
   useEffect(() => {
@@ -525,15 +525,11 @@ export default function ArticleForm({
             </div>
           </div>
 
-          <ArticleContentEditor
-              label="Длинный текст"
-              value={content}
+          <AdminWysiwygEditor
+              content={content}
               onChange={setContent}
-              rows={21}
-              required
-              disabled={isSubmitting}
-              placeholder="Введите полный текст статьи..."
-              editorApiRef={contentEditorApiRef}
+              onReady={(api) => { contentEditorApiRef.current = api; }}
+              readOnly={isSubmitting}
           />
 
           <div className="mb-6">
