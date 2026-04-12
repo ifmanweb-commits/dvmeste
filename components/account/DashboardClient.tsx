@@ -1,7 +1,7 @@
-"use client";
-
 import { DashboardData } from "@/lib/actions/account-dashboard";
 import Link from "next/link";
+import Image from "next/image";
+import { Award, CheckCircle, FileText, MessageSquare, Bell, UserCheck, TrendingUp } from "lucide-react";
 
 interface DashboardClientProps {
   data: DashboardData;
@@ -10,10 +10,13 @@ interface DashboardClientProps {
   certificationLevel: number;
 }
 
-const monthNames = [
-  "январь", "февраль", "март", "апрель", "май", "июнь",
-  "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"
-];
+const statusTranslations: Record<string, string> = {
+  candidate: "Непроверенный психолог",
+  active: "Проверенный психолог",
+  pending: "На модерации",
+  rejected: "Отклонён",
+  blocked: "Заблокирован",
+};
 
 export default function DashboardClient({
   data,
@@ -25,173 +28,214 @@ export default function DashboardClient({
     newLeadsCount,
     totalLeadsCount,
     acceptedLeadsCount,
+    totalAcceptedLeadsCount,
     oldAcceptedLeads,
     articleBalance,
     unreadNotificationsCount,
     unreadMessagesCount,
     hasActiveDialog,
+    awards,
+    submittedArticlesCount,
+    publishedArticlesCount,
   } = data;
 
-
   return (
-    <div className="space-y-6">
-      {/* Плашка статуса публикации */}
-      {status === "ACTIVE" && (
-        <div className={`p-4 rounded-lg border ${
-          isPublished 
-            ? "bg-green-50 border-green-200 text-green-800" 
-            : "bg-red-50 border-red-200 text-red-800"
-        }`}>
-          <div className="flex items-center gap-2">
-            {isPublished ? (
-              <>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span className="font-medium">Вы отображаетесь в каталоге</span>
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-                <span className="font-medium">Вы не отображаетесь в каталоге</span>
-              </>
+    <div className="flex flex-col lg:flex-row gap-6">
+      {/* Левая колонка: основные блоки */}
+      <div className="flex-1 space-y-6">
+        {/* Блок 1: Профиль психолога */}
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Профиль психолога</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Статус */}
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <UserCheck className="w-5 h-5 text-gray-500" />
+                <span className="text-sm text-gray-500">Статус</span>
+              </div>
+              <p className="text-lg font-medium text-gray-900">
+                {statusTranslations[status.toLowerCase()] || status}
+              </p>
+            </div>
+
+            {/* Уровень квалификации */}
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Award className="w-5 h-5 text-gray-500" />
+                <span className="text-sm text-gray-500">Уровень квалификации</span>
+              </div>
+              <p className="text-lg font-medium text-gray-900">
+                Уровень {certificationLevel}
+              </p>
+            </div>
+
+            {/* Размещение в каталоге */}
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-5 h-5 text-gray-500" />
+                <span className="text-sm text-gray-500">Каталог</span>
+              </div>
+              <p className={`text-lg font-medium ${isPublished ? 'text-green-600' : 'text-red-600'}`}>
+                {isPublished ? 'Разрешено размещение в каталоге' : 'Размещение в каталоге пока не разрешено'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Блок 3: Заявки */}
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Заявки</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Link href="/account/leads" className="p-4 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-100 transition-colors">
+              <p className="text-sm text-indigo-600 mb-1">Всего заявок</p>
+              <p className="text-3xl font-bold text-indigo-900">{totalLeadsCount}</p>
+            </Link>
+            <Link href="/account/leads" className="p-4 bg-green-50 rounded-lg border border-green-100 hover:bg-green-100 transition-colors">
+              <p className="text-sm text-green-600 mb-1">Активные</p>
+              <p className="text-3xl font-bold text-green-900">{acceptedLeadsCount}</p>
+            </Link>
+            <Link href="/account/leads" className="p-4 bg-blue-50 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors">
+              <p className="text-sm text-blue-600 mb-1">Было принято</p>
+              <p className="text-3xl font-bold text-blue-900">{totalAcceptedLeadsCount}</p>
+            </Link>
+            {newLeadsCount > 0 && (
+              <Link href="/account/leads" className="p-4 bg-amber-50 rounded-lg border border-amber-100 hover:bg-amber-100 transition-colors">
+                <p className="text-sm text-amber-600 mb-1">Новые заявки</p>
+                <p className="text-3xl font-bold text-amber-900">{newLeadsCount}</p>
+              </Link>
             )}
           </div>
         </div>
-      )}
 
-      {/* Верхние карточки */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Всего заявок / Принято */}
-        <Link href="/account/leads">
-          <div className="p-5 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Всего / Принято</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {totalLeadsCount} / {acceptedLeadsCount}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
+        {/* Блок 4: Уведомления и сообщения */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link href="/account/notifications" className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold text-gray-900">Уведомления</h2>
+              <Bell className="w-6 h-6 text-purple-600" />
             </div>
-          </div>
-        </Link>
+            <p className="text-4xl font-bold text-gray-900">{unreadNotificationsCount}</p>
+            <p className="text-sm text-gray-500 mt-1">непрочитанных уведомлений</p>
+          </Link>
 
-        {/* Новые заявки */}
-        <Link href="/account/leads">
-          <div className="p-5 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Новые заявки</p>
-                <p className="text-3xl font-bold text-gray-900">{newLeadsCount}</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
+          <Link href="/account/messages" className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow relative">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold text-gray-900">Сообщения</h2>
+              <MessageSquare className="w-6 h-6 text-green-600" />
             </div>
-          </div>
-        </Link>
-
-        {/* Баланс статей */}
-        <Link href="/account/articles">
-          <div className="p-5 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Баланс статей</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {articleBalance.totalBonus} балл{articleBalance.totalBonus === 1 ? '' : articleBalance.totalBonus >= 2 && articleBalance.totalBonus <= 4 ? 'а' : 'ов'}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {articleBalance.approvedArticlesCount} одобренных статей
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </Link>
-
-        {/* Уведомления */}
-        <Link href="/account/notifications">
-          <div className="p-5 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer relative">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Уведомления</p>
-                <p className="text-3xl font-bold text-gray-900">{unreadNotificationsCount}</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                {unreadNotificationsCount > 0 && (
-                  <span className="absolute top-2 right-2 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
-                )}
-              </div>
-            </div>
-          </div>
-        </Link>
-
-        {/* Сообщения от модераторов */}
-        <Link href="/account/messages">
-          <div className="p-5 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer relative">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Сообщения</p>
-                <p className="text-3xl font-bold text-gray-900">{unreadMessagesCount}</p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
-                {(unreadMessagesCount > 0 || hasActiveDialog) && (
-                  <span className="absolute top-2 right-2 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
-                )}
-              </div>
-            </div>
+            <p className="text-4xl font-bold text-gray-900">{unreadMessagesCount}</p>
+            <p className="text-sm text-gray-500 mt-1">непрочитанных сообщений</p>
             {hasActiveDialog && (
-              <p className="text-xs text-green-600 mt-2">Есть непрочитанные сообщения от модераторов</p>
+              <span className="absolute top-4 right-4 w-3 h-3 bg-red-500 rounded-full" />
             )}
+          </Link>
+        </div>
+
+        {/* Блок 5: Статьи */}
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Статьи</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Link href="/account/articles" className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="w-5 h-5 text-gray-500" />
+                <span className="text-sm text-gray-500">Сдано статей</span>
+              </div>
+              <p className="text-3xl font-bold text-gray-900">{submittedArticlesCount}</p>
+            </Link>
+            <Link href="/account/articles" className="p-4 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+                <span className="text-sm text-green-500">Опубликовано</span>
+              </div>
+              <p className="text-3xl font-bold text-green-900">{publishedArticlesCount}</p>
+            </Link>
+            <Link href="/account/articles" className="p-4 bg-emerald-50 rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors">
+              <div className="flex items-center gap-2 mb-2">
+                <Award className="w-5 h-5 text-emerald-500" />
+                <span className="text-sm text-emerald-500">Баллов</span>
+              </div>
+              <p className="text-3xl font-bold text-emerald-900">
+                {articleBalance.totalBonus}
+              </p>
+            </Link>
           </div>
-        </Link>
+        </div>
+
+        {/* Старые заявки (если есть) */}
+        {oldAcceptedLeads.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Заявки, требующие завершения
+            </h3>
+            <div className="space-y-3">
+              {oldAcceptedLeads.map((lead) => (
+                <Link
+                  key={lead.id}
+                  href={`/account/leads/${lead.id}`}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {lead.clientName || "Клиент"}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Принята {lead.daysSinceAccept} дн. назад
+                    </p>
+                  </div>
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Старые заявки */}
-      {oldAcceptedLeads.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Заявки, требующие завершения
-          </h3>
-          <div className="space-y-3">
-            {oldAcceptedLeads.map((lead) => (
-              <Link
-                key={lead.id}
-                href={`/account/leads/${lead.id}`}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">
-                    {lead.clientName || "Клиент"}
+      {/* Правая колонка: Награды */}
+      {awards.length > 0 && (
+        <div className="lg:w-80 xl:w-96">
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm sticky top-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Полученные награды</h2>
+            <div className="flex flex-col gap-4">
+              {awards.map((award) => (
+                <div
+                  key={award.id}
+                  className="p-2 hover:shadow-md transition-shadow"
+                >
+                  {/* Изображение награды */}
+                  <div className="h-40 rounded-md bg-gray-50 flex items-center justify-center mb-2 overflow-hidden">
+                    {award.rewardType === 'certificate' && award.certificateImageUrl ? (
+                      <Image
+                        src={award.certificateImageUrl}
+                        alt={award.certificationTitle}
+                        width={160}
+                        height={120}
+                        className="object-contain"
+                      />
+                    ) : award.badgeUrl ? (
+                      <Image
+                        src={award.badgeUrl}
+                        alt={award.certificationTitle}
+                        width={80}
+                        height={80}
+                        className="object-contain"
+                      />
+                    ) : (
+                      <Award className="w-10 h-10 text-gray-400" />
+                    )}
+                  </div>
+                  {/* Год получения */}
+                  <p className="text-center text-xs text-gray-500">
+                    {new Date(award.awardedAt).getFullYear()}
                   </p>
-                  <p className="text-sm text-gray-500">
-                    Принята {lead.daysSinceAccept} дн. назад
+                  {/* Название награды */}
+                  <p className="text-center text-sm font-medium text-gray-900 truncate">
+                    {award.certificationTitle}
                   </p>
                 </div>
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}

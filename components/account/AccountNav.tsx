@@ -67,7 +67,7 @@ export default function AccountNav({ user, isMobile, onNavigate }: AccountNavPro
   const menuItems = [
     {
       href: '/account',
-      label: 'Дашборд',
+      label: 'Личный кабинет',
       icon: Home,
       show: true
     },

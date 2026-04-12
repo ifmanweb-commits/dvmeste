@@ -10,6 +10,7 @@ export interface DashboardData {
   newLeadsCount: number;
   totalLeadsCount: number;
   acceptedLeadsCount: number;
+  totalAcceptedLeadsCount: number;
   oldAcceptedLeads: Array<{
     id: string;
     clientName: string | null;
@@ -23,6 +24,19 @@ export interface DashboardData {
   unreadNotificationsCount: number;
   unreadMessagesCount: number;
   hasActiveDialog: boolean;
+  // Новые поля для наград и статей
+  awards: Array<{
+    id: string;
+    certificationId: string | null;
+    certificationTitle: string;
+    rewardType: string;
+    badgeUrl: string | null;
+    certificateImageUrl: string | null;
+    awardedAt: Date;
+    level: number | null;
+  }>;
+  submittedArticlesCount: number;
+  publishedArticlesCount: number;
 }
 
 /**
@@ -39,7 +53,7 @@ export async function getDashboardData(psychologistId: string): Promise<{ succes
     });
 
     // 2. Общее количество заявок и количество принятых
-    const [totalLeadsCount, acceptedLeadsCount] = await Promise.all([
+    const [totalLeadsCount, acceptedLeadsCount, totalAcceptedLeadsCount] = await Promise.all([
       prisma.lead.count({
         where: { psychologistId },
       }),
@@ -47,6 +61,14 @@ export async function getDashboardData(psychologistId: string): Promise<{ succes
         where: {
           psychologistId,
           status: LeadStatus.ACCEPTED,
+        },
+      }),
+      prisma.lead.count({
+        where: {
+          psychologistId,
+          status: {
+            in: [LeadStatus.ACCEPTED, LeadStatus.COMPLETED],
+          },
         },
       }),
     ]);
@@ -127,12 +149,75 @@ export async function getDashboardData(psychologistId: string): Promise<{ succes
     const unreadMessagesCount = dialog?.messages.length ?? 0;
     const hasActiveDialog = dialog?.status === "ACTIVE";
 
+    // 6. Получаем награды пользователя (сертификаты и ачивки)
+    const awardsData = await prisma.certificationAward.findMany({
+      where: {
+        userId: psychologistId,
+      },
+      include: {
+        certification: {
+          select: {
+            id: true,
+            title: true,
+            rewardType: true,
+            badgeUrl: true,
+            level: true,
+          },
+        },
+        certificate: {
+          select: {
+            imageUrl: true,
+          },
+        },
+      },
+      orderBy: {
+        awardedAt: 'desc',
+      },
+    });
+
+    // Форматируем награды: сначала сертификаты, потом ачивки
+    const formattedAwards = awardsData
+      .filter(award => award.certification)
+      .map(award => ({
+        id: award.id,
+        certificationId: award.certificationId,
+        certificationTitle: award.certification!.title,
+        rewardType: award.certification!.rewardType,
+        badgeUrl: award.certification!.badgeUrl,
+        certificateImageUrl: award.certificate?.imageUrl ?? null,
+        awardedAt: award.awardedAt,
+        level: award.certification!.level,
+      }))
+      .sort((a, b) => {
+        // Сначала сертификаты (rewardType = 'certificate'), потом ачивки
+        if (a.rewardType === 'certificate' && b.rewardType !== 'certificate') return -1;
+        if (a.rewardType !== 'certificate' && b.rewardType === 'certificate') return 1;
+        // Внутри каждой группы сортируем по дате получения
+        return new Date(b.awardedAt).getTime() - new Date(a.awardedAt).getTime();
+      });
+
+    // 7. Получаем количество статей
+    const [submittedArticlesCount, publishedArticlesCount] = await Promise.all([
+      prisma.article.count({
+        where: {
+          userId: psychologistId,
+        },
+      }),
+      prisma.article.count({
+        where: {
+          userId: psychologistId,
+          isPublished: true,
+        },
+      }),
+    ]);
+
     return {
       success: true,
       data: {
         newLeadsCount,
         totalLeadsCount,
         acceptedLeadsCount,
+        totalAcceptedLeadsCount,
         oldAcceptedLeads: formattedOldLeads,
         articleBalance: {
           totalBonus,
@@ -141,6 +226,9 @@ export async function getDashboardData(psychologistId: string): Promise<{ succes
         unreadNotificationsCount,
         unreadMessagesCount,
         hasActiveDialog,
+        awards: formattedAwards,
+        submittedArticlesCount,
+        publishedArticlesCount,
       },
     };
   } catch (error) {
