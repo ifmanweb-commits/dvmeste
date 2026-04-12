@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from "react";
-import { Eye, Code } from "lucide-react";
+import { Eye, Code, List, ListOrdered } from "lucide-react";
 
 export type AdminWysiwygEditorApi = {
   insertHtml: (snippet: string) => boolean;
@@ -288,13 +288,15 @@ export default function AdminWysiwygEditor({
             <ToolbarButton
               onClick={handleUnorderedList}
               active={queryCommandState("insertUnorderedList")}
-              label="• Список"
+              icon={<List className="w-4 h-4" />}
+              label=""
               tooltip="Маркированный список"
             />
             <ToolbarButton
               onClick={handleOrderedList}
               active={queryCommandState("insertOrderedList")}
-              label="1. Список"
+              icon={<ListOrdered className="w-4 h-4" />}
+              label=""
               tooltip="Нумерованный список"
             />
 
@@ -387,6 +389,7 @@ function ToolbarButton({
   onClick,
   active,
   label,
+  icon,
   bold,
   italic,
   strikeThrough,
@@ -396,6 +399,7 @@ function ToolbarButton({
   onClick: () => void;
   active?: boolean;
   label: string;
+  icon?: React.ReactNode;
   bold?: boolean;
   italic?: boolean;
   strikeThrough?: boolean;
@@ -407,7 +411,7 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       title={tooltip}
-      className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
+      className={`px-3 py-1.5 text-sm rounded-lg transition-all flex items-center gap-1.5 ${
         active
           ? "bg-[#5858E2] text-white shadow-md"
           : "text-slate-600 hover:bg-slate-200 hover:text-slate-900"
@@ -418,6 +422,7 @@ function ToolbarButton({
         textDecoration: strikeThrough ? "line-through" : underline ? "underline" : undefined,
       }}
     >
+      {icon}
       {label}
     </button>
   );
