@@ -44,10 +44,12 @@ export default async function SupervisionPage({ searchParams }: PageProps) {
   // Загружаем данные для первых двух вкладок сразу на сервере
   const [availableSubmissionsResult, reviewingSubmissionsResult, availableQuestionnairesResult, reviewingQuestionnairesResult] = await Promise.all([
     // Доступные работы: status = SUBMITTED, reviewerId = null, нет review от текущего
+    // Исключаем собственные работы супервизора
     prisma.workSubmission.findMany({
       where: {
         status: 'SUBMITTED',
         reviewerId: null,
+        userId: { not: user.id },
         NOT: {
           reviews: {
             some: {
@@ -79,10 +81,12 @@ export default async function SupervisionPage({ searchParams }: PageProps) {
       },
     }),
     // На проверке: status = REVIEWING, reviewerId = текущий
+    // Исключаем собственные работы супервизора
     prisma.workSubmission.findMany({
       where: {
         status: 'REVIEWING',
         reviewerId: user.id,
+        userId: { not: user.id },
       },
       include: {
         challenge: {
@@ -107,10 +111,12 @@ export default async function SupervisionPage({ searchParams }: PageProps) {
       },
     }),
     // Доступные вопросники: status = SUBMITTED, reviewerId = null, нет review от текущего
+    // Исключаем собственные вопросники супервизора
     prisma.questionnaireSubmission.findMany({
       where: {
         status: 'SUBMITTED',
         reviewerId: null,
+        userId: { not: user.id },
         NOT: {
           reviews: {
             some: {
@@ -147,10 +153,12 @@ export default async function SupervisionPage({ searchParams }: PageProps) {
       },
     }),
     // На проверке вопросники: status = REVIEWING, reviewerId = текущий
+    // Исключаем собственные вопросники супервизора
     prisma.questionnaireSubmission.findMany({
       where: {
         status: 'REVIEWING',
         reviewerId: user.id,
+        userId: { not: user.id },
       },
       include: {
         challenge: {

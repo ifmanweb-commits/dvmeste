@@ -691,7 +691,7 @@ model CertificationAward {
   certificate     Certificate?   @relation(fields: [certificateId], references: [id], onDelete: SetNull)
 
   @@unique([certificationId, userId])
-  @@index([userId])
+  @@index([userId, certificationId, certificateId])
   @@index([certificationId])
   @@index([certificateId])
 }

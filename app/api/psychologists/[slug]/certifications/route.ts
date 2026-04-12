@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/psychologists/[slug]/certifications - получить публичные награды психолога
+// Оптимизированный запрос: начинаем от CertificationAward для использования составного индекса
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -22,69 +23,70 @@ export async function GET(
       );
     }
 
-    // Получаем публичные сертификации, которые есть у этого психолога
-    const certifications = await prisma.certification.findMany({
+    // Получаем все награды психолога с данными сертификации и сертификата
+    // Используем CertificationAward как основную таблицу для эффективного использования индекса
+    const awards = await prisma.certificationAward.findMany({
       where: {
-        isPublic: true,
-        isActive: true,
-        awards: {
-          some: {
-            userId: psychologist.id,
-          },
-        },
+        userId: psychologist.id,
       },
       include: {
-        awards: {
+        certification: {
           where: {
-            userId: psychologist.id,
+            isPublic: true,
+            isActive: true,
           },
-          select: {
-            awardedAt: true,
-            certificate: {
+          include: {
+            certificateTemplate: {
               select: {
                 id: true,
-                verificationCode: true,
-                imageUrl: true,
-              }
-            }
+                name: true,
+                slug: true,
+                backgroundUrl: true,
+              },
+            },
           },
         },
-        certificateTemplate: {
+        certificate: {
           select: {
             id: true,
-            name: true,
-            slug: true,
-            backgroundUrl: true,
+            verificationCode: true,
+            imageUrl: true,
           },
         },
       },
-      orderBy: [
-        { order: 'asc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: {
+        awardedAt: 'desc',
+      },
     });
 
-    // Форматируем результат
-    const result = certifications.map((cert) => {
-      const award = cert.awards[0];
-      const certificate = award?.certificate;
-      return {
-        id: cert.id,
-        slug: cert.slug,
-        title: cert.title,
-        description: cert.description,
-        awardText: cert.awardText,
-        level: cert.level,
-        rewardType: cert.rewardType,
-        badgeUrl: cert.badgeUrl,
-        awardedAt: award?.awardedAt,
-        certificateTemplate: cert.certificateTemplate,
-        // Для сертификата используем verificationCode из Certificate
-        verificationCode: certificate?.verificationCode,
-        // Если есть сгенерированный сертификат, используем его imageUrl
-        certificateImageUrl: certificate?.imageUrl,
-      };
-    });
+    // Фильтруем награды (оставляем только те, где сертификация публичная и активная)
+    // и сортируем по порядку сертификации
+    const result = awards
+      .filter(award => award.certification)
+      .sort((a, b) => {
+        // Сортировка по order сертификации
+        return (a.certification?.order ?? 0) - (b.certification?.order ?? 0);
+      })
+      .map(award => {
+        const cert = award.certification!;
+        const certificate = award.certificate;
+        return {
+          id: cert.id,
+          slug: cert.slug,
+          title: cert.title,
+          description: cert.description,
+          awardText: cert.awardText,
+          level: cert.level,
+          rewardType: cert.rewardType,
+          badgeUrl: cert.badgeUrl,
+          awardedAt: award.awardedAt,
+          certificateTemplate: cert.certificateTemplate,
+          // Для сертификата используем verificationCode из Certificate
+          verificationCode: certificate?.verificationCode,
+          // Если есть сгенерированный сертификат, используем его imageUrl
+          certificateImageUrl: certificate?.imageUrl,
+        };
+      });
 
     return NextResponse.json(result);
   } catch (error) {
