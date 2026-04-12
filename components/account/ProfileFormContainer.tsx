@@ -299,116 +299,175 @@ export function ProfileFormContainer({
       <div>
         {/* Вкладка 1: Личные данные */}
         <div className={cn(activeTab !== 'basic' && "hidden")}>
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Input
-              label="Фамилия"
-              value={user.lastName || ''}
-              onChange={(e) => handleBasicChange('lastName', e.target.value)}
-            />
-            <Input
-              label="Имя"
-              value={user.firstName || ''}
-              onChange={(e) => handleBasicChange('firstName', e.target.value)}
-            />
-            <Input
-              label="Отчество (опционально)"
-              value={user.middleName || ''}
-              onChange={(e) => handleBasicChange('middleName', e.target.value)}
-            />
-            <Select
-              label="Пол"
-              value={user.gender || ''}
-              onChange={(e) => handleBasicChange('gender', e.target.value)}
-            >
-              <option value="">Не указано</option>
-              <option value="male">Мужской</option>
-              <option value="female">Женский</option>
-            </Select>
-            <Input
-              label="Город"
-              value={user.city || ''}
-              onChange={(e) => handleBasicChange('city', e.target.value)}
-            />
-            <Input
-              label="Дата рождения"
-              type="date"
-              value={user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : ''}
-              onChange={(e) => handleBasicChange('birthDate', new Date(e.target.value))}
-            />
-            <Input
-              label="Цена приема (₽)"
-              type="number"
-              value={user.price || ''}
-              onChange={(e) => handleBasicChange('price', parseInt(e.target.value) || 0)}
-            />
-            <Input
-              label="Бесплатных сессий"
-              type="number"
-              min={0}
-              max={10}
-              value={user.freeSession ?? 0}
-              onChange={(e) => handleBasicChange('freeSession', parseInt(e.target.value) || 0)}
-            />
-            <Select
-              label="Формат работы"
-              value={user.workFormat || ''}
-              onChange={(e) => handleBasicChange('workFormat', e.target.value)}
-            >
-              <option value="ONLINE">Онлайн</option>
-              <option value="OFFLINE">Оффлайн</option>
-              <option value="BOTH">И то, и другое</option>
-            </Select>
-            <div className="md:col-span-2">
-              <Input
-                label="Контакты (Telegram, WhatsApp)"
-                value={user.contactInfo || ''} 
-                onChange={(e) => handleBasicChange('contactInfo', e.target.value)}
-              />
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+            {/* Заголовок вкладки */}
+            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Личные данные</h2>
+              <p className="text-sm text-gray-500 mt-1">Основная информация о вас для профиля</p>
             </div>
-            {user.status === 'CANDIDATE' && (
-              <div className="md:col-span-2">
-                <label className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={user.showCandidate || false}
-                    onChange={(e) => handleBasicChange('showCandidate', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">
-                    Отображать в таблице непроверенных психологов
-                  </span>
-                </label>
-                <a
-                  href="/unverified-psychologists"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:text-blue-700 hover:underline ml-4"
+
+            <div className="p-6">
+              <div className="space-y-8">
+                {/* Секция: ФИО */}
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-4 flex items-center gap-2">
+                    <UserIcon className="w-4 h-4 text-indigo-500" />
+                    Персональные данные
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Input
+                      label="Фамилия"
+                      value={user.lastName || ''}
+                      onChange={(e) => handleBasicChange('lastName', e.target.value)}
+                    />
+                    <Input
+                      label="Имя"
+                      value={user.firstName || ''}
+                      onChange={(e) => handleBasicChange('firstName', e.target.value)}
+                    />
+                    <Input
+                      label="Отчество"
+                      value={user.middleName || ''}
+                      onChange={(e) => handleBasicChange('middleName', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Секция: Пол и дата рождения */}
+                <div className="flex flex-wrap gap-4">
+                  <div className="w-40">
+                    <Select
+                      label="Пол"
+                      value={user.gender || ''}
+                      onChange={(e) => handleBasicChange('gender', e.target.value)}
+                    >
+                      <option value="">Не указано</option>
+                      <option value="male">Мужской</option>
+                      <option value="female">Женский</option>
+                    </Select>
+                  </div>
+                  <div className="w-48">
+                    <Input
+                      label="Дата рождения"
+                      type="date"
+                      value={user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : ''}
+                      onChange={(e) => handleBasicChange('birthDate', new Date(e.target.value))}
+                    />
+                  </div>
+                </div>
+
+                {/* Секция: Контакты и локация */}
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-4 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-indigo-500" />
+                    Контакты и местоположение
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      label="Город"
+                      value={user.city || ''}
+                      onChange={(e) => handleBasicChange('city', e.target.value)}
+                    />
+                    <div className="md:col-span-2">
+                      <Input
+                        label="Контакты (Telegram, WhatsApp)"
+                        value={user.contactInfo || ''} 
+                        onChange={(e) => handleBasicChange('contactInfo', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Секция: Условия работы */}
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-4 flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4 text-indigo-500" />
+                    Условия работы
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Input
+                      label="Цена приема (₽)"
+                      type="number"
+                      value={user.price || ''}
+                      onChange={(e) => handleBasicChange('price', parseInt(e.target.value) || 0)}
+                    />
+                    <Input
+                      label="Бесплатных сессий"
+                      type="number"
+                      min={0}
+                      max={10}
+                      value={user.freeSession ?? 0}
+                      onChange={(e) => handleBasicChange('freeSession', parseInt(e.target.value) || 0)}
+                    />
+                    <Select
+                      label="Формат работы"
+                      value={user.workFormat || ''}
+                      onChange={(e) => handleBasicChange('workFormat', e.target.value)}
+                    >
+                      <option value="ONLINE">Онлайн</option>
+                      <option value="OFFLINE">Оффлайн</option>
+                      <option value="BOTH">И то, и другое</option>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Секция: Настройки видимости */}
+                <div className="border-t border-gray-100 pt-6">
+                  <h3 className="text-sm font-medium text-gray-700 mb-4">Настройки видимости</h3>
+                  <div className="space-y-4">
+                    {user.status === 'CANDIDATE' && (
+                      <div className="flex items-start gap-3">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={user.showCandidate || false}
+                            onChange={(e) => handleBasicChange('showCandidate', e.target.checked)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">
+                            Отображать в таблице непроверенных психологов
+                          </span>
+                        </label>
+                        <a
+                          href="/unverified-psychologists"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
+                        >
+                          <span>Посмотреть таблицу</span>
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      </div>
+                    )}
+                    {user.status === 'ACTIVE' && (
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={user.wantPublished ?? true}
+                          onChange={(e) => handleBasicChange('wantPublished', e.target.checked)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">
+                          Хочу отображаться в каталоге
+                        </span>
+                      </label>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Кнопка сохранения */}
+              <div className="mt-8 pt-6 border-t border-gray-100 flex justify-end">
+                <button 
+                  onClick={handleSaveBasic} 
+                  disabled={loading} 
+                  className="bg-[#5858E2] text-white px-8 py-2.5 rounded-lg hover:bg-[#4a4ac9] transition-colors font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Посмотреть таблицу ↗
-                </a>
+                  {loading ? "Сохранение..." : "Сохранить изменения"}
+                </button>
               </div>
-            )}
-            {user.status === 'ACTIVE' && (
-              <div className="md:col-span-2">
-                <label className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={user.wantPublished ?? true}
-                    onChange={(e) => handleBasicChange('wantPublished', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">
-                    Хочу отображаться в каталоге
-                  </span>
-                </label>
-              </div>
-            )}
-            </div>
-            <div className="mt-6 flex justify-end">
-              <button onClick={handleSaveBasic} disabled={loading} className="bg-[#5858E2] text-white px-8 py-2 rounded-lg hover:bg-[#4a4ac9] transition-colors">
-                {loading ? "Сохранение..." : "Сохранить изменения"}
-              </button>
             </div>
           </div>
         </div>
