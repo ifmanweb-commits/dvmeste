@@ -475,58 +475,103 @@ export function ProfileFormContainer({
         {/* Вкладка 2: Подробно */}
         <div className={cn(activeTab !== 'detailed' && "hidden")}>
           {isCandidate ? <LockedFeature title="Раздел закрыт" description="Доступно участникам каталога." /> : (
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-6">
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+              {/* Заголовок вкладки */}
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Подробная информация</h2>
+                <p className="text-sm text-gray-500 mt-1">Данные для расширенного профиля психолога</p>
+              </div>
 
-              {/* Индикатор статуса черновика */}
-              {(user as any).draftStatus === 'PENDING' && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
-                  ⏳ Ваши изменения отправлены на модерацию и ожидают проверки
+              <div className="p-6">
+                <div className="space-y-6">
+                  {/* Индикатор статуса черновика */}
+                  {(user as any).draftStatus === 'PENDING' && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800 flex items-start gap-3">
+                      <span>⏳</span>
+                      <span>Ваши изменения отправлены на модерацию и ожидают проверки</span>
+                    </div>
+                  )}
+
+                  {(user as any).draftStatus === 'REJECTED' && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <p className="text-sm font-medium text-red-800 mb-1 flex items-center gap-2">
+                        <span>✋</span> Изменения отклонены
+                      </p>
+                      <p className="text-sm text-red-700">{(user as any).draftComment || 'Комментарий отсутствует'}</p>
+                      <p className="text-sm text-red-700 mt-2">Вы можете исправить данные и отправить снова</p>
+                    </div>
+                  )}
+
+                  {/* Секция: Методы работы */}
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-4 flex items-center gap-2">
+                      <ClipboardList className="w-4 h-4 text-purple-500" />
+                      Методы работы
+                    </h3>
+                    <ParadigmSelector 
+                      label="Ваши рабочие методы"
+                      options={availableParadigms}
+                      selected={user.mainParadigm || []}
+                      onChange={(items) => handleDetailedChange('mainParadigm', items)}
+                    />
+                  </div>
+
+                  {/* Секция: Образование */}
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-4 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-purple-500" />
+                      Образование
+                    </h3>
+                    <div className="max-w-xs">
+                      <Input 
+                        label="Дата получения первого диплома" 
+                        type="date"
+                        value={user.firstDiplomaDate ? new Date(user.firstDiplomaDate).toISOString().split('T')[0] : ''} 
+                        onChange={(e) => handleDetailedChange('firstDiplomaDate', e.target.value ? new Date(e.target.value) : null)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Секция: О себе */}
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-4 flex items-center gap-2">
+                      <UserIcon className="w-4 h-4 text-purple-500" />
+                      О себе
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">Короткая информация</label>
+                        <textarea
+                          className="w-full p-3 border border-gray-200 rounded-xl min-h-[100px] focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+                          value={user.shortBio || ''}
+                          onChange={(e) => handleDetailedChange('shortBio', e.target.value)}
+                          placeholder="Краткое описание для карточки профиля"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">Подробное описание</label>
+                        <textarea 
+                          rows={20}
+                          className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+                          value={user.longBio || ''}
+                          onChange={(e) => handleDetailedChange('longBio', e.target.value)}
+                          placeholder="Развернутое описание для страницы профиля"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              )}
 
-              {(user as any).draftStatus === 'REJECTED' && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <p className="text-sm font-medium text-red-800 mb-1">✋ Изменения отклонены</p>
-                  <p className="text-sm text-red-700">{(user as any).draftComment || 'Комментарий отсутствует'}</p>
-                  <p className="text-sm text-red-700 mt-2">Вы можете исправить данные и отправить снова</p>
+                {/* Кнопка сохранения */}
+                <div className="mt-8 pt-6 border-t border-gray-100 flex justify-end">
+                  <button 
+                    onClick={handleSaveDetailed} 
+                    disabled={loading} 
+                    className="bg-[#5858E2] text-white px-8 py-2.5 rounded-lg hover:bg-[#4a4ac9] transition-colors font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? "Сохранение..." : (user as any).draftStatus === 'PENDING' ? "Обновить черновик" : "Сохранить черновик"}
+                  </button>
                 </div>
-              )}
-
-              <ParadigmSelector 
-                label="Ваши рабочие методы"
-                options={availableParadigms}
-                selected={user.mainParadigm || []}
-                onChange={(items) => handleDetailedChange('mainParadigm', items)}
-              />
-              <div className="max-w-xs">
-                <Input 
-                  label="Дата получения первого диплома" 
-                  type="date"
-                  value={user.firstDiplomaDate ? new Date(user.firstDiplomaDate).toISOString().split('T')[0] : ''} 
-                  onChange={(e) => handleDetailedChange('firstDiplomaDate', e.target.value ? new Date(e.target.value) : null)}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Короткая информация</label>
-                <textarea
-                  className="w-full p-3 border rounded-xl min-h-[100px]"
-                  value={user.shortBio || ''}
-                  onChange={(e) => handleDetailedChange('shortBio', e.target.value)}
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Подробное описание</label>
-                <textarea 
-                  rows={10}
-                  className="w-full p-3 border rounded-lg"
-                  value={user.longBio || ''}
-                  onChange={(e) => handleDetailedChange('longBio', e.target.value)}
-                />
-              </div>
-              <div className="mt-6 flex justify-end">
-                <button onClick={handleSaveDetailed} disabled={loading} className="bg-[#5858E2] text-white px-8 py-2 rounded-lg hover:bg-[#4a4ac9] transition-colors">
-                  {loading ? "Сохранение..." : (user as any).draftStatus === 'PENDING' ? "Обновить черновик" : "Сохранить черновик"}
-                </button>
               </div>
             </div>
           )}
@@ -535,76 +580,84 @@ export function ProfileFormContainer({
         {/* Вкладка 3: Фотографии */}
         <div className={cn(activeTab !== 'photos' && "hidden")}>
           {isCandidate ? (
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
               <LockedFeature 
                 title="Загрузка фото недоступна" 
                 description="Вы сможете добавить фотографии профиля после того, как ваша анкета пройдет предварительную проверку." 
               />
             </div>
           ) : (
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {photos.map(photo => (
-                  <div key={photo.id} className="relative aspect-square rounded-xl overflow-hidden group border border-gray-100 bg-gray-50">
-                    <img src={photo.url} className="w-full h-full object-cover" alt="Фото профиля" />
-                    
-                    {/* Статус модерации: если даты верификации нет — показываем плашку */}
-                    {!photo.verifiedAt && (
-                      <div className="absolute top-2 left-2 z-10">
-                        <span className="text-[9px] font-bold uppercase px-2 py-1 rounded-lg bg-amber-500/90 text-white backdrop-blur-sm shadow-sm">
-                          На модерации
-                        </span>
-                      </div>
-                    )}
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+              {/* Заголовок вкладки */}
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Фотографии</h2>
+                <p className="text-sm text-gray-500 mt-1">Добавьте до 5 фотографий вашего профиля</p>
+              </div>
 
-                    {/* Индикатор главного фото (если совпадает с avatarUrl) */}
-                    {user.avatarUrl === photo.url && (
-                      <div className="absolute top-2 right-2 z-10">
-                        <div className="bg-blue-600 text-white p-1 rounded-full shadow-lg">
-                          <Star className="w-3 h-3 fill-current" />
+              <div className="p-6">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    {photos.map(photo => (
+                      <div key={photo.id} className="relative aspect-square rounded-xl overflow-hidden group border border-gray-100 bg-gray-50">
+                        <img src={photo.url} className="w-full h-full object-cover" alt="Фото профиля" />
+                        
+                        {/* Статус модерации: если даты верификации нет — показываем плашку */}
+                        {!photo.verifiedAt && (
+                          <div className="absolute top-2 left-2 z-10">
+                            <span className="text-[9px] font-bold uppercase px-2 py-1 rounded-lg bg-amber-500/90 text-white backdrop-blur-sm shadow-sm">
+                              На модерации
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Индикатор главного фото (если совпадает с avatarUrl) */}
+                        {user.avatarUrl === photo.url && (
+                          <div className="absolute top-2 right-2 z-10">
+                            <div className="bg-blue-600 text-white p-1 rounded-full shadow-lg">
+                              <Star className="w-3 h-3 fill-current" />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Панель действий */}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                          <button 
+                            onClick={() => handleSetMain(photo.id)} 
+                            className="p-2 bg-white rounded-full text-blue-600 hover:scale-110 transition-transform shadow-md"
+                            title="Сделать главным"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeletePhoto(photo.id)} 
+                            className="p-2 bg-white rounded-full text-red-600 hover:scale-110 transition-transform shadow-md"
+                            title="Удалить"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
+                    ))}
+
+                    {/* Слот для загрузки */}
+                    {photos.length < 5 && (
+                      <label className="aspect-square border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 hover:border-amber-300 transition-all group">
+                        <Plus className="w-8 h-8 text-gray-300 group-hover:text-amber-400 transition-colors" />
+                        <span className="text-[10px] text-gray-400 mt-2 font-medium uppercase group-hover:text-amber-500">Загрузить</span>
+                        <input 
+                          type="file" 
+                          className="hidden" 
+                          accept="image/*" 
+                          onChange={handlePhotoUpload} 
+                          disabled={loading} 
+                        />
+                      </label>
                     )}
-
-                    {/* Панель действий */}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                      <button 
-                        onClick={() => handleSetMain(photo.id)} 
-                        className="p-2 bg-white rounded-full text-blue-600 hover:scale-110 transition-transform shadow-md"
-                        title="Сделать главным"
-                      >
-                        <Check className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleDeletePhoto(photo.id)} 
-                        className="p-2 bg-white rounded-full text-red-600 hover:scale-110 transition-transform shadow-md"
-                        title="Удалить"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
                   </div>
-                ))}
-
-                {/* Слот для загрузки */}
-                {photos.length < 5 && (
-                  <label className="aspect-square border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 hover:border-blue-300 transition-all group">
-                    <Plus className="w-8 h-8 text-gray-300 group-hover:text-blue-400 transition-colors" />
-                    <span className="text-[10px] text-gray-400 mt-2 font-medium uppercase group-hover:text-blue-500">Загрузить</span>
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      accept="image/*" 
-                      onChange={handlePhotoUpload} 
-                      disabled={loading} 
-                    />
-                  </label>
-                )}
+                  <p className="text-[11px] text-gray-400 italic">
+                    * Вы можете загрузить до 5 фотографий. Выберите главное фото, поставив на нём "галочку"
+                  </p>
                 </div>
-                <p className="text-[11px] text-gray-400 italic">
-                  * Вы можете загрузить до 5 фотографий. Выберите главное фото, поставив на нём "галочку"
-                </p>
               </div>
             </div>
           )}
