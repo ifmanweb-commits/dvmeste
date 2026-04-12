@@ -12,6 +12,20 @@ import {
   RESOLUTION_OPTIONS,
   LeadAction,
 } from "@/lib/lead-status-config";
+import { 
+  ArrowLeft, 
+  AlertTriangle, 
+  Mail, 
+  Phone, 
+  MessageSquare, 
+  Calendar, 
+  Clock,
+  User,
+  FileText,
+  CheckCircle,
+  XCircle,
+  AlertCircle
+} from "lucide-react";
 
 interface Lead {
   id: string;
@@ -42,12 +56,12 @@ interface LeadResponse {
 
 function getStatusColorClass(color: string): string {
   const colors: Record<string, string> = {
-    green: "bg-green-100 text-green-800",
-    blue: "bg-blue-100 text-blue-800",
-    yellow: "bg-yellow-100 text-yellow-800",
-    red: "bg-red-100 text-red-800",
-    gray: "bg-gray-100 text-gray-800",
-    purple: "bg-purple-100 text-purple-800",
+    green: "bg-green-100 text-green-700",
+    blue: "bg-blue-100 text-blue-700",
+    yellow: "bg-yellow-100 text-yellow-700",
+    red: "bg-red-100 text-red-700",
+    gray: "bg-gray-100 text-gray-700",
+    purple: "bg-purple-100 text-purple-700",
   };
   return colors[color] || colors.gray;
 }
@@ -58,6 +72,7 @@ function getButtonVariantClass(variant: string): string {
     danger: "bg-red-600 hover:bg-red-700 text-white",
     warning: "bg-yellow-600 hover:bg-yellow-700 text-white",
     neutral: "bg-gray-600 hover:bg-gray-700 text-white",
+    primary: "bg-[#5858E2] hover:bg-[#4a4ac9] text-white",
   };
   return variants[variant] || variants.neutral;
 }
@@ -110,12 +125,13 @@ function RejectModal({
           disabled={isLoading}
           className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 disabled:opacity-50"
         >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <XCircle className="w-5 h-5" />
         </button>
 
-        <h3 className="mb-4 text-lg font-semibold text-gray-900">Отказ от заявки</h3>
+        <h3 className="mb-4 text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <XCircle className="w-5 h-5 text-red-500" />
+          Отказ от заявки
+        </h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -217,12 +233,13 @@ function CompleteModal({
           disabled={isLoading}
           className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 disabled:opacity-50"
         >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <XCircle className="w-5 h-5" />
         </button>
 
-        <h3 className="mb-4 text-lg font-semibold text-gray-900">Завершение заявки</h3>
+        <h3 className="mb-4 text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <CheckCircle className="w-5 h-5 text-green-500" />
+          Завершение заявки
+        </h3>
         <p className="text-sm text-gray-600 mb-4">Выберите исход этой заявки:</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -338,12 +355,13 @@ function ComplaintModal({
           disabled={isLoading}
           className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 disabled:opacity-50"
         >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <XCircle className="w-5 h-5" />
         </button>
 
-        <h3 className="mb-4 text-lg font-semibold text-gray-900">Пожаловаться на клиента</h3>
+        <h3 className="mb-4 text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-amber-500" />
+          Пожаловаться на клиента
+        </h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -393,7 +411,7 @@ function ComplaintModal({
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 rounded-lg bg-yellow-600 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-700 disabled:opacity-50"
+              className="flex-1 rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
             >
               {isLoading ? "Отправка..." : "Отправить жалобу"}
             </button>
@@ -581,8 +599,8 @@ export default function LeadDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50/30">
-        <div className="max-w-4xl mx-auto py-8 px-4">
+      <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+        <div className="mx-auto max-w-7xl">
           <div className="flex justify-center items-center py-12">
             <svg className="animate-spin h-8 w-8 text-[#5858E2]" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -600,14 +618,14 @@ export default function LeadDetailPage() {
 
   if (error || !lead) {
     return (
-      <div className="min-h-screen bg-slate-50/30">
-        <div className="max-w-4xl mx-auto py-8 px-4">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
+      <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800 mb-4">
             {error || "Заявка не найдена"}
           </div>
           <button
             onClick={() => router.push("/account/leads")}
-            className="mt-4 text-[#5858E2] hover:underline"
+            className="text-[#5858E2] hover:underline text-sm font-medium cursor-pointer"
           >
             ← Вернуться к списку
           </button>
@@ -619,168 +637,235 @@ export default function LeadDetailPage() {
   const actions = LEAD_STATUS_ACTIONS[lead.status] || [];
 
   return (
-    <div className="min-h-screen bg-slate-50/30">
-      <div className="max-w-4xl mx-auto py-8 px-4">
-        {/* Хедер */}
-        <div className="mb-6">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        {/* Заголовок страницы */}
+        <header className="mb-8">
           <button
             onClick={() => router.push("/account/leads")}
-            className="mb-4 text-[#5858E2] hover:underline"
+            className="cursor-pointer mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#5858E2] hover:text-[#4a4ac9] transition-colors"
           >
-            ← Вернуться к списку
+            <ArrowLeft className="w-4 h-4" />
+            Вернуться к списку
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Заявка #{lead.id.slice(-6)}</h1>
-        </div>
-
-        {/* Предупреждение о подозрительном клиенте */}
-        {lead.isSuspicious && (
-          <div className="mb-6 flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-yellow-800">
-            <svg className="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-            <span>
-              На этого клиента жаловали {lead.client.complaintCount} раз. Будьте осторожны
-            </span>
-          </div>
-        )}
-
-        {/* Основная информация */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Информация о клиенте</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">Заявка от {lead.client.name || "Анонима"}</h1>
+              <p className="text-gray-600 mt-1">Детальная информация о заявке</p>
+            </div>
             <div className="flex items-center gap-2">
-              <span
-                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColorClass(
-                  LEAD_STATUS_COLORS[lead.status]
-                )}`}
-              >
+              <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold ${getStatusColorClass(LEAD_STATUS_COLORS[lead.status])}`}>
                 {LEAD_STATUS_LABELS[lead.status]}
               </span>
               {lead.resolution && (
-                <span
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColorClass(
-                    RESOLUTION_COLORS[lead.resolution]
-                  )}`}
-                >
+                <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold ${getStatusColorClass(RESOLUTION_COLORS[lead.resolution])}`}>
                   {RESOLUTION_LABELS[lead.resolution]}
                 </span>
               )}
             </div>
           </div>
+        </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Предупреждение о подозрительном клиенте */}
+        {lead.isSuspicious && (
+          <div className="mb-6 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-800">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-600" />
             <div>
-              <p className="text-sm text-gray-500">Имя</p>
-              <p className="font-medium">{lead.client.name || "Не указано"}</p>
+              <p className="font-semibold text-sm">Подозрительный клиент</p>
+              <p className="text-sm">
+                На этого клиента жаловались {lead.client.complaintCount} раз. Будьте осторожны при общении.
+              </p>
             </div>
-            
-            {/* Контакты показываем только если заявка принята (ACCEPTED) */}
-            {lead.status === LeadStatus.ACCEPTED ? (
-              <>
-                <div>
-                  <p className="text-sm text-gray-500">Email</p>
-                  <p className="font-medium">{lead.client.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Телефон</p>
-                  <p className="font-medium">{lead.client.phone || "Не указано"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Telegram / VK</p>
-                  <p className="font-medium">{lead.client.telegram || lead.client.vk || "Не указано"}</p>
-                </div>
-              </>
-            ) : (
-              <div className="md:col-span-3">
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                    <div>
-                      <p className="font-medium mb-1">Контакты скрыты</p>
-                      <p>Контакты клиента будут доступны, если вы примете заявку. Нажмите кнопку «Принять» выше, чтобы связаться с клиентом.</p>
+          </div>
+        )}
+
+        {/* Основная информация */}
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white rounded-lg text-indigo-600">
+                <User className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-gray-900">Информация о клиенте</h2>
+                <p className="text-xs text-gray-500">Персональные данные и контакты</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Имя</p>
+                <p className="text-base font-semibold text-gray-900">{lead.client.name || "Не указано"}</p>
+              </div>
+              
+              {/* Контакты показываем только если заявка принята (ACCEPTED) */}
+              {lead.status === LeadStatus.ACCEPTED ? (
+                <>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Email</p>
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-gray-400" />
+                      <p className="text-base font-medium text-gray-900">{lead.client.email}</p>
                     </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Телефон</p>
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      <p className="text-base font-medium text-gray-900">{lead.client.phone || "Не указано"}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Telegram / VK</p>
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-gray-400" />
+                      <p className="text-base font-medium text-gray-900">{lead.client.telegram || lead.client.vk || "Не указано"}</p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="md:col-span-2">
+                  <div className="mt-2 p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-blue-600" />
+                      <div>
+                        <p className="font-semibold mb-1">Контакты скрыты</p>
+                        <p className="text-blue-700">
+                          Контакты клиента будут доступны, если вы примете заявку. Нажмите кнопку «Принять» в разделе действий, чтобы связаться с клиентом.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <Calendar className="w-5 h-5 text-gray-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Дата создания</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {new Date(lead.createdAt).toLocaleDateString("ru-RU", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <Clock className="w-5 h-5 text-gray-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Время создания</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {new Date(lead.createdAt).toLocaleTimeString("ru-RU", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {lead.statusChangedAt && (
+              <div className="mt-4 pt-6 border-t border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <Clock className="w-5 h-5 text-gray-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Дата изменения статуса</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {new Date(lead.statusChangedAt).toLocaleDateString("ru-RU", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
                   </div>
                 </div>
               </div>
             )}
           </div>
-
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <p className="text-sm text-gray-500 mb-1">Дата создания</p>
-            <p className="font-medium">
-              {new Date(lead.createdAt).toLocaleDateString("ru-RU", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </p>
-          </div>
-
-          {lead.statusChangedAt && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-sm text-gray-500 mb-1">Дата изменения статуса</p>
-              <p className="font-medium">
-                {new Date(lead.statusChangedAt).toLocaleDateString("ru-RU", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Сообщение клиента */}
         {lead.message && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">Сообщение клиента</h2>
-            <p className="text-gray-700 whitespace-pre-wrap">{lead.message}</p>
+          <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden mb-6">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-lg text-purple-600">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-gray-900">Сообщение клиента</h2>
+                  <p className="text-xs text-gray-500">Текст обращения</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{lead.message}</p>
+            </div>
           </div>
         )}
 
         {/* Кнопки действий */}
         {actions.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Действия</h2>
-            <div className="flex flex-wrap gap-3">
-              {actions.map((action) => (
-                <button
-                  key={action.id}
-                  onClick={() => handleAction(action)}
-                  disabled={actionLoading !== null}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${getButtonVariantClass(
-                    action.variant
-                  )} disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {action.icon && <span>{action.icon}</span>}
-                  {action.label}
-                </button>
-              ))}
+          <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden mb-6">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-lg text-amber-600">
+                  <CheckCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-gray-900">Действия</h2>
+                  <p className="text-xs text-gray-500">Управление статусом заявки</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="flex flex-wrap gap-3">
+                {actions.map((action) => (
+                  <button
+                    key={action.id}
+                    onClick={() => handleAction(action)}
+                    disabled={actionLoading !== null}
+                    className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed ${getButtonVariantClass(action.variant)}`}
+                  >
+                    {action.icon && <span>{action.icon}</span>}
+                    {action.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
         {/* Кнопка жалобы */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <button
-            onClick={() => setShowComplaintModal(true)}
-            disabled={actionLoading !== null}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-yellow-50 text-yellow-700 border border-yellow-200 hover:bg-yellow-100 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span>⚠️</span>
-            Пожаловаться на клиента
-          </button>
+        <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+          <div className="p-6">
+            <button
+              onClick={() => setShowComplaintModal(true)}
+              disabled={actionLoading !== null}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <AlertTriangle className="w-4 h-4" />
+              Пожаловаться на клиента
+            </button>
+          </div>
         </div>
       </div>
 

@@ -9,6 +9,8 @@ import {
   LEAD_STATUS_LABELS,
   LEAD_STATUS_COLORS,
 } from "@/lib/lead-status-config";
+import { LeadCard } from "@/components/account/leads/LeadCard";
+import { AlertTriangle } from "lucide-react";
 
 interface Lead {
   id: string;
@@ -188,88 +190,75 @@ export default function LeadsPage() {
           </div>
         ) : (
           <>
-            {/* Список заявок */}
-            <div className="space-y-4">
-              {leads.map((lead) => (
-                <div
-                  key={lead.id}
-                  className="bg-white border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
-                >
-                  {/* Предупреждение о подозрительном клиенте */}
-                  {lead.isSuspicious && (
-                    <div className="mb-3 flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-2 text-yellow-800 text-sm">
-                      <svg
-                        className="h-5 w-5 flex-shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                        />
-                      </svg>
-                      <span>
-                        На этого клиента жаловались {lead.client.complaintCount || 0} раз. Будьте осторожны
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      {/* Заголовок */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-semibold text-gray-900">
-                          {lead.client.name || "Аноним"}
-                        </span>
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getStatusColorClass(
-                            LEAD_STATUS_COLORS[lead.status]
-                          )}`}
-                        >
-                          {LEAD_STATUS_LABELS[lead.status]}
-                        </span>
-                      </div>
-
-                      {/* Сообщение */}
-                      {lead.message && (
-                        <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                          {lead.message.length > 70
-                            ? `${lead.message.slice(0, 70)}...`
-                            : lead.message}
-                        </p>
-                      )}
-
-                      {/* Мета-информация */}
-                      <div className="flex items-center gap-4 text-xs text-gray-500">
-                        <span>
+            {/* Список заявок - сетка карточек для новых и принятых, таблица для архива */}
+            {activeTab === "archived" ? (
+              /* Компактная таблица для архива */
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Клиент</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Статус</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Дата</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Действие</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {leads.map((lead) => (
+                      <tr key={lead.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <a href={`/account/leads/${lead.id}`} className="font-medium text-gray-900 hover:text-[#5858E2]">
+                            {lead.client.name || "Аноним"}
+                          </a>
+                          {lead.isSuspicious && (
+                            <div className="flex items-center gap-1 mt-1 text-xs text-amber-600">
+                              <AlertTriangle className="w-3 h-3" />
+                              <span>Жалоб: {lead.client.complaintCount || 0}</span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getStatusColorClass(LEAD_STATUS_COLORS[lead.status])}`}>
+                            {LEAD_STATUS_LABELS[lead.status]}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-500">
                           {new Date(lead.createdAt).toLocaleDateString("ru-RU", {
                             day: "numeric",
                             month: "long",
-                            hour: "2-digit",
-                            minute: "2-digit",
+                            year: "numeric",
                           })}
-                        </span>
-                        {/* Email показываем только если заявка принята */}
-                        {lead.status === LeadStatus.ACCEPTED && lead.client.email && (
-                          <span className="truncate">{lead.client.email}</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Кнопка */}
-                    <a
-                      href={`/account/leads/${lead.id}`}
-                      className="flex-shrink-0 inline-flex items-center px-4 py-2 bg-[#5858E2] text-white text-sm font-medium rounded-lg hover:bg-[#4d4dd0] transition-colors"
-                    >
-                      Подробнее
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <a
+                            href={`/account/leads/${lead.id}`}
+                            className="text-[#5858E2] hover:text-[#4a4ac9] text-sm font-medium"
+                          >
+                            Подробнее →
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              /* Сетка карточек для новых и принятых */
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {leads.map((lead) => (
+                  <LeadCard
+                    key={lead.id}
+                    id={lead.id}
+                    client={lead.client}
+                    message={lead.message}
+                    status={lead.status}
+                    isSuspicious={lead.isSuspicious}
+                    createdAt={lead.createdAt}
+                    statusChangedAt={lead.statusChangedAt}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* Пагинация */}
             {total > limit && (
