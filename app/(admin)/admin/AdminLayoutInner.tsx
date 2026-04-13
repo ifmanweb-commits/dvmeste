@@ -29,10 +29,10 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
     { href: '/admin/complaints', label: 'Жалобы', roles: ['admin', 'manager'] },
     { href: '/admin/secrets', label: 'Секреты', roles: ['admin', 'manager'] },
     { href: '/admin/certifications', label: 'Сертификации', roles: ['admin', 'manager'] },
-    { href: '/admin/courses', label: 'Курсы', roles: ['admin', 'manager'] },
-    { href: '/admin/payments', label: 'Платежи', roles: ['admin'] },
     { href: '/admin/onboarding', label: 'Советы', roles: ['admin', 'manager'] },
+    { href: '/admin/courses', label: 'Курсы', roles: ['admin', 'manager'] },
     { href: '/admin/pages', label: 'Страницы', roles: ['admin'] },
+    { href: '/admin/payments', label: 'Платежи', roles: ['admin'] },
     { href: '/admin/management', label: 'Управление', roles: ['admin'] },
   ]
   

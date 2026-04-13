@@ -88,8 +88,8 @@ export async function saveBlock(blockData: BlockUpdateData) {
     });
 
     // Инвалидируем кеш
-    revalidateTag('blocks' as any);
-    revalidatePath('/admin/blocks', 'page');
+    revalidateTag('blocks', 'default');
+    revalidatePath('/admin/blocks');
     
     return { success: true };
   } catch (error) {
@@ -120,8 +120,8 @@ export async function updateBlocks(blocksData: BlockUpdateData[]) {
     }
 
     // Инвалидируем кеш
-    revalidateTag('blocks' as any);
-    revalidatePath('/admin/blocks', 'page');
+    revalidateTag('blocks', 'default');
+    revalidatePath('/admin/blocks');
     
     return { success: true };
   } catch (error) {
@@ -151,7 +151,7 @@ export async function createBlock(data: BlockCreateData) {
     });
 
     // Инвалидируем кеш
-    revalidateTag('blocks' as any);
+    revalidateTag('blocks', 'default');
     revalidatePath('/admin/blocks');
     
     return { success: true, block };
@@ -173,7 +173,7 @@ export async function deleteBlock(blockId: string) {
     });
 
     // Инвалидируем кеш
-    revalidateTag('blocks' as any);
+    revalidateTag('blocks', 'default');
     revalidatePath('/admin/blocks');
     
     return { success: true };
