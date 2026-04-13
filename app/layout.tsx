@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { LayoutShell } from "@/components/layout/LayoutShell";
+import BlockRenderer from "@/components/BlockRenderer";
 
 import {
   buildMetadata,
@@ -56,7 +57,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -75,17 +76,22 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: organizationSchema }}
         />
+        {/* Динамические блоки для head — загружаются по slug'ам */}
+        <BlockRenderer slugs={['head-scripts']} variant="head" />
       </head>
       <body
         className={`${inter.variable} ${displayFont.variable} font-sans antialiased`}
       >
-          <a
-            href="#main"
-            className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-primary focus:px-3 focus:py-2 focus:text-white"
-          >
-            Перейти к содержимому
-          </a>
-          <LayoutShell>{children}</LayoutShell>
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-primary focus:px-3 focus:py-2 focus:text-white"
+        >
+          Перейти к содержимому
+        </a>
+        <LayoutShell>{children}</LayoutShell>
+        
+        {/* Блок body-end перед закрывающим тегом body */}
+        <BlockRenderer slugs={['body-end']} variant="body" />
       </body>
     </html>
   );
