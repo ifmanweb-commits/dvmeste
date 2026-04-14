@@ -3,6 +3,8 @@ import { getArticles, getArticleTags } from "@/lib/articles";
 import { buildMetadata } from "@/lib/seo";
 import { Calendar, Tag, ArrowLeft, ArrowRight, User, Search, X } from "lucide-react";
 import type { Metadata } from "next";
+import { LayoutShell } from "@/components/layout/LayoutShell";
+import BlockRenderer from "@/components/BlockRenderer";
 
 export const revalidate = 60;
 
@@ -83,8 +85,10 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7]">
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+    <LayoutShell>
+      <BlockRenderer slugs={['articles-header']} variant="body" />
+      <div className="min-h-screen bg-[#F5F5F7]">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
         
         {/* Заголовок раздела (компактный) */}
         <div className="mb-10">
@@ -300,7 +304,9 @@ export default async function ArticlesListPage({ searchParams }: PageProps) {
             )}
           </>
         )}
+        </div>
       </div>
-    </div>
+      <BlockRenderer slugs={['articles-footer']} variant="body" />
+    </LayoutShell>
   );
 }

@@ -10,6 +10,7 @@ import { Calendar, User, ArrowLeft, Clock, Share2, ArrowUp } from "lucide-react"
 import styles from './articles.module.css';
 import { prisma } from "@/lib/prisma";
 import { ArticleClient } from "../ArticleClient";
+import { LayoutShell } from "@/components/layout/LayoutShell";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -53,30 +54,36 @@ export default async function ArticlePage({ params }: PageProps) {
     authorImage = author.avatarUrl;
   }
   
-  // Получаем другие статьи автора
-  const authorArticles = author 
+  // Получаем другие статьи автора (приводим к массиву, т.к. getArticles может возвращать объект с пагинацией)
+  const authorArticlesResult = author 
     ? await getArticles({ authorId: author.id, publishedOnly: true })
     : [];
-  const otherAuthorArticles = authorArticles
-    .filter(a => a.id !== article.id)
+  const authorArticlesArray = Array.isArray(authorArticlesResult) 
+    ? authorArticlesResult 
+    : (authorArticlesResult as any).articles || [];
+  const otherAuthorArticles = authorArticlesArray
+    .filter((a: any) => a.id !== article.id)
     .slice(0, 3);
   
   // Получаем статьи по теме (с таким же первым тегом)
-  const topicArticles = article.tags.length > 0
+  const topicArticlesResult = article.tags.length > 0
     ? await getArticles({ tag: article.tags[0], publishedOnly: true })
     : [];
-  const otherTopicArticles = topicArticles
-    .filter(a => a.id !== article.id)
+  const topicArticlesArray = Array.isArray(topicArticlesResult)
+    ? topicArticlesResult
+    : (topicArticlesResult as any).articles || [];
+  const otherTopicArticles = topicArticlesArray
+    .filter((a: any) => a.id !== article.id)
     .slice(0, 3);
   
   // Время чтения
   const readingTime = calculateReadingTime(article.content);
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] relative">
-      <ArticleClient />
-
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <LayoutShell>
+      <div className="min-h-screen bg-[#F5F5F7] relative">
+        <ArticleClient />
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         
         {/* Навигация */}
         <Link
@@ -145,7 +152,7 @@ export default async function ArticlePage({ params }: PageProps) {
                     🏷️ По теме
                   </h3>
                   <ul className="space-y-3">
-                    {otherTopicArticles.map((a) => (
+                    {otherTopicArticles.map((a: any) => (
                       <li key={a.id}>
                         <Link
                           href={`/articles/${a.slug}`}
@@ -266,7 +273,7 @@ export default async function ArticlePage({ params }: PageProps) {
               📚 Другие статьи {author?.fullName}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {otherAuthorArticles.map((a) => (
+              {otherAuthorArticles.map((a: any) => (
                 <Link
                   key={a.id}
                   href={`/articles/${a.slug}`}
@@ -300,7 +307,7 @@ export default async function ArticlePage({ params }: PageProps) {
               🏷️ Ещё по теме «{article.tags[0]}»
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {otherTopicArticles.slice(0, 3).map((a) => (
+              {otherTopicArticles.slice(0, 3).map((a: any) => (
                 <Link
                   key={a.id}
                   href={`/articles/${a.slug}`}
@@ -337,9 +344,8 @@ export default async function ArticlePage({ params }: PageProps) {
             Назад к списку статей
           </Link>
         </div>
+        </div>
       </div>
-
-      
-    </div>
+    </LayoutShell>
   );
 }

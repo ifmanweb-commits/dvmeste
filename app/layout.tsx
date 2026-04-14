@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
-import { LayoutShell } from "@/components/layout/LayoutShell";
 import BlockRenderer from "@/components/BlockRenderer";
 
 import {
@@ -66,7 +65,7 @@ export default async function RootLayout({
   const organizationSchema = organizationJsonLd();
 
   return (
-    <html className="scroll-smooth" lang="ru">
+    <html lang="ru" className="scroll-smooth">
       <head>
         <script
           type="application/ld+json"
@@ -76,7 +75,7 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: organizationSchema }}
         />
-        {/* Динамические блоки для head — загружаются по slug'ам */}
+        {/* Глобальные блоки для head — загружаются по slug'ам */}
         <BlockRenderer slugs={['head-scripts']} variant="head" />
       </head>
       <body
@@ -88,9 +87,9 @@ export default async function RootLayout({
         >
           Перейти к содержимому
         </a>
-        <LayoutShell>{children}</LayoutShell>
+        {children}
         
-        {/* Блок body-end перед закрывающим тегом body */}
+        {/* Глобальные блоки body-end перед закрывающим тегом body */}
         <BlockRenderer slugs={['body-end']} variant="body" />
       </body>
     </html>

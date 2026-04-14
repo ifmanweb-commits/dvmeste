@@ -1,17 +1,39 @@
 import { prisma } from '@/lib/prisma';
-import { notFound } from 'next/navigation';
+import PageRenderer from '@/components/PageRenderer';
+import { Metadata } from 'next';
+
+// Генерация метаданных для главной страницы
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await prisma.page.findUnique({
+    where: { slug: 'home', isPublished: true }
+  });
+
+  if (!page) {
+    return {
+      title: 'Давай вместе — Каталог психологов',
+      description: 'Подберите психолога по парадигме, цене и городу. Фильтры, уровни сертификации, удобный каталог. Сервис «Давай вместе».',
+    };
+  }
+
+  return {
+    title: page.metaTitle || page.adminTitle || 'Давай вместе — Каталог психологов',
+    description: page.metaDescription || 'Подберите психолога по парадигме, цене и городу. Фильтры, уровни сертификации, удобный каталог. Сервис «Давай вместе».',
+    keywords: page.metaKeywords?.split(',').map(k => k.trim()) || [],
+    robots: page.metaRobots || 'index, follow',
+  };
+}
 
 export default async function HomePage() {
-  // Ищем страницу с нужным slug в БД
+  // Ищем страницу с slug 'home' в БД
   const page = await prisma.page.findUnique({
     where: { 
-      slug: 'home', // или любой другой slug, который вы используете для главной
+      slug: 'home',
       isPublished: true 
     }
   });
 
   if (!page) {
-    // Если страница не найдена - можно показать дефолтную
+    // Если страница не найдена - показываем дефолтную
     return (
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold">Добро пожаловать</h1>
@@ -20,10 +42,5 @@ export default async function HomePage() {
     );
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">{page.adminTitle}</h1>
-      <div dangerouslySetInnerHTML={{ __html: page.content || '' }} />
-    </div>
-  );
+  return <PageRenderer page={page} />;
 }

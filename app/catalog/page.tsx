@@ -9,6 +9,7 @@ import BlockRenderer from "@/components/BlockRenderer";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import type { PsychologistCatalogItem } from "@/types/catalog";
+import { LayoutShell } from "@/components/layout/LayoutShell";
 
 export const revalidate = 60;
 export const dynamic = 'force-dynamic'
@@ -121,11 +122,11 @@ export default async function PsyListPage({ searchParams }: PageProps) {
   }, excludeUserId);
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header блок над каталогом */}
-      <BlockRenderer slugs={['catalog-header']} variant="body" />
+    <LayoutShell>
+      <div className="min-h-screen bg-white">
+        <BlockRenderer slugs={['catalog-header']} variant="body" />
 
-      <div className="relative">
+        <div className="relative">
         <div className="mx-auto w-full max-w-[1640px] px-4 py-8 sm:px-6 xl:px-8">
           <div className="relative">
             <MobileFilters initialParams={params} totalCount={total} />
@@ -151,8 +152,8 @@ export default async function PsyListPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      {/* Footer блок под каталогом */}
-      <BlockRenderer slugs={['catalog-footer']} variant="body" />
-    </div>
+        <BlockRenderer slugs={['catalog-footer']} variant="body" />
+      </div>
+    </LayoutShell>
   );
 }

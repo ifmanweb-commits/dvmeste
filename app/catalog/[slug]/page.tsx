@@ -10,6 +10,8 @@ import LeadFormModal from "@/components/lead/LeadFormModal";
 import { normalizeEmbeddedLocalAssetUrls } from "@/lib/html-local-assets";
 import { EducationBlock } from "./components/EducationBlock";
 import { CertificationsBlock } from "@/components/catalog/CertificationsBlock";
+import { LayoutShell } from "@/components/layout/LayoutShell";
+import BlockRenderer from "@/components/BlockRenderer";
 
 export const revalidate = 60;
 
@@ -275,11 +277,12 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
   const experience = calculateExperience(user.firstDiplomaDate);
 
   return (
-    <>
+    <LayoutShell>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: personSchema }}
       />
+      <BlockRenderer slugs={['catalog-header']} variant="body" />
       <div className="min-h-screen bg-white">
         <div className="mx-auto sm:max-w-4xl px-0 sm:px-6 lg:px-8 py-4 sm:py-6">
           <Link
@@ -473,6 +476,7 @@ export default async function PsychologistProfilePage({ params }: PageProps) {
           </article>
         </div>
       </div>
-    </>
+      <BlockRenderer slugs={['catalog-footer']} variant="body" />
+    </LayoutShell>
   );
 }

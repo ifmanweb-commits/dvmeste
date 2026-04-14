@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { LayoutShell } from "@/components/layout/LayoutShell";
+import BlockRenderer from "@/components/BlockRenderer";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -94,8 +96,10 @@ export default async function UnverifiedPsychologistsPage({
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7]">
-      {/* Hero секция */}
+    <LayoutShell>
+      <BlockRenderer slugs={['unverified-psychologists-header']} variant="body" />
+      <div className="min-h-screen bg-[#F5F5F7]">
+        {/* Hero секция */}
       <section className="bg-white border-b border-neutral-200">
         <div className="container mx-auto px-4 py-12">
           <h1 className="text-4xl font-bold mb-4">
@@ -253,6 +257,8 @@ export default async function UnverifiedPsychologistsPage({
           </>
         )}
       </section>
-    </div>
+      </div>
+      <BlockRenderer slugs={['unverified-psychologists-footer']} variant="body" />
+    </LayoutShell>
   );
 }
