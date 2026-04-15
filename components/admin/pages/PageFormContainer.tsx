@@ -71,9 +71,10 @@ export default function PageFormContainer({ initialData = {} }: PageFormContaine
 
       if (result.success) {
         setSuccess('Страница сохранена');
+        setSaving(false);
         setTimeout(() => {
-          router.push('/admin/pages');
-        }, 500);
+          setSuccess('');
+        }, 3000);
       } else {
         setError(result.error || 'Ошибка при сохранении');
         setSaving(false);

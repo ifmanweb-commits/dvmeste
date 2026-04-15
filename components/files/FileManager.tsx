@@ -36,20 +36,32 @@ export default function FileManager({
   
   const prevUrlsRef = useRef<string[] | undefined>(undefined);
 
-  // Определяем API URL в зависимости от режима
+  // Определяем API URL в зависимости от scope и режима
   const getApiUrl = (action: 'list' | 'upload' | 'delete', file?: FileItem) => {
-    if (mode === 'db') {
-      //console.log('Режим БД');
-      // Для режима БД используем новый роут
+    if (scope === 'articles') {
+      // API для статей
       switch (action) {
         case 'list':
         case 'upload':
           return `/api/articles/${entityKey}/images-admin`;
         case 'delete':
-          return `/api/articles/${entityKey}/images-admin?imageId=${file?.id}`;
+          if (file?.id) {
+            return `/api/articles/${entityKey}/images-admin?imageId=${file.id}`;
+          } else {
+            return `/api/articles/${entityKey}/images-admin?filename=${encodeURIComponent(file?.name || '')}`;
+          }
+      }
+    } else if (scope === 'pages') {
+      // API для страниц
+      switch (action) {
+        case 'list':
+        case 'upload':
+          return `/api/admin/pages/${entityKey}/files`;
+        case 'delete':
+          return `/api/admin/pages/${entityKey}/files?filename=${encodeURIComponent(file?.name || '')}`;
       }
     } else {
-      // Старый режим через /api/files
+      // Старый режим через /api/files для остальных scope
       const baseUrl = `/api/files?scope=${scope}&entityKey=${entityKey}`;
       switch (action) {
         case 'list':
@@ -161,17 +173,7 @@ export default function FileManager({
   };
 
   const handleDelete = async (file: FileItem) => {
-    const params = new URLSearchParams();
-    
-    if (file.id) {
-      // Это изображение из БД
-      params.append('imageId', file.id);
-    } else {
-      // Обычный файл
-      params.append('filename', file.name);
-    }
-    
-    const url = `/api/articles/${entityKey}/images-admin?${params}`;
+    const url = getApiUrl('delete', file);
     
     try {
       const res = await fetch(url, { method: 'DELETE' });

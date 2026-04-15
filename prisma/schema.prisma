@@ -231,6 +231,10 @@ model Message {
   @@index([createdAt])
 }
 
+// Возможные значения поля template:
+// - "blank" — Пустая страница, только контент без обёртки LayoutShell
+// - "landing" — Лендинг с обёрткой LayoutShell, без заголовка
+// - "text" — Текстовая страница с обёрткой LayoutShell, заголовком и стилями prose
 model Page {
   id              String   @id @default(cuid())
   slug            String   @unique
@@ -239,7 +243,7 @@ model Page {
   metaDescription String?
   metaKeywords    String?
   metaRobots      String?
-  template        String
+  template        String   // blank, landing, text
   content         String
   customHead      String?
   images          String[]

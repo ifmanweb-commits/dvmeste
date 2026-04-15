@@ -286,6 +286,14 @@ export async function deletePage(id: string): Promise<ActionResult> {
       };
     }
 
+    // Защищённая страница home - нельзя удалить
+    if (page.slug === 'home') {
+      return {
+        success: false,
+        error: 'Невозможно удалить системную страницу home'
+      };
+    }
+
     // Удаляем файлы с диска
     if (page.images && page.images.length > 0) {
       const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'pages', page.slug);

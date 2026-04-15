@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import PageRenderer from '@/components/PageRenderer';
 import { Metadata } from 'next';
+import { getCurrentUser } from '@/lib/auth/session';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -11,11 +12,14 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   
+  const user = await getCurrentUser();
+  const isAdminOrManager = user?.isAdmin || user?.isManager;
+  
   const page = await prisma.page.findUnique({
-    where: { slug, isPublished: true }
+    where: { slug }
   });
 
-  if (!page) {
+  if (!page || (!page.isPublished && !isAdminOrManager)) {
     return {
       title: 'Страница не найдена',
     };
@@ -31,16 +35,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function DynamicPage({ params }: PageProps) {
   const { slug } = await params;
+  
+  const user = await getCurrentUser();
+  const isAdminOrManager = user?.isAdmin || user?.isManager;
 
   // Получаем страницу из БД
   const page = await prisma.page.findUnique({
-    where: {
-      slug,
-      isPublished: true
-    }
+    where: { slug }
   });
 
-  if (!page) {
+  // Если страница не найдена или не опубликована и пользователь не админ/менеджер
+  if (!page || (!page.isPublished && !isAdminOrManager)) {
     notFound();
   }
 

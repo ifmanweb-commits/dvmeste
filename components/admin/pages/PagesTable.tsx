@@ -164,6 +164,7 @@ export function PagesTable({ pages }: PagesTableProps) {
                     >
                       <Pencil className="w-5 h-5" />
                     </Link>
+                    {page.slug !== 'home' && (
                     <button
                       onClick={() => handleDelete(page.id, page.adminTitle)}
                       disabled={deletingId === page.id}
@@ -172,6 +173,7 @@ export function PagesTable({ pages }: PagesTableProps) {
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
+                    )}
                   </div>
                 </td>
               </tr>
