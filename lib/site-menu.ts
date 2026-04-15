@@ -18,11 +18,8 @@ const RESERVED_PAGE_SLUGS = new Set(["site-footer", CATALOG_PAGE_SLUG]);
 
 const DEFAULT_SITE_MENU_ITEMS: SiteMenuItem[] = [
   { id: "menu-catalog", label: "Подобрать психолога", href: "/catalog" },
-  { id: "menu-courses", label: "Курсы", href: "/courses" },
-  { id: "menu-lib", label: "Библиотека", href: "/lib" },
-  { id: "menu-lib-articles", label: "Статьи", href: "/lib/articles" },
+  { id: "menu-lib-articles", label: "Статьи", href: "/articles" },
   { id: "menu-connect", label: "Для психологов", href: "/connect" },
-  { id: "menu-contacts", label: "Контакты", href: "/contacts" },
 ];
 
 function normalizeLabel(value: unknown) {

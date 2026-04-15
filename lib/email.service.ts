@@ -18,7 +18,7 @@ class EmailService {
       // Локально: используем MailDev
       console.log('📧 Development mode: using MailDev');
       this.transporter = nodemailer.createTransport({
-        host: 'localhost',
+        host: '127.0.0.1',
         port: 1025,
         ignoreTLS: true,
       });

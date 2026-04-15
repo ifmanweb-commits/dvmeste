@@ -9,16 +9,25 @@ import { User } from '@prisma/client'
 import { logout } from '@/lib/auth/logout';
 import { LogOut } from 'lucide-react';
 import { OnboardingProvider } from '@/components/account/OnboardingProvider';
+import { AdminSiteMenu } from '@/components/layout/AdminSiteMenu';
+import { SiteMenuItem } from '@/lib/site-menu';
 
 interface AdminLayoutInnerProps {
   children: ReactNode
   user: User
+  menuItems: SiteMenuItem[]
 }
 
-export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
+interface AdminMenuItem {
+  href: string;
+  label: string;
+  roles: string[];
+}
+
+export function AdminLayoutInner({ children, user, menuItems }: AdminLayoutInnerProps) {
   const pathname = usePathname()
   
-  const menuItems = [
+  const adminMenuItems: AdminMenuItem[] = [
     { href: '/admin', label: 'Дашборд', roles: ['admin', 'manager'] },
     { href: '/admin/psychologists', label: 'Психологи', roles: ['admin', 'manager'] },
     { href: '/admin/moderation', label: 'Модерация', roles: ['admin', 'manager'] },
@@ -37,7 +46,7 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
   ]
   
   // Фильтруем меню по ролям
-  const filteredMenu = menuItems.filter(item => {
+  const filteredMenu = adminMenuItems.filter(item => {
     if (user.isAdmin) return true
     if (user.isManager && item.roles.includes('manager')) return true
     return false
@@ -51,7 +60,10 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
       {/* Sidebar */}
       <aside className="w-64 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col sticky top-0 h-screen">
           <div className="p-4 border-b border-gray-200">
-          <h2 className="font-semibold text-lg">Админ-панель</h2>
+          <div className="flex items-center gap-2 mb-3">
+            <AdminSiteMenu menuItems={menuItems} />
+            <h2 className="font-semibold text-lg">Админ-панель</h2>
+          </div>
           <Link href="/account" className="flex items-center gap-3 mt-3 hover:bg-gray-50 p-2 -mx-2 rounded-md transition-colors">
             {userAvatar ? (
               <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-gray-200">
