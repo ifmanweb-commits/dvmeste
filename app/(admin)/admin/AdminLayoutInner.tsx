@@ -50,9 +50,9 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
       <aside className="w-64 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col sticky top-0 h-screen">
-        <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-gray-200">
           <h2 className="font-semibold text-lg">Админ-панель</h2>
-          <div className="flex items-center gap-3 mt-3">
+          <Link href="/account" className="flex items-center gap-3 mt-3 hover:bg-gray-50 p-2 -mx-2 rounded-md transition-colors">
             {userAvatar ? (
               <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-gray-200">
                 <Image
@@ -75,7 +75,7 @@ export function AdminLayoutInner({ children, user }: AdminLayoutInnerProps) {
                 {user.isAdmin ? 'Администратор' : 'Менеджер'}
               </p>
             </div>
-          </div>
+          </Link>
         </div>
         
         <nav className="p-2">

@@ -47,24 +47,21 @@ export function ParadigmSelector({ label, selected, options, onChange, error }: 
       {/* Выпадающий список или сетка вариантов */}
       <div className="border rounded-lg p-3 bg-gray-50/50 max-h-48 overflow-y-auto">
         <div className="flex flex-wrap gap-2">
-          {options.map(option => {
-            const isSelected = selected.includes(option)
-            return (
+          {options
+            .filter(option => !selected.includes(option))
+            .map(option => (
               <button
                 key={option}
                 type="button"
                 onClick={() => toggleItem(option)}
                 className={cn(
                   "px-3 py-1 rounded-md text-xs transition-colors border",
-                  isSelected 
-                    ? "bg-blue-600 border-blue-600 text-white" 
-                    : "bg-white border-gray-200 text-gray-600 hover:border-blue-400"
+                  "bg-white border-gray-200 text-gray-600 hover:border-blue-400"
                 )}
               >
                 {option}
               </button>
-            )
-          })}
+            ))}
         </div>
       </div>
       {error && <p className="text-xs text-red-500">{error}</p>}
