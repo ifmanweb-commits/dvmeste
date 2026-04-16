@@ -10,7 +10,7 @@ import {
   LEAD_STATUS_COLORS,
 } from "@/lib/lead-status-config";
 import { LeadCard } from "@/components/account/leads/LeadCard";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Lock } from "lucide-react";
 
 interface Lead {
   id: string;
@@ -41,6 +41,10 @@ interface LeadsResponse {
   error?: string;
 }
 
+interface UserProfile {
+  status: string;
+}
+
 function getStatusColorClass(color: string): string {
   const colors: Record<string, string> = {
     green: "bg-green-100 text-green-800",
@@ -62,7 +66,69 @@ export default function LeadsPage() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const limit = 20;
+
+  // Получение данных пользователя
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/account/user');
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+        }
+      } catch (err) {
+        console.error('Ошибка получения данных пользователя:', err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  // Если пользователь еще не загружен, показываем загрузку
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+        <div className="flex justify-center items-center py-12">
+          <svg className="animate-spin h-8 w-8 text-[#5858E2]" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+        </div>
+      </div>
+    );
+  }
+
+  // Если пользователь имеет статус CANDIDATE - показываем заглушку
+  if (user.status === 'CANDIDATE') {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+        <div className="mx-auto max-w-7xl">
+          <header className="mb-8">
+            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">Заявки</h1>
+            <p className="text-gray-600">Управляйте заявками от клиентов</p>
+          </header>
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50 text-center">
+              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                <Lock className="w-6 h-6 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Заявки недоступны</h3>
+              <p className="text-sm text-gray-500 max-w-md mt-2">
+                Заявки от клиентов на консультацию могут принимать только проверенные психологи, размещенные в каталоге. Получите сертификат о первом уровне квалификации и выше, чтобы открыть этот раздел.
+              </p>
+              <a 
+                href="/account/certification"
+                className="mt-6 text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer inline-block"
+              >
+                К сертификации →
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Получение списка заявок
   const fetchLeads = useCallback(async () => {

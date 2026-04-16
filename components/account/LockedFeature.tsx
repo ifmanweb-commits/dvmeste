@@ -11,13 +11,12 @@ export function LockedFeature({ title, description }: { title: string, descripti
       <p className="text-sm text-gray-500 max-w-xs mt-2">
         {description}
       </p>
-      <button 
-        type="button"
-        className="mt-6 text-sm font-medium text-blue-600 hover:text-blue-700"
-        onClick={() => window.location.href = '/account/certification'}
+      <a 
+        href="/account/certification"
+        className="mt-6 text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer inline-block"
       >
         Как подтвердить квалификацию? →
-      </button>
+      </a>
     </div>
   )
 }

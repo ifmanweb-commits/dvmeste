@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import ArticlesStats from "@/components/articles/AcArticlesStats";
 import ArticleTable from "@/components/articles/AcArticleTable";
 import AcApprovedArticles from "@/components/articles/AcArticlesApproved";
+import { Lock } from "lucide-react";
 import "./editor.css";
 
 export default async function MyArticlesPage() {
@@ -16,21 +17,28 @@ export default async function MyArticlesPage() {
   // Проверка: только ACTIVE пользователи могут управлять статьями
   if (user.status === "CANDIDATE") {
     return (
-      <div className="min-h-screen bg-slate-50/20">
-        <div className="max-w-2xl mx-auto py-12 px-6">
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-            <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
+      <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+        <div className="mx-auto max-w-7xl">
+          <header className="mb-8">
+            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">Мои статьи</h1>
+            <p className="text-gray-600">Управляйте своими статьями</p>
+          </header>
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50 text-center">
+              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                <Lock className="w-6 h-6 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Статьи недоступны</h3>
+              <p className="text-sm text-gray-500 max-w-md mt-2">
+                Заявки от клиентов на консультацию могут принимать только проверенные психологи, размещенные в каталоге. Получите сертификат о первом уровне квалификации и выше, чтобы открыть этот раздел.
+              </p>
+              <a 
+                href="/account/certification"
+                className="mt-6 text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer inline-block"
+              >
+                К сертификации →
+              </a>
             </div>
-            <h1 className="text-xl font-semibold text-gray-900 mb-3">
-              Доступ ограничен
-            </h1>
-            <p className="text-gray-600 leading-relaxed">
-              Только проверенные психологи, участники каталога могут управлять статьями. 
-              Подтвердите квалификацию и раздел будет для вас открыт.
-            </p>
           </div>
         </div>
       </div>

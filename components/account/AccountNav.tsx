@@ -186,7 +186,7 @@ export default function AccountNav({ user, isMobile, onNavigate }: AccountNavPro
           )}>
             {user.status === 'ACTIVE' && <ShieldCheck className="w-3 h-3 mr-1" />}
             {user.status === 'ACTIVE' && 'Проверен'}
-            {user.status === 'CANDIDATE' && 'Кандидат'}
+            {user.status === 'CANDIDATE' && 'Не проверен'}
             {user.status === 'PENDING' && 'Ожидает'}
             {user.status === 'REJECTED' && 'Отклонен'}
             {user.status === 'BLOCKED' && 'Заблокирован'}

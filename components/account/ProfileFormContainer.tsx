@@ -474,7 +474,14 @@ export function ProfileFormContainer({
 
         {/* Вкладка 2: Подробно */}
         <div className={cn(activeTab !== 'detailed' && "hidden")}>
-          {isCandidate ? <LockedFeature title="Раздел закрыт" description="Доступно участникам каталога." /> : (
+          {isCandidate ? (
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <LockedFeature 
+                title="Раздел закрыт" 
+                description="Раздел закрыт. Он доступен после прохождения любой сертификации, подтверждающей ваш уровень квалификации. Тогда вы можете размещать свою анкету в каталоге и пользоваться этим разделом." 
+              />
+            </div>
+          ) : (
             <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
               {/* Заголовок вкладки */}
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
@@ -580,10 +587,10 @@ export function ProfileFormContainer({
         {/* Вкладка 3: Фотографии */}
         <div className={cn(activeTab !== 'photos' && "hidden")}>
           {isCandidate ? (
-            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <LockedFeature 
                 title="Загрузка фото недоступна" 
-                description="Вы сможете добавить фотографии профиля после того, как ваша анкета пройдет предварительную проверку." 
+                description="Раздел закрыт. Он доступен после прохождения любой сертификации, подтверждающей ваш уровень квалификации. Тогда вы можете размещать свою анкету в каталоге и пользоваться этим разделом." 
               />
             </div>
           ) : (
@@ -669,7 +676,7 @@ export function ProfileFormContainer({
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
               <LockedFeature 
                 title="Документы недоступны" 
-                description="Вы сможете загрузить дипломы и сертификаты после прохождения предварительной модерации. Сейчас они не требуются." 
+                description="Раздел закрыт. Он доступен после прохождения любой сертификации, подтверждающей ваш уровень квалификации. Тогда вы можете размещать свою анкету в каталоге и пользоваться этим разделом." 
               />
             </div>
           ) : (
