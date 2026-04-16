@@ -94,13 +94,17 @@ model User {
 }
 
 model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
+  id           String    @id @default(cuid())
+  sessionToken String    @unique
+  userId       String?   // для психологов
+  clientId     String?   // для клиентов
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client       Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([sessionToken])
+  @@index([userId])
+  @@index([clientId])
 }
 
 model VerificationToken {
@@ -306,10 +310,10 @@ model PushSubscription {
 model Client {
   id             String      @id @default(cuid())
   email          String      @unique
+  emailVerified  DateTime?
   emailHash      String?     @unique
   name           String?
   phone          String?
-  telegram       String?
   vk             String?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
@@ -318,6 +322,7 @@ model Client {
   complaintsFrom Complaint[] @relation("client_complaints_from")
   complaintsTo   Complaint[] @relation("client_complaints_to")
   leads          Lead[]
+  sessions       Session[]
 
   @@index([email])
   @@index([emailHash])

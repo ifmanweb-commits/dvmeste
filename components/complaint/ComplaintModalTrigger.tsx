@@ -40,12 +40,32 @@ export function ComplaintModalTrigger({
   const [targetPsychologistName, setTargetPsychologistName] = useState((psychologistName || "").trim());
   const [targetPsychologistSlug, setTargetPsychologistSlug] = useState((psychologistSlug || "").trim());
   const [manualPsychologistName, setManualPsychologistName] = useState((psychologistName || "").trim());
-  const [email, setEmail] = useState("");
   const [complaintText, setComplaintText] = useState("");
   const [contactsText, setContactsText] = useState("");
   const [errorText, setErrorText] = useState<string | null>(null);
   const [successText, setSuccessText] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  // Проверка авторизации при открытии модалки
+  useEffect(() => {
+    if (isOpen) {
+      const checkAuth = async () => {
+        try {
+          const res = await fetch("/api/client/account/me");
+          if (res.ok) {
+            setIsAuthenticated(true);
+          } else {
+            setIsAuthenticated(false);
+          }
+        } catch (error) {
+          console.error("Error checking auth:", error);
+          setIsAuthenticated(false);
+        }
+      };
+      checkAuth();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!listenToComplaintLinks) return;
@@ -73,7 +93,6 @@ export function ComplaintModalTrigger({
       setTargetPsychologistSlug(datasetSlug);
       setErrorText(null);
       setSuccessText(null);
-      setEmail("");
       setComplaintText("");
       setContactsText("");
       setIsOpen(true);
@@ -93,7 +112,6 @@ export function ComplaintModalTrigger({
     setIsOpen(false);
     setErrorText(null);
     setSuccessText(null);
-    setEmail("");
     setComplaintText("");
     setContactsText("");
     if (!listenToComplaintLinks) {
@@ -111,7 +129,6 @@ export function ComplaintModalTrigger({
     setIsOpen(true);
     setErrorText(null);
     setSuccessText(null);
-    setEmail("");
     setComplaintText("");
     setContactsText("");
   };
@@ -123,27 +140,18 @@ export function ComplaintModalTrigger({
     const psychologist = (manualPsychologistName || targetPsychologistName || "").trim();
     const complaint = complaintText.trim();
     const contacts = contactsText.trim();
-    const emailValue = email.trim().toLowerCase();
     const clientId = typeof window !== "undefined" ? localStorage.getItem("clientId") : null;
     
     if (!psychologist) {
       setErrorText("Укажите ФИО психолога.");
       return;
     }
-    if (!emailValue) {
-      setErrorText("Укажите ваш email.");
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
-      setErrorText("Укажите корректный email.");
-      return;
-    }
     if (!complaint || complaint.length < 10) {
       setErrorText("Опишите суть жалобы подробнее (минимум 10 символов).");
       return;
     }
-    if (!contacts || contacts.length < 10) {
-      setErrorText("Укажите контакты для обратной связи (минимум 10 символов).");
+    if (!contacts || contacts.length < 5) {
+      setErrorText("Укажите контакты для обратной связи.");
       return;
     }
 
@@ -153,14 +161,13 @@ export function ComplaintModalTrigger({
 
     try {
       const sourceUrl = typeof window !== "undefined" ? window.location.href : "";
-      // Отправляем жалобу через специальный endpoint для публичных жалоб
-      const response = await fetch("/api/complaints/public", {
+      // Отправляем жалобу через специальный endpoint для авторизованных клиентов
+      const response = await fetch("/api/complaints/client", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           psychologistName: psychologist,
           psychologistSlug: targetPsychologistSlug || "",
-          email: emailValue,
           clientId: clientId,
           complaintText: complaint,
           contactsText: contacts,
@@ -174,7 +181,6 @@ export function ComplaintModalTrigger({
       }
 
       setSuccessText("Жалоба отправлена. Спасибо за обращение.");
-      setEmail("");
       setComplaintText("");
       setContactsText("");
     } catch (error) {
@@ -245,6 +251,34 @@ export function ComplaintModalTrigger({
                   Закрыть
                 </button>
               </div>
+            ) : isAuthenticated === false ? (
+              <div className="py-8 text-center px-5">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+                  <svg
+                    className="h-8 w-8 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Зарегистрируйтесь, чтобы пожаловаться на психолога</h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  Для отправки жалобы необходимо войти в личный кабинет клиента
+                </p>
+                <a
+                  href="/client/auth/login"
+                  className="inline-block bg-[#5858E2] text-white py-2 px-6 rounded-lg hover:bg-[#4d4dd0] transition-colors"
+                >
+                  Войти / Зарегистрироваться
+                </a>
+              </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4 px-5 py-5">
                 {effectivePsychologistName && (
@@ -253,22 +287,6 @@ export function ComplaintModalTrigger({
                     <p className="mt-1 text-sm text-gray-900">{effectivePsychologistName}</p>
                   </div>
                 )}
-
-                <div>
-                  <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-800">
-                    Ваш email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none ring-[#5858E2]/30 transition focus:border-[#5858E2] focus:ring-2"
-                    placeholder="example@mail.ru"
-                  />
-                </div>
 
                 <div>
                   <label htmlFor="complaintText" className="mb-1 block text-sm font-medium text-gray-800">

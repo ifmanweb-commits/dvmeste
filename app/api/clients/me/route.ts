@@ -23,7 +23,6 @@ export async function GET(request: NextRequest) {
         email: true,
         name: true,
         phone: true,
-        telegram: true,
         vk: true,
       },
     });

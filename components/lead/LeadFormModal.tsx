@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 
 interface ClientData {
   id: string;
   email: string;
   name: string | null;
   phone: string | null;
-  telegram: string | null;
   vk: string | null;
 }
 
@@ -20,21 +20,10 @@ interface LeadFormModalProps {
   large?: boolean;
 }
 
-interface FormData {
-  name: string;
-  email: string;
-  phone: string;
-  telegram: string;
-  message: string;
-  consent: boolean;
-  rememberMe: boolean;
-}
-
 interface FormErrors {
-  email?: string;
   message?: string;
-  consent?: string;
   general?: string;
+  auth?: string;
 }
 
 export default function LeadFormModal({
@@ -50,56 +39,36 @@ export default function LeadFormModal({
   const [isSuccess, setIsSuccess] = useState(false);
   const [formOpenTime, setFormOpenTime] = useState<number | null>(null);
   const [clientData, setClientData] = useState<ClientData | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-  const [formData, setFormData] = useState<FormData>({
-    name: "",
-    email: "",
-    phone: "",
-    telegram: "",
-    message: "",
-    consent: false,
-    rememberMe: false,
-  });
+  const [message, setMessage] = useState("");
 
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // Загрузка данных клиента при открытии модалки
+  // Проверка авторизации при открытии модалки
   useEffect(() => {
     if (isOpen) {
-      const clientId = localStorage.getItem("clientId");
-      const rememberMe = localStorage.getItem("rememberMe") === "true";
-
-      if (clientId) {
-        fetch("/api/clients/me", {
-          headers: { "X-Client-Id": clientId },
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.success && data.data) {
-              setClientData(data.data);
-
-              // Подставляем данные в форму только если rememberMe === true
-              if (rememberMe) {
-                setFormData((prev) => ({
-                  ...prev,
-                  name: data.data.name || "",
-                  email: data.data.email || "",
-                  phone: data.data.phone || "",
-                  telegram: data.data.telegram || "",
-                  rememberMe: true,
-                }));
-              } else {
-                // Просто запоминаем email для удобства
-                setFormData((prev) => ({
-                  ...prev,
-                  email: data.data.email || "",
-                  rememberMe: false,
-                }));
-              }
-            }
-          })
-          .catch((err) => console.error("Error loading client data:", err));
-      }
+      const checkAuth = async () => {
+        try {
+          const res = await fetch("/api/client/account/me");
+          if (res.ok) {
+            const data = await res.json();
+            setClientData(data);
+            setIsAuthenticated(true);
+          } else if (res.status === 401) {
+            setIsAuthenticated(false);
+          } else {
+            // Ошибка сервера
+            setErrors({ general: "Ошибка проверки авторизации. Попробуйте позже." });
+            setIsAuthenticated(false);
+          }
+        } catch (error) {
+          console.error("Error checking auth:", error);
+          setErrors({ general: "Ошибка соединения с сервером" });
+          setIsAuthenticated(false);
+        }
+      };
+      checkAuth();
 
       // Записываем время открытия формы
       const openTime = Date.now();
@@ -135,21 +104,9 @@ export default function LeadFormModal({
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    // Валидация email
-    if (!formData.email) {
-      newErrors.email = "Email обязателен";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Некорректный email";
-    }
-
     // Валидация сообщения
-    if (!formData.message || formData.message.trim().length === 0) {
+    if (!message || message.trim().length === 0) {
       newErrors.message = "Сообщение обязательно";
-    }
-
-    // Валидация согласия
-    if (!formData.consent) {
-      newErrors.consent = "Необходимо согласие на обработку персональных данных";
     }
 
     setErrors(newErrors);
@@ -171,20 +128,12 @@ export default function LeadFormModal({
       const openTime = localStorage.getItem("leadFormOpenTime");
       const formOpenTimeValue = openTime ? parseInt(openTime, 10) : null;
 
-      const response = await fetch("/api/leads", {
+      const response = await fetch("/api/client/account/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           psychologistId,
-          client: {
-            email: formData.email,
-            name: formData.name || undefined,
-            phone: formData.phone || undefined,
-            telegram: formData.telegram || undefined,
-            vk: undefined,
-          },
-          message: formData.message,
-          consent: formData.consent,
+          message: message,
           honeypot: "", // Скрытое поле для ботов
           formOpenTime: formOpenTimeValue ? new Date(formOpenTimeValue).toISOString() : undefined,
         }),
@@ -195,26 +144,13 @@ export default function LeadFormModal({
       if (result.success) {
         setIsSuccess(true);
 
-        // Сохраняем clientId в localStorage (бессрочно)
-        if (result.clientId) {
-          localStorage.setItem("clientId", result.clientId);
-        }
-
         // Очищаем localStorage
         localStorage.removeItem("leadFormOpenTime");
 
         setTimeout(() => {
           setIsOpen(false);
           setIsSuccess(false);
-          setFormData({
-            name: "",
-            email: "",
-            phone: "",
-            telegram: "",
-            message: "",
-            consent: false,
-            rememberMe: false,
-          });
+          setMessage("");
           onSuccess?.();
         }, 2000);
       } else {
@@ -276,7 +212,6 @@ export default function LeadFormModal({
             </button>
 
             {isSuccess ? (
-              /* Сообщение об успехе */
               <div className="py-8 text-center">
                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
                   <svg
@@ -298,11 +233,38 @@ export default function LeadFormModal({
                   Психолог получит уведомление и свяжется с вами в ближайшее время.
                 </p>
               </div>
+            ) : isAuthenticated === false ? (
+              <div className="py-8 text-center">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+                  <svg
+                    className="h-8 w-8 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Зарегистрируйтесь, чтобы подать заявку психологу</h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  Для отправки заявки необходимо войти в личный кабинет клиента
+                </p>
+                <Link
+                  href="/client/auth/login"
+                  className="inline-block bg-[#5858E2] text-white py-2 px-6 rounded-lg hover:bg-[#4d4dd0] transition-colors"
+                >
+                  Войти / Зарегистрироваться
+                </Link>
+              </div>
             ) : (
-              /* Форма */
               <form onSubmit={handleSubmit} noValidate>
                 <h3 className="mb-1 text-lg font-semibold text-gray-900">
-                  Связаться с психологом
+                  Записаться к психологу
                 </h3>
                 {psychologistName && (
                   <p className="mb-4 text-sm text-gray-500">{psychologistName}</p>
@@ -315,88 +277,28 @@ export default function LeadFormModal({
                   tabIndex={-1}
                   autoComplete="off"
                   className="hidden"
-                  value={formData.telegram === "BOT_VALUE" ? "BOT_VALUE" : ""}
-                  onChange={() => {}}
+                  value=""
+                  readOnly
                 />
 
+                {/* Сообщение об общей ошибке */}
+                {errors.general && (
+                  <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3">
+                    <p className="text-sm text-red-700">{errors.general}</p>
+                  </div>
+                )}
+
                 <div className="space-y-4">
-                  {/* Имя */}
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                      Имя
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
-                      placeholder="Как к вам обращаться"
-                    />
-                  </div>
-
-                  {/* Email */}
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                      Email <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
-                        errors.email
-                          ? "border-red-300 focus:border-red-500 focus:ring-red-500"
-                          : "border-gray-300 focus:border-[#5858E2] focus:ring-[#5858E2]"
-                      }`}
-                      placeholder="example@mail.ru"
-                    />
-                    {errors.email && (
-                      <p className="mt-1 text-xs text-red-600">{errors.email}</p>
-                    )}
-                  </div>
-
-                  {/* Телефон */}
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                      Телефон
-                    </label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
-                      placeholder="+7 (999) 000-00-00"
-                    />
-                  </div>
-
-                  {/* Telegram / VK */}
-                  <div>
-                    <label htmlFor="telegram" className="block text-sm font-medium text-gray-700">
-                      Telegram / VK
-                    </label>
-                    <input
-                      type="text"
-                      id="telegram"
-                      value={formData.telegram}
-                      onChange={(e) => setFormData({ ...formData, telegram: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
-                      placeholder="@username или ссылка на VK"
-                    />
-                  </div>
-
                   {/* Сообщение */}
                   <div>
                     <label htmlFor="message" className="block text-sm font-medium text-gray-700">
-                      Сообщение <span className="text-red-500">*</span>
+                      С чем хотите поработать <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       id="message"
-                      value={formData.message}
-                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      rows={4}
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      rows={5}
                       className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
                         errors.message
                           ? "border-red-300 focus:border-red-500 focus:ring-red-500"
@@ -408,54 +310,6 @@ export default function LeadFormModal({
                       <p className="mt-1 text-xs text-red-600">{errors.message}</p>
                     )}
                   </div>
-
-                  {/* Чекбокс согласия */}
-                  <div>
-                    <label className="flex items-start gap-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.consent}
-                        onChange={(e) => setFormData({ ...formData, consent: e.target.checked })}
-                        className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#5858E2] focus:ring-[#5858E2]"
-                      />
-                      <span className="text-xs text-gray-600">
-                        Я согласен на обработку{" "}
-                        <a href="/s/personal-data" target="_blank" className="text-[#5858E2] underline">
-                          персональных данных
-                        </a>
-                      </span>
-                    </label>
-                    {errors.consent && (
-                      <p className="mt-1 text-xs text-red-600">{errors.consent}</p>
-                    )}
-                  </div>
-
-                  {/* Чекбокс запомнить */}
-                  <div>
-                    <label className="flex items-start gap-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.rememberMe}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          setFormData({ ...formData, rememberMe: checked });
-                          // Синхронизируем с localStorage
-                          localStorage.setItem("rememberMe", checked ? "true" : "false");
-                        }}
-                        className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#5858E2] focus:ring-[#5858E2]"
-                      />
-                      <span className="text-xs text-gray-600">
-                        Запомнить меня для будущих заявок
-                      </span>
-                    </label>
-                  </div>
-
-                  {/* Общая ошибка */}
-                  {errors.general && (
-                    <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
-                      {errors.general}
-                    </div>
-                  )}
                 </div>
 
                 {/* Кнопка отправки */}
@@ -488,7 +342,7 @@ export default function LeadFormModal({
                       Отправка...
                     </>
                   ) : (
-                    "Отправить заявку"
+                    "Записаться"
                   )}
                 </button>
               </form>
