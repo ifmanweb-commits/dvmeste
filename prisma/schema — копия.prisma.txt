@@ -7,16 +7,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+//metaData: {
+//  "secretCatalog": {
+//    "optIn": true,
+//    "freeSessions": 1,
+//    "price": 3000,
+//  }
+//}
 model User {
   id                    String               @id @default(cuid())
   /// @encrypted
   email                 String               @unique
   emailVerified         DateTime?
   fullName              String?
+  firstName             String?              // Имя (генерируется в fullName как "Фамилия Имя")
+  lastName              String?              // Фамилия
+  middleName            String?              // Отчество (опционально, не включается в fullName)
   isAdmin               Boolean              @default(false)
   isManager             Boolean              @default(false)
   status                PsychologistStatus   @default(PENDING)
   isPublished           Boolean              @default(false)
+  wantPublished         Boolean              @default(true)
+  metaData              Json                 @default("{}") @db.Json
   slug                  String?              @unique
   gender                String?
   birthDate             DateTime?
@@ -70,6 +82,10 @@ model User {
   questionnaireReviews  QuestionnaireReview[] @relation("SupervisorQuestionnaireReviews")
   reviewedQuestionnaireSubmissions QuestionnaireSubmission[] @relation("ReviewerQuestionnaireSubmissions")
   questionnaireSubmissions QuestionnaireSubmission[] @relation("UserQuestionnaireSubmissions")
+  keyUses               KeyUse[]
+  certificates          Certificate[] @relation("UserCertificates")
+  withdrawalRequests    WithdrawalRequest[] @relation("user_withdrawal_requests")
+  moderatedWithdrawals  WithdrawalRequest[] @relation("moderator_withdrawals")
 
   @@index([email])
   @@index([status])
@@ -78,13 +94,17 @@ model User {
 }
 
 model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
+  id           String    @id @default(cuid())
+  sessionToken String    @unique
+  userId       String?   // для психологов
+  clientId     String?   // для клиентов
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client       Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@index([sessionToken])
+  @@index([userId])
+  @@index([clientId])
 }
 
 model VerificationToken {
@@ -166,6 +186,14 @@ model Blocks {
   content     String?
   description String?
   isActive    Boolean @default(true)
+  
+  // Новые поля для системы блоков
+  isScript    Boolean @default(false)  // true = JavaScript-скрипт, false = обычный HTML
+  inHead      Boolean @default(false)  // true = вставляется в <head>, false = в тело страницы
+  order       Int     @default(0)      // Порядок вывода на сайте
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model ModerationRecord {
@@ -207,6 +235,10 @@ model Message {
   @@index([createdAt])
 }
 
+// Возможные значения поля template:
+// - "blank" — Пустая страница, только контент без обёртки LayoutShell
+// - "landing" — Лендинг с обёрткой LayoutShell, без заголовка
+// - "text" — Текстовая страница с обёрткой LayoutShell, заголовком и стилями prose
 model Page {
   id              String   @id @default(cuid())
   slug            String   @unique
@@ -215,7 +247,7 @@ model Page {
   metaDescription String?
   metaKeywords    String?
   metaRobots      String?
-  template        String
+  template        String   // blank, landing, text
   content         String
   customHead      String?
   images          String[]
@@ -278,10 +310,10 @@ model PushSubscription {
 model Client {
   id             String      @id @default(cuid())
   email          String      @unique
+  emailVerified  DateTime?
   emailHash      String?     @unique
   name           String?
   phone          String?
-  telegram       String?
   vk             String?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
@@ -290,6 +322,7 @@ model Client {
   complaintsFrom Complaint[] @relation("client_complaints_from")
   complaintsTo   Complaint[] @relation("client_complaints_to")
   leads          Lead[]
+  sessions       Session[]
 
   @@index([email])
   @@index([emailHash])
@@ -625,20 +658,31 @@ model WorkReview {
 }
 
 model Certification {
-  id           String                     @id @default(cuid())
-  slug         String                     @unique
-  title        String
-  description  String?
-  level        Int?
-  isActive     Boolean                    @default(true)
-  order        Int                        @default(0)
-  createdAt    DateTime                   @default(now())
-  updatedAt    DateTime                   @updatedAt
-  awards       CertificationAward[]
-  requirements CertificationRequirement[]
+  id                    String                     @id @default(cuid())
+  slug                  String                     @unique
+  title                 String
+  description           String?
+  // Текст для сертификата (что присваивается, например "уровень квалификации 1")
+  awardText             String?
+  level                 Int?
+  isActive              Boolean                    @default(true)
+  order                 Int                        @default(0)
+  // Тип награды: "certificate" — сертификат (генерируется PNG), "badge" — ачивка (картинка badgeUrl)
+  rewardType            String                     @default("certificate")
+  badgeUrl              String?
+  certificateTemplateId String?
+  // Отображать ли награду этой сертификации на сайте (публично)
+  isPublic              Boolean                    @default(false)
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  awards                CertificationAward[]
+  requirements          CertificationRequirement[]
+  certificateTemplate   CertificateTemplate?       @relation(fields: [certificateTemplateId], references: [id], onDelete: SetNull)
 
   @@index([slug])
   @@index([isActive])
+  @@index([certificateTemplateId])
+  @@index([isPublic])
 }
 
 model CertificationRequirement {
@@ -654,16 +698,19 @@ model CertificationRequirement {
 }
 
 model CertificationAward {
-  id              String        @id @default(cuid())
-  certificationId String
+  id              String         @id @default(cuid())
+  certificationId String?
   userId          String
-  awardedAt       DateTime      @default(now())
-  certification   Certification @relation(fields: [certificationId], references: [id])
-  user            User          @relation("CertificationAwards", fields: [userId], references: [id], onDelete: Cascade)
+  awardedAt       DateTime       @default(now())
+  certificateId   String?
+  certification   Certification? @relation(fields: [certificationId], references: [id], onDelete: SetNull)
+  user            User           @relation("CertificationAwards", fields: [userId], references: [id], onDelete: Cascade)
+  certificate     Certificate?   @relation(fields: [certificateId], references: [id], onDelete: SetNull)
 
   @@unique([certificationId, userId])
-  @@index([userId])
+  @@index([userId, certificationId, certificateId])
   @@index([certificationId])
+  @@index([certificateId])
 }
 
 model OnboardingTip {
@@ -801,6 +848,7 @@ enum WorkReviewStatus {
 }
 
 enum QuestionnaireStatus {
+  IN_PROGRESS
   SUBMITTED
   REVIEWING
   APPROVED
@@ -818,4 +866,122 @@ enum TransactionType {
 enum TipType {
   TOAST
   MODAL
+}
+
+model SecretPage {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  description String?
+  filePath  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+// resourceType: page / catalog 
+model UserAccess {
+  id           String   @id @default(cuid())
+  userId       String
+  resourceType String
+  resourceId   String
+  grantedBy    String
+  grantedAt    DateTime @default(now())
+  expiresAt    DateTime?
+  createdAt    DateTime @default(now())
+  metaData     Json     @default("{}") @db.Json
+
+  @@unique([userId, resourceType, resourceId])
+  @@index([userId])
+  @@index([resourceType, resourceId])
+  @@index([grantedBy])
+}
+
+model Key {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  actionsJson Json
+  maxUses     Int      @default(1)
+  usedCount   Int      @default(0)
+  expiresAt   DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  uses        KeyUse[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+model KeyUse {
+  id        String   @id @default(cuid())
+  keyId     String
+  userId    String
+  usedAt    DateTime @default(now())
+  key       Key      @relation(fields: [keyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([keyId, userId])
+  @@index([keyId])
+  @@index([userId])
+}
+
+// Модели для генератора сертификатов
+model CertificateTemplate {
+  id            String   @id @default(cuid())
+  name          String   // "Сертификат ПП-1"
+  slug          String   @unique
+  backgroundUrl String   // путь к фоновой картинке
+  fieldsJson    Json     @default("{\"fields\":[],\"background\":{\"width\":0,\"height\":0}}") @db.Json
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  certificates  Certificate[]
+  certifications Certification[]
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model Certificate {
+  id               String             @id @default(cuid())
+  templateId       String
+  userId           String             // кому выдан
+  dataJson         Json               @default("{}") @db.Json // заполненные значения полей
+  imageUrl         String             // путь к сгенерированному PNG
+  verificationCode String             @unique // 8 символов, проверочный код
+  issuedAt         DateTime           @default(now())
+  template         CertificateTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  user             User               @relation("UserCertificates", fields: [userId], references: [id], onDelete: Cascade)
+  certificationAwards CertificationAward[]
+
+  @@index([templateId])
+  @@index([userId])
+  @@index([verificationCode])
+}
+
+model WithdrawalRequest {
+  id          String           @id @default(cuid())
+  userId      String
+  amount      Int
+  status      WithdrawalStatus @default(PENDING)
+  moderatorId String?
+  processedAt DateTime?
+  createdAt   DateTime         @default(now())
+  
+  user      User      @relation("user_withdrawal_requests", fields: [userId], references: [id], onDelete: Cascade)
+  moderator User?     @relation("moderator_withdrawals", fields: [moderatorId], references: [id])
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

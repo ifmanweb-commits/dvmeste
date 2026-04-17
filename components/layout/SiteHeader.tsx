@@ -2,6 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
 import { getSiteMenuItems } from "@/lib/site-menu";
+import { getCurrentUser } from "@/lib/auth/session";
+import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
+import { CircleUser } from "lucide-react";
 
 function isExternalHref(href: string) {
   return /^(https?:\/\/|mailto:|tel:)/i.test(href);
@@ -16,6 +20,30 @@ function getMenuEmoji(href: string) {
 export async function SiteHeader() {
   noStore();
   const menu = await getSiteMenuItems();
+  
+  // Определяем тип пользователя и ссылку на кабинет
+  const user = await getCurrentUser();
+  let cabinetHref = "/auth/login";
+  
+  if (user) {
+    if (user.isAdmin || user.isManager) {
+      cabinetHref = "/admin";
+    } else {
+      cabinetHref = "/account";
+    }
+  } else {
+    // Проверяем сессию клиента
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get('session')?.value;
+    if (sessionToken) {
+      const session = await prisma.session.findUnique({
+        where: { sessionToken }
+      });
+      if (session && session.expires > new Date() && session.clientId) {
+        cabinetHref = "/client/account";
+      }
+    }
+  }
 
   return (
       <header id="site-header" className="sticky top-0 z-50 border-b border-gray-200/50 bg-white/90 backdrop-blur-md supports-[backdrop-filter]:bg-white/80">
@@ -63,6 +91,15 @@ export async function SiteHeader() {
                 )
               )}
             </nav>
+
+            {                    }
+            <Link
+              href={cabinetHref}
+              className="hidden md:flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-[#5858E2]/10 hover:text-[#5858E2] transition-all duration-200"
+            >
+              <CircleUser className="w-5 h-5" />
+              <span>Кабинет</span>
+            </Link>
 
             {                    }
             <details className="group md:hidden">
@@ -121,7 +158,17 @@ export async function SiteHeader() {
 
                       {                          }
                       <div className="mt-4 pt-4 border-t border-gray-200/30">
-                        <div className="flex items-center justify-center gap-2">
+                        <Link
+                          href={cabinetHref}
+                          className="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-800 hover:bg-[#5858E2]/10 hover:text-[#5858E2] transition-all duration-200"
+                        >
+                          <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#5858E2]/10 transition-transform group-hover:scale-110">
+                            <CircleUser className="w-4 h-4 text-[#5858E2]" />
+                          </div>
+                          <span>Кабинет</span>
+                          <span className="ml-auto opacity-40 text-xs">→</span>
+                        </Link>
+                        <div className="flex items-center justify-center gap-2 mt-4 pt-4 border-t border-gray-200/30">
                           <div className="h-px w-12 bg-gradient-to-r from-transparent to-gray-300"></div>
                           <div className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-[#5858E2] to-lime-400"></div>
                           <div className="h-px w-12 bg-gradient-to-l from-transparent to-gray-300"></div>

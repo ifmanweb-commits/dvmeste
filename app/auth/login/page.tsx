@@ -3,7 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+type UserType = 'client' | 'psychologist' | null
+
 export default function LoginPage() {
+  const [userType, setUserType] = useState<UserType>(null)
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSent, setIsSent] = useState(false)
@@ -19,7 +22,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email, userType: userType || 'psychologist' })
       })
       
       const data = await res.json()
@@ -36,61 +39,132 @@ export default function LoginPage() {
     }
   }
   
-  if (isSent) {
+  const handleBack = () => {
+    setUserType(null)
+    setEmail('')
+    setError('')
+    setIsSent(false)
+  }
+  
+  // Экран выбора типа пользователя
+  if (!userType) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-lg">
-          <h1 className="text-2xl font-bold text-center mb-4">Проверьте почту</h1>
-          <p className="text-gray-600 text-center">
-            Мы отправили ссылку для входа на <strong>{email}</strong>
-          </p>
-          <p className="text-gray-500 text-sm text-center mt-4">
-            Ссылка действительна 15 минут
-          </p>
-          <button
-            onClick={() => setIsSent(false)}
-            className="mt-6 w-full text-blue-600 hover:text-blue-800"
-          >
-            Ввести другой email
-          </button>
+        <div className="w-full max-w-4xl p-6">
+          <h1 className="text-2xl font-bold text-center mb-8 text-gray-900">
+            Выберите тип входа
+          </h1>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Область для клиентов - синий цвет (primary) */}
+            <button
+              onClick={() => setUserType('client')}
+              className="group relative flex flex-col items-center justify-center p-8 bg-primary hover:bg-primary-hover text-white rounded-xl shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl min-h-[280px]"
+            >
+              <div className="text-center">
+                <div className="mb-4 text-6xl">👤</div>
+                <h2 className="text-2xl font-bold mb-2">Для клиентов</h2>
+                <p className="text-white/80 text-sm">
+                  Вход для записи к психологу и управления консультациями
+                </p>
+              </div>
+              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 rounded-xl transition-all duration-300" />
+            </button>
+            
+            {/* Область для психологов - зелёный цвет (accent) */}
+            <button
+              onClick={() => setUserType('psychologist')}
+              className="group relative flex flex-col items-center justify-center p-8 bg-accent hover:bg-accent-hover text-gray-900 rounded-xl shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl min-h-[280px]"
+            >
+              <div className="text-center">
+                <div className="mb-4 text-6xl">🧠</div>
+                <h2 className="text-2xl font-bold mb-2">Для психологов</h2>
+                <p className="text-gray-800 text-sm">
+                  Вход для специалистов и модерации профиля
+                </p>
+              </div>
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 rounded-xl transition-all duration-300" />
+            </button>
+          </div>
         </div>
       </div>
     )
   }
   
+  // Экран ввода email
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-lg">
-        <h1 className="text-2xl font-bold text-center mb-6">Вход на сайт</h1>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="your@email.com"
-            />
-          </div>
-          
-          {error && (
-            <p className="text-red-600 text-sm">{error}</p>
-          )}
-          
+        {/* Кнопка назад и заголовок */}
+        <div className="flex items-center mb-6">
           <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleBack}
+            className="mr-3 text-gray-500 hover:text-gray-700 transition-colors"
+            aria-label="Назад"
           >
-            {isLoading ? 'Отправка...' : 'Получить ссылку для входа'}
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
-        </form>
+          <h1 className="text-xl font-bold text-gray-900">
+            {userType === 'client' ? 'Вход для клиентов' : 'Вход для психологов'}
+          </h1>
+        </div>
+        
+        {isSent ? (
+          // Сообщение об отправке
+          <div className="text-center">
+            <div className="mb-4 text-5xl">📧</div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Проверьте почту</h2>
+            <p className="text-gray-600 mb-4">
+              Мы отправили ссылку для входа на <strong className="text-gray-900">{email}</strong>
+            </p>
+            <p className="text-gray-500 text-sm mb-6">
+              Ссылка действительна 15 минут
+            </p>
+            <button
+              onClick={handleBack}
+              className="w-full text-primary hover:text-primary-hover font-medium transition-colors"
+            >
+              Ввести другой email
+            </button>
+          </div>
+        ) : (
+          // Форма ввода email
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="your@email.com"
+                autoFocus
+              />
+            </div>
+            
+            {error && (
+              <p className="text-red-600 text-sm bg-red-50 p-2 rounded">{error}</p>
+            )}
+            
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`w-full py-2 px-4 rounded-md text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                userType === 'client' 
+                  ? 'bg-primary hover:bg-primary-hover' 
+                  : 'bg-accent hover:bg-accent-hover text-gray-900'
+              }`}
+            >
+              {isLoading ? 'Отправка...' : 'Получить ссылку для входа'}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   )

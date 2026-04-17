@@ -2,7 +2,7 @@
 
 import { LeadStatus } from "@prisma/client";
 import Link from "next/link";
-import { ExternalLink, AlertTriangle, Clock, Mail, Phone, MessageSquare } from "lucide-react";
+import { ExternalLink, AlertTriangle, Clock, Mail, Phone } from "lucide-react";
 import {
   LEAD_STATUS_LABELS,
   LEAD_STATUS_COLORS,
@@ -13,7 +13,6 @@ interface LeadClient {
   email: string | null;
   name: string | null;
   phone: string | null;
-  telegram: string | null;
   vk: string | null;
   complaintCount?: number;
 }
@@ -127,12 +126,6 @@ export function LeadCard({
               <div className="flex items-center gap-2 text-xs text-gray-600">
                 <Phone className="w-3.5 h-3.5 text-gray-400" />
                 <span>{client.phone}</span>
-              </div>
-            )}
-            {client.telegram && (
-              <div className="flex items-center gap-2 text-xs text-gray-600">
-                <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
-                <span>{client.telegram}</span>
               </div>
             )}
           </div>

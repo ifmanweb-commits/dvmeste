@@ -32,46 +32,92 @@ export async function GET(req: Request) {
       )
     }
     
-    // 2. Удаляем использованный токен
+    // 2. Получаем userType из metadata
+    let userType: 'client' | 'psychologist' = 'psychologist'
+    if (verification.metadata) {
+      try {
+        const metadata = JSON.parse(verification.metadata)
+        userType = metadata.userType || 'psychologist'
+      } catch {
+        // Если metadata не распарсился, используем psychologist по умолчанию
+      }
+    }
+    
+    // 3. Удаляем использованный токен
     await prisma.verificationToken.delete({
       where: { token: verification.token }
     })
     
-    // 3. Ищем пользователя
+    // 4. В зависимости от типа пользователя ищем в нужной таблице
     const emailHash = createHash('sha256').update(normalizedEmail).digest('hex')
     
-    let user = await prisma.user.findUnique({
-      where: { emailHash }
-    })
-    
-    if (!user) {
-      // Такого не должно быть, но на всякий случай
-      return NextResponse.redirect(
-        new URL('/auth/login?error=user_not_found', req.url)
-      )
-    }
-    
-    // 4. Обновляем статус пользователя
-    const wasPending = user.status === 'PENDING'
-    
-    user = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        emailVerified: user.emailVerified || new Date(), // Если не было - ставим
-        status: wasPending ? 'CANDIDATE' : user.status // Если был PENDING -> CANDIDATE
+    if (userType === 'client') {
+      // Ищем клиента
+      let client = await prisma.client.findUnique({
+        where: { emailHash }
+      })
+      
+      if (!client) {
+        return NextResponse.redirect(
+          new URL('/auth/login?error=user_not_found', req.url)
+        )
       }
-    })
-    
-    // 5. Создаем сессию
-    const session = await createSession(user.id)
-    await setSessionCookie(session.sessionToken, session.expires)
-    
-    // 6. Редиректим по ролям
-    if (user.isAdmin || user.isManager) {
-      return NextResponse.redirect(new URL('/admin', req.url))
+      
+      // Обновляем emailVerified
+      await prisma.client.update({
+        where: { id: client.id },
+        data: {
+          emailVerified: client.emailVerified || new Date()
+        }
+      })
+      
+      // Создаем сессию для клиента
+      const session = await prisma.session.create({
+        data: {
+          sessionToken: require('crypto').randomBytes(32).toString('hex'),
+          clientId: client.id,
+          expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 дней
+        }
+      })
+      
+      await setSessionCookie(session.sessionToken, session.expires)
+      
+      // Редирект в ЛК клиента
+      return NextResponse.redirect(new URL('/client/account', req.url))
+    } else {
+      // Ищем психолога
+      let user = await prisma.user.findUnique({
+        where: { emailHash }
+      })
+      
+      if (!user) {
+        return NextResponse.redirect(
+          new URL('/auth/login?error=user_not_found', req.url)
+        )
+      }
+      
+      // Обновляем статус пользователя
+      const wasPending = user.status === 'PENDING'
+      
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerified: user.emailVerified || new Date(),
+          status: wasPending ? 'CANDIDATE' : user.status
+        }
+      })
+      
+      // Создаем сессию для психолога
+      const session = await createSession(user.id)
+      await setSessionCookie(session.sessionToken, session.expires)
+      
+      // 5. Редирект по ролям
+      if (user.isAdmin || user.isManager) {
+        return NextResponse.redirect(new URL('/admin', req.url))
+      }
+      
+      return NextResponse.redirect(new URL('/account', req.url))
     }
-    
-    return NextResponse.redirect(new URL('/account', req.url))
     
   } catch (error) {
     console.error('Verify error:', error)

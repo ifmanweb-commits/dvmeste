@@ -14,7 +14,6 @@ interface Client {
   email: string
   name: string | null
   phone: string | null
-  telegram: string | null
   vk: string | null
 }
 

@@ -15,7 +15,6 @@ export interface CreateLeadInput {
     email: string;
     name?: string;
     phone?: string;
-    telegram?: string;
     vk?: string;
   };
   message: string;
@@ -63,7 +62,6 @@ export interface ClientWithComplaintCount {
   email: string;
   name: string | null;
   phone: string | null;
-  telegram: string | null;
   vk: string | null;
   complaintCount: number;
 }
@@ -121,7 +119,6 @@ export async function createLead(
           emailHash,
           name: data.client.name || null,
           phone: data.client.phone || null,
-          telegram: data.client.telegram || null,
           vk: data.client.vk || null,
         },
       });
@@ -146,9 +143,6 @@ export async function createLead(
     }
     if (data.client.phone && client.phone !== data.client.phone) {
       updateClientData.phone = data.client.phone;
-    }
-    if (data.client.telegram && client.telegram !== data.client.telegram) {
-      updateClientData.telegram = data.client.telegram;
     }
     if (data.client.vk && client.vk !== data.client.vk) {
       updateClientData.vk = data.client.vk;
@@ -242,7 +236,6 @@ export async function getPsychologistLeads(
               email: true,
               name: true,
               phone: true,
-              telegram: true,
               vk: true,
               complaintCount: true,
             },
@@ -314,7 +307,6 @@ export async function getLeadById(
             email: true,
             name: true,
             phone: true,
-            telegram: true,
             vk: true,
             complaintCount: true,
           },
@@ -915,7 +907,6 @@ export async function getAdminLeadById(leadId: string) {
             email: true,
             name: true,
             phone: true,
-            telegram: true,
             vk: true,
             isShadowBanned: true,
             complaintCount: true,
@@ -956,7 +947,6 @@ export async function getAdminLeadById(leadId: string) {
           email: lead.client.email,
           name: lead.client.name,
           phone: lead.client.phone,
-          telegram: lead.client.telegram,
           vk: lead.client.vk,
           isShadowBanned: lead.client.isShadowBanned,
           complaintCount: lead.client.complaintCount,
@@ -1102,7 +1092,6 @@ export async function getAcceptedLeadsOlderThanDays(
             email: true,
             name: true,
             phone: true,
-            telegram: true,
             vk: true,
             complaintCount: true,
           },

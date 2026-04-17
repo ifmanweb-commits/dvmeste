@@ -4,7 +4,7 @@ import { emailService } from '@/lib/email.service'
 
 const TOKEN_EXPIRY = 15 * 60 * 1000 // 15 минут
 
-export async function createMagicLink(email: string) {
+export async function createMagicLink(email: string, userType: 'client' | 'psychologist' = 'psychologist') {
   // Нормализуем email
   email = email.toLowerCase().trim()
   
@@ -17,12 +17,13 @@ export async function createMagicLink(email: string) {
     where: { identifier: email }
   })
   
-  // Создаём новый токен
+  // Создаём новый токен с metadata (userType)
   await prisma.verificationToken.create({
     data: {
       identifier: email,
       token,
-      expires
+      expires,
+      metadata: JSON.stringify({ userType })
     }
   })
   

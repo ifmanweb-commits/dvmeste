@@ -51,7 +51,7 @@ export function ClientHeader({ className }: ClientHeaderProps) {
     setIsLoggingOut(true)
     try {
       await fetch('/api/client/auth/logout', { method: 'POST' })
-      router.push('/client/auth/login')
+      router.push('/catalog')
     } catch (error) {
       console.error('Logout error:', error)
     } finally {

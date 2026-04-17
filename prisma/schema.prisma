@@ -112,6 +112,7 @@ model VerificationToken {
   identifier String
   token      String   @unique
   expires    DateTime
+  metadata   String?  @db.Text
 
   @@unique([identifier, token])
   @@index([expires])

@@ -85,6 +85,40 @@ export default function LeadsPage() {
     fetchUser();
   }, []);
 
+  // Получение списка заявок
+  const fetchLeads = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const statuses = TAB_STATUS_MAP[activeTab];
+      const params = new URLSearchParams({
+        statuses: statuses.join(","),
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+
+      const response = await fetch(`/api/leads?${params}`);
+      const data: LeadsResponse = await response.json();
+
+      if (data.success && data.leads) {
+        setLeads(data.leads);
+        setTotal(data.total || 0);
+      } else {
+        setError(data.error || "Ошибка при загрузке заявок");
+      }
+    } catch (err) {
+      setError("Ошибка при загрузке заявок");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, page]);
+
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
+
   // Если пользователь еще не загружен, показываем загрузку
   if (!user) {
     return (
@@ -129,40 +163,6 @@ export default function LeadsPage() {
       </div>
     );
   }
-
-  // Получение списка заявок
-  const fetchLeads = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const statuses = TAB_STATUS_MAP[activeTab];
-      const params = new URLSearchParams({
-        statuses: statuses.join(","),
-        page: page.toString(),
-        limit: limit.toString(),
-      });
-
-      const response = await fetch(`/api/leads?${params}`);
-      const data: LeadsResponse = await response.json();
-
-      if (data.success && data.leads) {
-        setLeads(data.leads);
-        setTotal(data.total || 0);
-      } else {
-        setError(data.error || "Ошибка при загрузке заявок");
-      }
-    } catch (err) {
-      setError("Ошибка при загрузке заявок");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [activeTab, page]);
-
-  useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
 
   // Обработка переключения вкладки
   const handleTabChange = (tab: string) => {
