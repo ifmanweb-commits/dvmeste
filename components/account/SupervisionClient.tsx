@@ -25,6 +25,7 @@ export interface Submission {
       instructions: string | null;
       requiredReviews: number;
       reviewsToPass: number;
+      reviewPrice: number | null;
     } | null;
   };
   user: {
@@ -50,6 +51,7 @@ export interface QuestionnaireSubmission {
     questionnaire: {
       timeLimit: number | null;
       questionsPool: any;
+      reviewPrice: number | null;
     } | null;
   };
   user: {
@@ -375,9 +377,9 @@ function AvailableTab({
             </p>
           </div>
           <div className="flex items-center justify-between gap-2 mt-4">
-            {s.challenge.price && s.challenge.price > 0 && (
+            {s.challenge.work?.reviewPrice && s.challenge.work.reviewPrice > 0 && (
               <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded">
-                +{(s.challenge.price / 100).toLocaleString("ru-RU")} ₽
+                +{(s.challenge.work.reviewPrice / 100).toLocaleString("ru-RU")} ₽
               </span>
             )}
             <button
@@ -433,9 +435,9 @@ function AvailableQuestionnairesTab({
             </p>
           </div>
           <div className="flex items-center justify-between gap-2 mt-4">
-            {q.challenge.price && q.challenge.price > 0 && (
+            {q.challenge.questionnaire?.reviewPrice && q.challenge.questionnaire.reviewPrice > 0 && (
               <span className="text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded">
-                +{(q.challenge.price / 100).toLocaleString("ru-RU")} ₽
+                +{(q.challenge.questionnaire.reviewPrice / 100).toLocaleString("ru-RU")} ₽
               </span>
             )}
             <button

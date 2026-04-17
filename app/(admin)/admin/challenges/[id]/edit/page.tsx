@@ -386,6 +386,7 @@ export default function EditChallengePage() {
             instructions: workSettings.instructions || null,
             requiredReviews: workSettings.requiredReviews,
             reviewsToPass: workSettings.reviewsToPass,
+            reviewPrice: workSettings.reviewPrice,
           }),
           ...(challengeType === 'LESSON' && {
             content: lessonSettings.content || '',

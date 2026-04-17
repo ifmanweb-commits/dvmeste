@@ -248,10 +248,14 @@ export async function POST(
       }
     }
 
-    // Получаем ответы пользователя и правильные ответы
+    // Получаем ответы пользователя из запроса или из базы
+    const body = await request.json().catch(() => ({}));
+    const { answers: bodyAnswers } = body || {};
+    
     // selectedQuestionIndices теперь содержит полные объекты вопросов
     const selectedQuestions = (attempt.selectedQuestionIndices as any[]) || [];
-    const userAnswers = (attempt.answers as Record<string, number[]>) || {};
+    // Используем ответы из запроса, если они есть, иначе из базы
+    const userAnswers = (bodyAnswers || attempt.answers) as Record<string, number[]> || {};
 
     // Считаем правильные ответы
     let correctCount = 0;

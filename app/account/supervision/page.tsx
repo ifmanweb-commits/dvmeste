@@ -65,7 +65,14 @@ export default async function SupervisionPage({ searchParams }: PageProps) {
             title: true,
             description: true,
             price: true,
-            work: true,
+            work: {
+              select: {
+                instructions: true,
+                requiredReviews: true,
+                reviewsToPass: true,
+                reviewPrice: true,
+              },
+            },
           },
         },
         user: {
@@ -88,29 +95,36 @@ export default async function SupervisionPage({ searchParams }: PageProps) {
         reviewerId: user.id,
         userId: { not: user.id },
       },
-      include: {
-        challenge: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            price: true,
-            work: true,
+        include: {
+          challenge: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              price: true,
+              work: {
+                select: {
+                  instructions: true,
+                  requiredReviews: true,
+                  reviewsToPass: true,
+                  reviewPrice: true,
+                },
+              },
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
           },
         },
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
-          },
+        orderBy: {
+          submittedAt: 'asc',
         },
-      },
-      orderBy: {
-        submittedAt: 'asc',
-      },
-    }),
-    // Доступные вопросники: status = SUBMITTED, reviewerId = null, нет review от текущего
+      }),
+      // Доступные вопросники: status = SUBMITTED, reviewerId = null, нет review от текущего
     // Исключаем собственные вопросники супервизора
     prisma.questionnaireSubmission.findMany({
       where: {
@@ -125,34 +139,35 @@ export default async function SupervisionPage({ searchParams }: PageProps) {
           },
         },
       },
-      include: {
-        challenge: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            price: true,
-            questionnaire: {
-              select: {
-                timeLimit: true,
-                questionsPool: true,
+        include: {
+          challenge: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              price: true,
+              questionnaire: {
+                select: {
+                  timeLimit: true,
+                  questionsPool: true,
+                  reviewPrice: true,
+                },
               },
             },
           },
-        },
-        user: {
-          select: {
-            id: true,
-            fullName: true,
-            email: true,
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
           },
         },
-      },
-      orderBy: {
-        submittedAt: 'asc',
-      },
-    }),
-    // На проверке вопросники: status = REVIEWING, reviewerId = текущий
+        orderBy: {
+          submittedAt: 'asc',
+        },
+      }),
+      // На проверке вопросники: status = REVIEWING, reviewerId = текущий
     // Исключаем собственные вопросники супервизора
     prisma.questionnaireSubmission.findMany({
       where: {
@@ -171,6 +186,7 @@ export default async function SupervisionPage({ searchParams }: PageProps) {
               select: {
                 timeLimit: true,
                 questionsPool: true,
+                reviewPrice: true,
               },
             },
           },

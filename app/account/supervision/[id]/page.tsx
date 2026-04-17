@@ -124,7 +124,7 @@ export default async function ReviewPage({
           submission={{
             id: submission.id,
             videoUrl: submission.videoUrl,
-            transcriptUrl: submission.transcriptUrl,
+            transcriptUrl: submission.transcriptUrl ?? undefined,
             challenge: {
               title: submission.challenge.title,
               work: submission.challenge.work,

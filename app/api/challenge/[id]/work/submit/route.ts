@@ -23,12 +23,7 @@ export async function POST(
       );
     }
 
-    if (!transcriptUrl || !transcriptUrl.trim()) {
-      return NextResponse.json(
-        { error: 'Transcript URL is required' },
-        { status: 400 }
-      );
-    }
+    // Transcript URL is optional
 
     // Если передан submissionId - это редактирование существующей отправки
     if (submissionId) {

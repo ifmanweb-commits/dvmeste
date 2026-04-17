@@ -74,7 +74,6 @@ export default function TestChallengePage({ challengeId, attemptId }: TestChalle
         return;
       }
 
-      setAttemptIdState(id);
       setChallengeTitle(data.challengeTitle);
       setQuestions(data.questions || []);
       setAnswers(data.answers || {});
@@ -97,32 +96,16 @@ export default function TestChallengePage({ challengeId, attemptId }: TestChalle
     }
   }, []);
 
-  // Начальная загрузка
+  // Начальная загрузка - загружаем только если есть attemptId из URL
   useEffect(() => {
-    if (attemptIdState) {
-      loadAttempt(attemptIdState);
+    if (attemptId) {
+      setLoading(true);
+      setError(null);
+      loadAttempt(attemptId);
     } else {
       setLoading(false);
     }
-  }, [attemptIdState, loadAttempt]);
-
-  // Таймер
-  useEffect(() => {
-    if (!timeRemaining || timeRemaining <= 0) return;
-
-    const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (!prev || prev <= 1) {
-          // Время истекло
-          finishTest(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeRemaining]);
+  }, [attemptId, loadAttempt]);
 
   // Начало новой попытки
   const startTest = async () => {
@@ -148,6 +131,27 @@ export default function TestChallengePage({ challengeId, attemptId }: TestChalle
     }
   };
 
+  // Сохранение ответов на сервер (с debouncing)
+  const saveAnswers = useCallback(async (answersToSave: Record<string, number[]>) => {
+    if (!attemptIdState) return;
+    
+    try {
+      await fetch(`/api/challenge/${attemptIdState}/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: answersToSave }),
+      });
+    } catch (err) {
+      console.error('Error saving answers:', err);
+    }
+  }, [attemptIdState]);
+
+  // Debounced сохранение - сохраняем только при изменении конкретного вопроса
+  const saveAnswerForQuestion = useCallback((questionIndex: number, answer: number[]) => {
+    const answersToSave = { [questionIndex.toString()]: answer };
+    saveAnswers(answersToSave);
+  }, [saveAnswers]);
+
   // Выбор ответа
   const selectAnswer = (optionIndex: number) => {
     const currentQuestion = questions[currentQuestionIndex];
@@ -166,7 +170,8 @@ export default function TestChallengePage({ challengeId, attemptId }: TestChalle
       }
     }
 
-    setAnswers({ ...answers, [currentQuestionIndex.toString()]: newAnswer });
+    setAnswers(prev => ({ ...prev, [currentQuestionIndex.toString()]: newAnswer }));
+    saveAnswerForQuestion(currentQuestionIndex, newAnswer);
   };
 
   // Переход к следующему вопросу
@@ -184,15 +189,24 @@ export default function TestChallengePage({ challengeId, attemptId }: TestChalle
   };
 
   // Отправка теста
-  const finishTest = async (timeExpired = false) => {
+  const finishTest = useCallback(async (timeExpired = false) => {
     if (!attemptIdState) return;
 
     setIsSubmitting(true);
 
     try {
+      // Сначала сохраняем ответы
+      await fetch(`/api/challenge/${attemptIdState}/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers }),
+      });
+
+      // Затем завершаем тест
       const res = await fetch(`/api/challenge/${attemptIdState}/finish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers }),
       });
       const data = await res.json();
 
@@ -212,7 +226,26 @@ export default function TestChallengePage({ challengeId, attemptId }: TestChalle
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [attemptIdState, answers]);
+
+  // Таймер
+  useEffect(() => {
+    if (!timeRemaining || timeRemaining <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (!prev || prev <= 1) {
+          // Время истекло
+          clearInterval(timer);
+          finishTest(true);
+          return 0;
+        }
+        return prev ? prev - 1 : 0;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeRemaining, attemptId, finishTest]);
 
   // Рендеринг результата
   if (result) {
@@ -263,7 +296,7 @@ export default function TestChallengePage({ challengeId, attemptId }: TestChalle
   }
 
   // Рендеринг загрузки
-  if (loading && !attemptIdState) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
@@ -275,7 +308,7 @@ export default function TestChallengePage({ challengeId, attemptId }: TestChalle
   }
 
   // Рендеринг ошибки или кнопки начала
-  if (error || !attemptIdState) {
+  if (error || !attemptId) {
     return (
       <div className="mx-auto max-w-2xl">
         <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm">

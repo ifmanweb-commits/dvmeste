@@ -18,7 +18,7 @@ interface Review {
 interface Submission {
   id: string;
   videoUrl: string;
-  transcriptUrl: string;
+  transcriptUrl?: string;
   status: "SUBMITTED" | "REVIEWING" | "APPROVED" | "REJECTED";
   submittedAt: string;
   reviews: Review[];
@@ -50,7 +50,7 @@ export default function WorkSubmissionClient({
   );
 
   const [videoUrl, setVideoUrl] = useState(pendingSubmission?.videoUrl || "");
-  const [transcriptUrl, setTranscriptUrl] = useState(pendingSubmission?.transcriptUrl || "");
+  const [transcriptUrl, setTranscriptUrl] = useState(pendingSubmission?.transcriptUrl ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
 
@@ -264,7 +264,7 @@ export default function WorkSubmissionClient({
               <button
                 onClick={submitWork}
                 disabled={
-                  isSubmitting || !videoUrl.trim() || !transcriptUrl.trim()
+                  isSubmitting || !videoUrl.trim()
                 }
                 className="inline-flex items-center rounded-lg bg-[#5858E2] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9] disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -303,7 +303,7 @@ export default function WorkSubmissionClient({
                 <button
                   onClick={() => {
                     setVideoUrl(pendingSubmission.videoUrl);
-                    setTranscriptUrl(pendingSubmission.transcriptUrl);
+                    setTranscriptUrl(pendingSubmission.transcriptUrl || "");
                     setIsEditing(true);
                   }}
                   className="mt-4 inline-flex items-center rounded-lg bg-[#5858E2] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
@@ -373,7 +373,7 @@ export default function WorkSubmissionClient({
           <button
             onClick={submitWork}
             disabled={
-              isSubmitting || !videoUrl.trim() || !transcriptUrl.trim()
+              isSubmitting || !videoUrl.trim()
             }
             className="inline-flex items-center rounded-lg bg-[#5858E2] px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9] disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -474,15 +474,17 @@ export default function WorkSubmissionClient({
                           >
                             <Video className="h-4 w-4" />
                           </a>
-                          <a
-                            href={submission.transcriptUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center rounded-lg bg-green-50 p-2 text-green-600 hover:bg-green-100 transition-colors"
-                            title="Текст"
-                          >
-                            <FileText className="h-4 w-4" />
-                          </a>
+                          {submission.transcriptUrl && (
+                            <a
+                              href={submission.transcriptUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center rounded-lg bg-green-50 p-2 text-green-600 hover:bg-green-100 transition-colors"
+                              title="Текст"
+                            >
+                              <FileText className="h-4 w-4" />
+                            </a>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">

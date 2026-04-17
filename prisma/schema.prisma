@@ -623,7 +623,7 @@ model WorkSubmission {
   challengeId   String
   userId        String
   videoUrl      String
-  transcriptUrl String
+  transcriptUrl String?
   status        WorkStatus   @default(SUBMITTED)
   submittedAt   DateTime     @default(now())
   reviewerId    String?

@@ -8,7 +8,7 @@ interface ReviewClientProps {
   submission: {
     id: string;
     videoUrl: string;
-    transcriptUrl: string;
+    transcriptUrl?: string;
     challenge: {
       title: string;
       work: {
@@ -118,7 +118,7 @@ export default function ReviewClient({ submission }: ReviewClientProps) {
       )}
 
       {/* Ссылки на материалы */}
-      <div className="grid md:grid-cols-2 gap-4 mb-6">
+      <div className={`gap-4 mb-6 ${submission.transcriptUrl ? 'grid md:grid-cols-2' : 'grid'}`}>
         <a
           href={submission.videoUrl}
           target="_blank"
@@ -131,18 +131,20 @@ export default function ReviewClient({ submission }: ReviewClientProps) {
           </div>
           <ExternalLink className="w-5 h-5 text-gray-400" />
         </a>
-        <a
-          href={submission.transcriptUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:border-blue-300 transition-colors flex items-center justify-between"
-        >
-          <div>
-            <h3 className="font-semibold text-gray-900">Расшифровка</h3>
-            <p className="text-sm text-gray-500 mt-1">Откроется в новом окне</p>
-          </div>
-          <ExternalLink className="w-5 h-5 text-gray-400" />
-        </a>
+        {submission.transcriptUrl && (
+          <a
+            href={submission.transcriptUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:border-blue-300 transition-colors flex items-center justify-between"
+          >
+            <div>
+              <h3 className="font-semibold text-gray-900">Расшифровка</h3>
+              <p className="text-sm text-gray-500 mt-1">Откроется в новом окне</p>
+            </div>
+            <ExternalLink className="w-5 h-5 text-gray-400" />
+          </a>
+        )}
       </div>
 
       {/* Сообщения */}

@@ -24,6 +24,8 @@ export default function ChallengePage() {
   // Определяем тип испытания
   useEffect(() => {
     async function loadChallengeType() {
+      setLoading(true);
+      setError(null);
       try {
         const res = await fetch(`/api/challenge/${id}/type`);
         const data = await res.json();
@@ -41,7 +43,7 @@ export default function ChallengePage() {
     }
 
     loadChallengeType();
-  }, [id]);
+  }, [id, attemptId]);
 
   if (loading) {
     return (
