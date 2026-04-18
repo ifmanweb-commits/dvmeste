@@ -15,5 +15,8 @@ export async function register() {
 
     const { startRecalculateArticleBonusCron } = await import('@/lib/cron/recalculate-article-bonus')
     startRecalculateArticleBonusCron()
+
+    const { startCleanupAccessLogsCron } = await import('@/lib/cron/cleanup-access-logs')
+    startCleanupAccessLogsCron()
   }
 }

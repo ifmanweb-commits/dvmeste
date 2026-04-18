@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
+import { headers } from 'next/headers'
 import { createHash } from 'crypto'
+import { logLoginSuccess, logLoginFailed } from '@/lib/actions/access-log'
 
 export const runtime = 'nodejs'
 
@@ -17,6 +19,12 @@ export async function GET(req: Request) {
 
     const normalizedEmail = email.toLowerCase().trim()
     
+    // Получаем IP и User-Agent из заголовков
+    const headersList = await headers()
+    const forwarded = headersList.get('x-forwarded-for')
+    const ip = forwarded ? forwarded.split(',')[0].trim() : headersList.get('x-real-ip') || 'unknown'
+    const userAgent = headersList.get('user-agent') || 'unknown'
+    
     // 1. Ищем токен верификации
     const verification = await prisma.verificationToken.findFirst({
       where: {
@@ -27,6 +35,14 @@ export async function GET(req: Request) {
     })
     
     if (!verification) {
+      // Логирование неудачного входа - истёкший токен
+      await logLoginFailed({
+        email: normalizedEmail,
+        reason: 'expired_token',
+        ipAddress: ip,
+        userAgent: userAgent || undefined
+      })
+      
       return NextResponse.redirect(
         new URL('/client/auth/login?error=expired', req.url)
       )
@@ -45,17 +61,32 @@ export async function GET(req: Request) {
     })
     
     if (!client) {
-      // Такого не должно быть, но на всякий случай
+      // Логирование неудачного входа - пользователь не найден
+      await logLoginFailed({
+        email: normalizedEmail,
+        reason: 'user_not_found',
+        ipAddress: ip,
+        userAgent: userAgent || undefined
+      })
+      
       return NextResponse.redirect(
         new URL('/client/auth/login?error=client_not_found', req.url)
       )
     }
     
-    // 4. Обновляем статус клиента - ставим emailVerified
+    // 4. Обновляем статус клиента - ставим emailVerified и заполняем согласие если его нет
+    const consentData = !client.consentGivenAt ? {
+      consentGivenAt: new Date(),
+      consentVersion: '1.0',
+      consentIp: ip,
+      consentUserAgent: userAgent
+    } : {}
+    
     await prisma.client.update({
       where: { id: client.id },
       data: {
-        emailVerified: new Date()
+        emailVerified: new Date(),
+        ...consentData
       }
     })
     
@@ -72,7 +103,17 @@ export async function GET(req: Request) {
       path: '/'
     })
     
-    // 7. Редирект в личный кабинет клиента
+    // 7. Логирование успешного входа
+    await logLoginSuccess({
+      sessionId: session.sessionToken,
+      clientId: client.id,
+      userType: 'client',
+      ipAddress: ip,
+      userAgent: userAgent || undefined,
+      email: normalizedEmail
+    })
+    
+    // 8. Редирект в личный кабинет клиента
     return NextResponse.redirect(new URL('/client/account', req.url))
     
   } catch (error) {

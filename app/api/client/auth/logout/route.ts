@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
+import { headers } from 'next/headers'
+import { logLogout } from '@/lib/actions/access-log'
 
 export const runtime = 'nodejs'
 
@@ -9,7 +11,29 @@ export async function POST() {
     const cookieStore = await cookies()
     const sessionToken = cookieStore.get('session')?.value
     
+    // Получаем IP и User-Agent из заголовков
+    const headersList = await headers()
+    const forwarded = headersList.get('x-forwarded-for')
+    const ip = forwarded ? forwarded.split(',')[0].trim() : headersList.get('x-real-ip') || 'unknown'
+    const userAgent = headersList.get('user-agent') || 'unknown'
+    
     if (sessionToken) {
+      // Получаем сессию для логирования перед удалением
+      const session = await prisma.session.findUnique({
+        where: { sessionToken }
+      })
+      
+      // Логирование выхода
+      if (session) {
+        await logLogout({
+          sessionId: session.sessionToken,
+          clientId: session.clientId || undefined,
+          userType: 'client',
+          ipAddress: ip,
+          userAgent: userAgent || undefined
+        })
+      }
+      
       // Удаляем сессию из базы
       await prisma.session.deleteMany({
         where: { sessionToken }

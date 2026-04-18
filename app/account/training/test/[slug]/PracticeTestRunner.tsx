@@ -293,10 +293,10 @@ export default function PracticeTestRunner({ challenge, userId }: PracticeTestRu
         {/* Заголовок */}
         <div className="mb-6">
           <Link
-            href="/account/training"
+            href="/account/key-active"
             className="text-sm text-gray-500 hover:text-gray-700"
           >
-            ← Назад к обучению
+            ← Назад
           </Link>
           <h1 className="mt-2 text-xl font-bold text-gray-900 md:text-2xl">
             {challenge.title}

@@ -86,6 +86,7 @@ model User {
   certificates          Certificate[] @relation("UserCertificates")
   withdrawalRequests    WithdrawalRequest[] @relation("user_withdrawal_requests")
   moderatedWithdrawals  WithdrawalRequest[] @relation("moderator_withdrawals")
+  accessLogs            AccessLog[]
   
   // Consent fields
   consentGivenAt   DateTime?   // дата согласия
@@ -337,6 +338,7 @@ model Client {
   complaintsTo   Complaint[] @relation("client_complaints_to")
   leads          Lead[]
   sessions       Session[]
+  accessLogs     AccessLog[]
 
   @@index([email])
   @@index([emailHash])
@@ -1011,4 +1013,27 @@ model ConsentDocument {
 
   @@index([isActive])
   @@index([version])
+}
+
+model AccessLog {
+  id        String   @id @default(cuid())
+  sessionId String?
+  userId    String?
+  clientId  String?
+  userType  String?  // "psychologist" / "client"
+  eventType String   // "LOGIN_SUCCESS", "LOGIN_FAILED", "LOGOUT"
+  emailHash String?
+  ipAddress String
+  userAgent String?
+  reason    String?  // "user_not_found", "wrong_type", "expired_token", "consent_required"
+  createdAt DateTime @default(now())
+
+  user   User?   @relation(fields: [userId], references: [id])
+  client Client? @relation(fields: [clientId], references: [id])
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([clientId])
+  @@index([emailHash])
+  @@index([ipAddress])
 }

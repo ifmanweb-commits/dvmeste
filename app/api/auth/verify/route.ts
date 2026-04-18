@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { createSession, setSessionCookie } from '@/lib/auth/session'
 import { createHash } from 'crypto'
 import { headers } from 'next/headers'
+import { logLoginSuccess, logLoginFailed } from '@/lib/actions/access-log'
 
 export const runtime = 'nodejs'
 
@@ -34,6 +35,14 @@ export async function GET(req: Request) {
     })
     
     if (!verification) {
+      // Логирование неудачного входа - истёкший токен
+      await logLoginFailed({
+        email: normalizedEmail,
+        reason: 'expired_token',
+        ipAddress: ip,
+        userAgent: userAgent || undefined
+      })
+      
       return NextResponse.redirect(
         new URL('/auth/login?error=expired', req.url)
       )
@@ -65,6 +74,14 @@ export async function GET(req: Request) {
       })
       
       if (!client) {
+        // Логирование неудачного входа - пользователь не найден
+        await logLoginFailed({
+          email: normalizedEmail,
+          reason: 'user_not_found',
+          ipAddress: ip,
+          userAgent: userAgent || undefined
+        })
+        
         return NextResponse.redirect(
           new URL('/auth/login?error=user_not_found', req.url)
         )
@@ -97,6 +114,16 @@ export async function GET(req: Request) {
       
       await setSessionCookie(session.sessionToken, session.expires)
       
+      // Логирование успешного входа
+      await logLoginSuccess({
+        sessionId: session.sessionToken,
+        clientId: client.id,
+        userType: 'client',
+        ipAddress: ip,
+        userAgent: userAgent || undefined,
+        email: normalizedEmail
+      })
+      
       // Редирект в ЛК клиента
       return NextResponse.redirect(new URL('/client/account', req.url))
     } else {
@@ -106,6 +133,14 @@ export async function GET(req: Request) {
       })
       
       if (!user) {
+        // Логирование неудачного входа - пользователь не найден
+        await logLoginFailed({
+          email: normalizedEmail,
+          reason: 'user_not_found',
+          ipAddress: ip,
+          userAgent: userAgent || undefined
+        })
+        
         return NextResponse.redirect(
           new URL('/auth/login?error=user_not_found', req.url)
         )
@@ -133,6 +168,16 @@ export async function GET(req: Request) {
       // Создаем сессию для психолога
       const session = await createSession(user.id)
       await setSessionCookie(session.sessionToken, session.expires)
+      
+      // Логирование успешного входа
+      await logLoginSuccess({
+        sessionId: session.sessionToken,
+        userId: user.id,
+        userType: 'psychologist',
+        ipAddress: ip,
+        userAgent: userAgent || undefined,
+        email: normalizedEmail
+      })
       
       // 5. Редирект по ролям
       if (user.isAdmin || user.isManager) {

@@ -9,6 +9,7 @@ const tabs = [
   { label: 'Главное меню', href: '/admin/menu' },
   { label: 'Справочники', href: '/admin/ListDate' },
   { label: 'Политика', href: '/admin/management/policy' },
+  { label: 'Авторизации', href: '/admin/management/access-logs' },
   { label: 'Утилиты', href: '/admin/management' },
 ];
 
