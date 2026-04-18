@@ -168,7 +168,16 @@ export default function LoginPage() {
                 className="mt-1 mr-2 h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
               />
               <label htmlFor="consent" className="text-sm text-gray-600">
-                Даю согласие на обработку персональных данных в соответствии с политикой обработки персональных данных.
+                Даю согласие на обработку персональных данных в соответствии с{" "}
+                <a
+                  href="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#5858E2] hover:text-[#5858E2]/80 underline"
+                >
+                  политикой обработки персональных данных
+                </a>
+                .
               </label>
             </div>
             

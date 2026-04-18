@@ -999,3 +999,16 @@ enum WithdrawalStatus {
   APPROVED
   REJECTED
 }
+
+model ConsentDocument {
+  id          String   @id @default(cuid())
+  version     String   // "1.0", "1.1", "2.0"
+  documentUrl String?  // ссылка для отображения текста
+  content     String   @db.Text  // сам текст политики
+  validFrom   DateTime // дата действия версии
+  isActive    Boolean  @default(false)  // текущая ли версия
+  createdAt   DateTime @default(now())
+
+  @@index([isActive])
+  @@index([version])
+}
