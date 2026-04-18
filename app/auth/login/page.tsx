@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSent, setIsSent] = useState(false)
   const [error, setError] = useState('')
+  const [consentGiven, setConsentGiven] = useState(false)
   const router = useRouter()
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -18,11 +19,21 @@ export default function LoginPage() {
     setIsLoading(true)
     setError('')
     
+    if (!consentGiven) {
+      setError('Необходимо дать согласие на обработку персональных данных')
+      setIsLoading(false)
+      return
+    }
+    
     try {
       const res = await fetch('/api/auth/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, userType: userType || 'psychologist' })
+        body: JSON.stringify({ 
+          email, 
+          userType: userType || 'psychologist',
+          consentGiven: true
+        })
       })
       
       const data = await res.json()
@@ -74,12 +85,12 @@ export default function LoginPage() {
             {/* Область для психологов - зелёный цвет (accent) */}
             <button
               onClick={() => setUserType('psychologist')}
-              className="group relative flex flex-col items-center justify-center p-8 bg-accent hover:bg-accent-hover text-gray-900 rounded-xl shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl min-h-[280px]"
+              className="group relative flex flex-col items-center justify-center p-8 bg-accent hover:bg-accent-hover text-primary rounded-xl shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl min-h-[280px]"
             >
               <div className="text-center">
                 <div className="mb-4 text-6xl">🧠</div>
                 <h2 className="text-2xl font-bold mb-2">Для психологов</h2>
-                <p className="text-gray-800 text-sm">
+                <p className="text-primary text-sm">
                   Вход для специалистов и модерации профиля
                 </p>
               </div>
@@ -143,9 +154,22 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="your@email.com"
+                placeholder="your@email.ru"
                 autoFocus
               />
+            </div>
+            
+            <div className="flex items-start">
+              <input
+                id="consent"
+                type="checkbox"
+                checked={consentGiven}
+                onChange={(e) => setConsentGiven(e.target.checked)}
+                className="mt-1 mr-2 h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+              />
+              <label htmlFor="consent" className="text-sm text-gray-600">
+                Даю согласие на обработку персональных данных в соответствии с политикой обработки персональных данных.
+              </label>
             </div>
             
             {error && (
@@ -154,11 +178,11 @@ export default function LoginPage() {
             
             <button
               type="submit"
-              disabled={isLoading}
-              className={`w-full py-2 px-4 rounded-md text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              disabled={isLoading || !consentGiven}
+              className={`w-full py-2 px-4 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                 userType === 'client' 
-                  ? 'bg-primary hover:bg-primary-hover' 
-                  : 'bg-accent hover:bg-accent-hover text-gray-900'
+                  ? 'bg-primary hover:bg-primary-hover text-white' 
+                  : 'bg-accent hover:bg-accent-hover !text-primary'
               }`}
             >
               {isLoading ? 'Отправка...' : 'Получить ссылку для входа'}

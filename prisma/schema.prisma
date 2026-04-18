@@ -86,6 +86,12 @@ model User {
   certificates          Certificate[] @relation("UserCertificates")
   withdrawalRequests    WithdrawalRequest[] @relation("user_withdrawal_requests")
   moderatedWithdrawals  WithdrawalRequest[] @relation("moderator_withdrawals")
+  
+  // Consent fields
+  consentGivenAt   DateTime?   // дата согласия
+  consentVersion   String?     // версия документа ("1.0", "2.0")
+  consentIp        String?     // IP при согласии
+  consentUserAgent String?     // браузер/устройство
 
   @@index([email])
   @@index([status])
@@ -320,6 +326,13 @@ model Client {
   updatedAt      DateTime    @updatedAt
   complaintCount Int         @default(0)
   isShadowBanned Boolean     @default(false)
+  
+  // Consent fields
+  consentGivenAt   DateTime?   // дата согласия
+  consentVersion   String?     // версия документа ("1.0", "2.0")
+  consentIp        String?     // IP при согласии
+  consentUserAgent String?     // браузер/устройство
+  
   complaintsFrom Complaint[] @relation("client_complaints_from")
   complaintsTo   Complaint[] @relation("client_complaints_to")
   leads          Lead[]

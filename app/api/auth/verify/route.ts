@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createSession, setSessionCookie } from '@/lib/auth/session'
 import { createHash } from 'crypto'
+import { headers } from 'next/headers'
 
 export const runtime = 'nodejs'
 
@@ -16,6 +17,12 @@ export async function GET(req: Request) {
     }
 
     const normalizedEmail = email.toLowerCase().trim()
+    
+    // Получаем IP и User-Agent из заголовков
+    const headersList = await headers()
+    const forwarded = headersList.get('x-forwarded-for')
+    const ip = forwarded ? forwarded.split(',')[0].trim() : headersList.get('x-real-ip') || 'unknown'
+    const userAgent = headersList.get('user-agent') || 'unknown'
     
     // 1. Ищем токен верификации
     const verification = await prisma.verificationToken.findFirst({
@@ -63,11 +70,19 @@ export async function GET(req: Request) {
         )
       }
       
-      // Обновляем emailVerified
+      // Обновляем emailVerified и заполняем согласие если его нет
+      const consentData = !client.consentGivenAt ? {
+        consentGivenAt: new Date(),
+        consentVersion: '1.0',
+        consentIp: ip,
+        consentUserAgent: userAgent
+      } : {}
+      
       await prisma.client.update({
         where: { id: client.id },
         data: {
-          emailVerified: client.emailVerified || new Date()
+          emailVerified: client.emailVerified || new Date(),
+          ...consentData
         }
       })
       
@@ -96,14 +111,22 @@ export async function GET(req: Request) {
         )
       }
       
-      // Обновляем статус пользователя
+      // Обновляем статус пользователя и заполняем согласие если его нет
       const wasPending = user.status === 'PENDING'
+      
+      const consentData = !user.consentGivenAt ? {
+        consentGivenAt: new Date(),
+        consentVersion: '1.0',
+        consentIp: ip,
+        consentUserAgent: userAgent
+      } : {}
       
       user = await prisma.user.update({
         where: { id: user.id },
         data: {
           emailVerified: user.emailVerified || new Date(),
-          status: wasPending ? 'CANDIDATE' : user.status
+          status: wasPending ? 'CANDIDATE' : user.status,
+          ...consentData
         }
       })
       
