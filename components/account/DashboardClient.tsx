@@ -118,16 +118,13 @@ export default function DashboardClient({
             <p className="text-sm text-gray-500 mt-1">непрочитанных уведомлений</p>
           </Link>
 
-          <Link href="/account/messages" className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow relative">
+          <Link href="/account/messages" className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold text-gray-900">Сообщения</h2>
               <MessageSquare className="w-6 h-6 text-green-600" />
             </div>
             <p className="text-4xl font-bold text-gray-900">{unreadMessagesCount}</p>
             <p className="text-sm text-gray-500 mt-1">непрочитанных сообщений</p>
-            {hasActiveDialog && (
-              <span className="absolute top-4 right-4 w-3 h-3 bg-red-500 rounded-full" />
-            )}
           </Link>
         </div>
 

@@ -6,9 +6,15 @@ import { StatisticsBlock } from "@/components/admin/dashboard/StatisticsBlock";
 import { ArticlesStats } from "@/components/admin/dashboard/ArticlesStats";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth/session";
 
 export default async function AdminPage() {
-  const result = await getDashboardStats();
+  const [result, user] = await Promise.all([
+    getDashboardStats(),
+    getCurrentUser()
+  ]);
+
+  const isAdmin = user?.isAdmin ?? false;
 
   return (
     <div className="space-y-8">
@@ -19,7 +25,7 @@ export default async function AdminPage() {
       {result.success && result.stats ? (
         <>
           {/* Красный блок — Срочно на модерацию */}
-          <ModerationCards data={result.stats.moderation} />
+          <ModerationCards data={result.stats.moderation} isAdmin={isAdmin} />
 
           {/* Синий блок — Проблемные заявки */}
           <ProblematicLeads data={result.stats.problematicLeads} />

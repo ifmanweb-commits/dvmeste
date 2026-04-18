@@ -10,6 +10,7 @@ interface ModerationData {
 
 interface ModerationCardsProps {
   data: ModerationData;
+  isAdmin: boolean;
 }
 
 const moderationItems = [
@@ -19,11 +20,14 @@ const moderationItems = [
   { key: "articles" as const, label: "Статьи", href: "/admin/moderation/articles" },
   { key: "unreadMessages" as const, label: "Требуют ответа", href: "/admin/messages" },
   { key: "psychologistComplaints" as const, label: "Жалобы на психологов", href: "/admin/complaints/psychologists" },
-  { key: "withdrawalRequests" as const, label: "Заявки на вывод", href: "/admin/withdrawal-requests" },
+  { key: "withdrawalRequests" as const, label: "Заявки на вывод", href: "/admin/withdrawal-requests", adminOnly: true },
 ];
 
-export function ModerationCards({ data }: ModerationCardsProps) {
-  const hasAnyModeration = moderationItems.some(item => data[item.key] > 0);
+export function ModerationCards({ data, isAdmin }: ModerationCardsProps) {
+  const hasAnyModeration = moderationItems.some(item => {
+    if (item.adminOnly && !isAdmin) return false;
+    return data[item.key] > 0;
+  });
 
   if (!hasAnyModeration) {
     return null;
@@ -36,6 +40,9 @@ export function ModerationCards({ data }: ModerationCardsProps) {
       </h2>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {moderationItems.map((item) => {
+          // Скрываем заявки на вывод от менеджеров
+          if (item.adminOnly && !isAdmin) return null;
+          
           const count = data[item.key];
           if (count === 0) return null;
 
