@@ -15,6 +15,7 @@ export default async function AdminPage() {
   ]);
 
   const isAdmin = user?.isAdmin ?? false;
+  const isManager = user?.isManager ?? false;
 
   return (
     <div className="space-y-8">
@@ -25,7 +26,7 @@ export default async function AdminPage() {
       {result.success && result.stats ? (
         <>
           {/* Красный блок — Срочно на модерацию */}
-          <ModerationCards data={result.stats.moderation} isAdmin={isAdmin} />
+          <ModerationCards data={result.stats.moderation} isAdmin={isAdmin} isManager={isManager} />
 
           {/* Синий блок — Проблемные заявки */}
           <ProblematicLeads data={result.stats.problematicLeads} />
