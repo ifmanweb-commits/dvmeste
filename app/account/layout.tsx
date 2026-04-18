@@ -4,6 +4,7 @@ import AccountNav from '@/components/account/AccountNav'
 import AccountHeader from '@/components/account/AccountHeader'
 import { getBalance } from '@/lib/billing'
 import { OnboardingProvider } from '@/components/account/OnboardingProvider'
+import { getSiteMenuItems } from '@/lib/site-menu'
 
 export default async function AccountLayout({
   children,
@@ -24,19 +25,23 @@ export default async function AccountLayout({
   // Получаем баланс пользователя
   const balance = await getBalance(user.id)
   
+  // Получаем элементы меню сайта
+  const menuItems = await getSiteMenuItems()
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Мобильный хедер */}
       <AccountHeader user={user} />
       
-      <div className="flex">
+      {/* Grid layout для десктопа */}
+      <div className="grid grid-cols-[256px_1fr] min-h-screen">
         {/* Боковая панель - скрыта на мобильном, видна на md+ */}
-        <div className="hidden md:block">
-          <AccountNav user={{ ...user, balance }} />
-        </div>
+        <aside className="hidden md:block border-r border-gray-200 bg-white">
+          <AccountNav user={{ ...user, balance }} menuItems={menuItems} />
+        </aside>
         
         {/* Основной контент */}
-        <main className="flex-1 p-4 md:p-8">
+        <main className="p-4 md:p-8">
           {children}
         </main>
       </div>

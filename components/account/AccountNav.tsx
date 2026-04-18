@@ -27,14 +27,25 @@ import {
   KeyRound
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { PsychologistSiteMenu } from '@/components/layout/PsychologistSiteMenu'
+import { SiteMenuItem } from '@/lib/site-menu'
+import { LucideIcon } from 'lucide-react'
+
+interface NavMenuItem {
+  href: string
+  label: string
+  icon: LucideIcon
+  show: boolean
+}
 
 interface AccountNavProps {
   user: User & { balance?: number }
   isMobile?: boolean
   onNavigate?: () => void
+  menuItems?: SiteMenuItem[]
 }
 
-export default function AccountNav({ user, isMobile, onNavigate }: AccountNavProps) {
+export default function AccountNav({ user, isMobile, onNavigate, menuItems: siteMenuItems = [] }: AccountNavProps) {
   const pathname = usePathname()
   const [balance, setBalance] = useState<number>(user.balance ?? 0)
 
@@ -64,7 +75,7 @@ export default function AccountNav({ user, isMobile, onNavigate }: AccountNavPro
   }
   
   // Базовые пункты меню для всех
-  const menuItems = [
+  const navMenuItems: NavMenuItem[] = [
     {
       href: '/account',
       label: 'Личный кабинет',
@@ -128,15 +139,21 @@ export default function AccountNav({ user, isMobile, onNavigate }: AccountNavPro
   ]
   
   // Фильтруем пункты по статусу
-  const visibleItems = menuItems.filter(item => item.show)
+  const visibleItems = navMenuItems.filter(item => item.show)
   
   return (
     <aside className={cn(
-      "w-64 bg-white min-h-screen flex flex-col",
-      isMobile ? "border-b border-gray-200" : "border-r border-gray-200"
+      "w-64 bg-white h-full flex flex-col",
+      isMobile ? "border-b border-gray-200" : ""
     )}>
       {/* Шапка с информацией о пользователе */}
       <div className="p-4 border-b border-gray-200">
+        <div className="flex items-center gap-2 mb-3">
+          {siteMenuItems.length > 0 && (
+            <PsychologistSiteMenu menuItems={siteMenuItems} />
+          )}
+          <h2 className="font-semibold text-lg">Кабинет психолога</h2>
+        </div>
         <div className="flex items-center space-x-3">
           {user.avatarUrl ? (
             <Image
@@ -239,10 +256,20 @@ export default function AccountNav({ user, isMobile, onNavigate }: AccountNavPro
             )
           })}
         </ul>
-        {/* Кнопка выхода */}
-        <div className="p-4 border-t border-gray-200">
-          <LogoutButton className="cursor-pointer"/>
-        </div>
+        {/* Разделитель */}
+        <div className="my-2 border-t border-gray-200"></div>
+        
+        {/* Кнопка выхода - в стиле пунктов меню */}
+        <button
+          onClick={async () => {
+            await fetch('/api/auth/logout', { method: 'POST' })
+            window.location.href = '/auth/login'
+          }}
+          className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+        >
+          <LogOut className="w-5 h-5 mr-3 text-gray-500" />
+          Выйти
+        </button>
       </nav>
       
       
