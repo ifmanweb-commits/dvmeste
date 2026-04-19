@@ -37,6 +37,14 @@ export default async function CertificationDetailPage({ params }: PageProps) {
         where: { userId: user.id },
       },
       certificateTemplate: true,
+      award: {
+        select: {
+          id: true,
+          type: true,
+          badgeUrl: true,
+          isPublic: true,
+        },
+      },
     },
   });
 
@@ -55,6 +63,11 @@ export default async function CertificationDetailPage({ params }: PageProps) {
   // Проверяем, получена ли уже эта сертификация
   const isCertified = certification.awards.length > 0;
   const awardedYear = isCertified ? new Date(certification.awards[0].awardedAt).getFullYear() : null;
+
+  // Определяем тип награды и badgeUrl из связи award
+  const awardType = certification.award?.type ?? 'CERTIFICATE';
+  const rewardType = awardType === 'CERTIFICATE' ? 'certificate' : 'badge';
+  const badgeUrl = certification.award?.badgeUrl ?? null;
 
   // Для каждого требования получаем статус
   const requirementsWithStatus = await Promise.all(
@@ -174,11 +187,11 @@ export default async function CertificationDetailPage({ params }: PageProps) {
                     let certificateUrl: string | null = null;
                     
                     if (isCertified) {
-                      if (certification.rewardType === 'badge' && certification.badgeUrl) {
+                      if (rewardType === 'badge' && badgeUrl) {
                         // Для ачивки используем badgeUrl
-                        imageUrl = certification.badgeUrl;
+                        imageUrl = badgeUrl;
                         imageAlt = `Ачивка: ${certification.title}`;
-                      } else if (certification.rewardType === 'certificate' && certification.certificateTemplateId) {
+                      } else if (rewardType === 'certificate' && certification.certificateTemplateId) {
                         // Для сертификата ищем сгенерированный сертификат
                         const generatedCert = userCertificates.find(
                           (gc) => gc.templateId === certification.certificateTemplateId
@@ -219,7 +232,7 @@ export default async function CertificationDetailPage({ params }: PageProps) {
                     );
                   })()}
                 </div>
-                {isCertified && certification.rewardType === 'badge' && (
+                {isCertified && rewardType === 'badge' && (
                   <p className="mt-4 text-lg font-semibold text-gray-900">
                     Награда получена!
                   </p>

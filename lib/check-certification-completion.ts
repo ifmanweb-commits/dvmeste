@@ -4,7 +4,7 @@ import { generateAndSaveCertificate } from './actions/certificate-templates';
 /**
  * Проверяет, завершена ли сертификация после прохождения испытания.
  * Если все требования сертификации выполнены — выдаёт награду.
- * Если у сертификации rewardType = "certificate" и есть certificateTemplateId — генерирует сертификат.
+ * Если у сертификации есть awardId — берём данные из Award, иначе из Certification.
  * 
  * @param userId - ID пользователя
  * @param challengeId - ID пройденного испытания
@@ -18,17 +18,20 @@ export async function checkCertificationCompletion(
     where: { isActive: true },
     include: {
       requirements: true,
+      award: true, // Добавляем связь с Award
     },
   });
 
   for (const cert of certifications) {
-    // Проверяем, есть ли текущее испытание в требованиях этой сертификации
+    // Проверяем, есть ли текущее испытание в требованиях сертификации
     const hasCurrentChallenge = cert.requirements.some(
       (req) => req.challengeId === challengeId
     );
 
-    // Пропускаем если нет awardText (для обратной совместимости)
-    const awardText = (cert as any).awardText || cert.title;
+    // Берём awardText из Award если есть, иначе из Certification
+    let awardText = cert.award?.awardText || cert.awardText || cert.title;
+    let certificateTemplateId = cert.award?.certificateTemplateId || cert.certificateTemplateId;
+    let rewardType = cert.award?.type || (cert as any).rewardType;
 
     // Если этого испытания нет в требованиях — пропускаем
     if (!hasCurrentChallenge) {
@@ -107,19 +110,22 @@ export async function checkCertificationCompletion(
       });
 
       if (!existingAward) {
-        // Выдаём награду
+        // Выдаём награду с ссылкой на Award если есть
         const award = await prisma.certificationAward.create({
           data: {
             certificationId: cert.id,
             userId,
+            awardId: cert.awardId || undefined,
           },
         });
 
         // Проверяем тип награды и генерируем сертификат если нужно
-        if (cert.rewardType === 'certificate' && cert.certificateTemplateId) {
+        // Берём certificateTemplateId из Award если есть
+        const templateId = certificateTemplateId;
+        if (rewardType === 'CERTIFICATE' && templateId) {
           try {
             await generateAndSaveCertificate(
-              cert.certificateTemplateId,
+              templateId,
               userId,
               {},
               {

@@ -159,9 +159,22 @@ export async function getDashboardData(psychologistId: string): Promise<{ succes
           select: {
             id: true,
             title: true,
-            rewardType: true,
-            badgeUrl: true,
             level: true,
+            awardId: true,
+            certificateTemplateId: true,
+            award: {
+              select: {
+                id: true,
+                type: true,
+                badgeUrl: true,
+              },
+            },
+            certificateTemplate: {
+              select: {
+                id: true,
+                backgroundUrl: true,
+              },
+            },
           },
         },
         certificate: {
@@ -177,17 +190,22 @@ export async function getDashboardData(psychologistId: string): Promise<{ succes
 
     // Форматируем награды: сначала сертификаты, потом ачивки
     const formattedAwards = awardsData
-      .filter(award => award.certification)
-      .map(award => ({
-        id: award.id,
-        certificationId: award.certificationId,
-        certificationTitle: award.certification!.title,
-        rewardType: award.certification!.rewardType,
-        badgeUrl: award.certification!.badgeUrl,
-        certificateImageUrl: award.certificate?.imageUrl ?? null,
-        awardedAt: award.awardedAt,
-        level: award.certification!.level,
-      }))
+      .filter((award): award is typeof award & { certification: NonNullable<typeof award.certification> } => !!award.certification)
+      .map(award => {
+        const awardType = award.certification.award?.type ?? 'CERTIFICATE';
+        const badgeUrl = award.certification.award?.badgeUrl ?? null;
+        const certificateImageUrl = award.certificate?.imageUrl ?? award.certification.certificateTemplate?.backgroundUrl ?? null;
+        return {
+          id: award.id,
+          certificationId: award.certificationId,
+          certificationTitle: award.certification.title,
+          rewardType: awardType === 'CERTIFICATE' ? 'certificate' : 'badge',
+          badgeUrl,
+          certificateImageUrl,
+          awardedAt: award.awardedAt,
+          level: award.certification.level,
+        };
+      })
       .sort((a, b) => {
         // Сначала сертификаты (rewardType = 'certificate'), потом ачивки
         if (a.rewardType === 'certificate' && b.rewardType !== 'certificate') return -1;

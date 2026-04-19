@@ -27,6 +27,14 @@ export default async function CertificationPage() {
         where: { userId: user.id },
       },
       certificateTemplate: true,
+      award: {
+        select: {
+          id: true,
+          type: true,
+          badgeUrl: true,
+          isPublic: true,
+        },
+      },
     },
     orderBy: { createdAt: 'asc' },
   });
@@ -42,6 +50,22 @@ export default async function CertificationPage() {
   // Разделяем на полученные и доступные
   const awardedCertifications = certifications.filter(cert => cert.awards.length > 0);
   const availableCertifications = certifications.filter(cert => cert.awards.length === 0);
+
+  // Функция для определения типа награды и badgeUrl
+  const getAwardTypeAndBadge = (cert: typeof certifications[0]) => {
+    // Если есть связь award - используем её
+    if (cert.award) {
+      return {
+        rewardType: cert.award.type === 'CERTIFICATE' ? 'certificate' : 'badge',
+        badgeUrl: cert.award.badgeUrl,
+      };
+    }
+    // По умолчанию считаем сертификатом
+    return {
+      rewardType: 'certificate' as const,
+      badgeUrl: null,
+    };
+  };
 
   // Для доступных сертификаций считаем прогресс
   const availableCertsWithProgress = await Promise.all(
@@ -146,11 +170,13 @@ export default async function CertificationPage() {
                 let imageUrl = '/images/icons/award-gold-500-tp.png';
                 let imageAlt = 'Сертификат получен';
                 
-                if (cert.rewardType === 'badge' && cert.badgeUrl) {
+                const { rewardType, badgeUrl } = getAwardTypeAndBadge(cert);
+                
+                if (rewardType === 'badge' && badgeUrl) {
                   // Для ачивки используем badgeUrl
-                  imageUrl = cert.badgeUrl;
+                  imageUrl = badgeUrl;
                   imageAlt = `Ачивка: ${cert.title}`;
-                } else if (cert.rewardType === 'certificate' && cert.certificateTemplateId) {
+                } else if (rewardType === 'certificate' && cert.certificateTemplateId) {
                   // Для сертификата ищем сгенерированный сертификат
                   const generatedCert = userCertificates.find(
                     (gc) => gc.templateId === cert.certificateTemplateId

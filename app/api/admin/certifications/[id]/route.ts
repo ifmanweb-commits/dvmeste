@@ -73,14 +73,13 @@ export async function PUT(
     let slug: string | undefined;
     let title: string | undefined;
     let description: string | undefined;
-    let awardText: string | null | undefined;
+    let awardText: string | undefined;
     let isActive: boolean | undefined;
-    let isPublic: boolean | undefined;
     let level: number | null | undefined;
     let order: number | undefined;
-    let rewardType: string | undefined;
     let certificateTemplateId: string | null | undefined;
     let badgeFile: File | null = null;
+    let awardId: string | null | undefined;
     let requirements: Array<{ challengeId: string; order: number }> = [];
 
     if (contentType.includes('multipart/form-data')) {
@@ -88,14 +87,13 @@ export async function PUT(
       slug = formData.get('slug') as string || undefined;
       title = formData.get('title') as string || undefined;
       description = formData.get('description') as string;
-      awardText = formData.get('awardText') as string || null;
+      awardText = formData.get('awardText') as string;
       isActive = formData.get('isActive') === 'on';
-      isPublic = formData.get('isPublic') === 'on';
       level = formData.get('level') === '' ? null : parseInt(formData.get('level') as string);
       order = parseInt(formData.get('order') as string) || 0;
-      rewardType = (formData.get('rewardType') as string) || 'certificate';
       certificateTemplateId = formData.get('certificateTemplateId') as string || null;
       badgeFile = formData.get('badge') as File | null || null;
+      awardId = formData.get('awardId') as string || null;
 
       // Парсим требования из FormData
       const reqKeys = Array.from(formData.keys()).filter(k => k.startsWith('requirements['));
@@ -115,11 +113,10 @@ export async function PUT(
       description = body.description;
       awardText = body.awardText;
       isActive = body.isActive;
-      isPublic = body.isPublic;
       level = body.level;
       order = body.order;
-      rewardType = body.rewardType;
       certificateTemplateId = body.certificateTemplateId;
+      awardId = body.awardId;
       requirements = body.requirements || [];
     }
 
@@ -148,25 +145,6 @@ export async function PUT(
       }
     }
 
-    let badgeUrl: string | null | undefined = undefined;
-
-    // Если есть новый файл ачивки, сохраняем его
-    if (badgeFile && badgeFile.size > 0) {
-      const fs = await import('fs/promises');
-      const path = await import('path');
-      
-      const uploadDir = path.join(process.cwd(), 'public', 'images', 'certification-badges');
-      await fs.mkdir(uploadDir, { recursive: true });
-      
-      const fileBuffer = await badgeFile.arrayBuffer();
-      const ext = badgeFile.name.split('.').pop() || 'png';
-      const filename = `${existing.slug}-${Date.now()}.${ext}`;
-      const filepath = path.join(uploadDir, filename);
-      
-      await fs.writeFile(filepath, Buffer.from(fileBuffer));
-      badgeUrl = `/images/certification-badges/${filename}`;
-    }
-
     // Обновляем сертификацию
     const certification = await prisma.certification.update({
       where: { id },
@@ -174,14 +152,12 @@ export async function PUT(
         slug: slug || existing.slug,
         title: title || existing.title,
         description: description !== undefined ? description : existing.description,
-        awardText: awardText !== undefined ? awardText : (existing as any).awardText,
+        awardText: awardText !== undefined ? awardText : existing.awardText,
         isActive: isActive !== undefined ? isActive : existing.isActive,
-        isPublic: isPublic !== undefined ? isPublic : existing.isPublic,
         level: level !== undefined ? level : existing.level,
         order: order !== undefined ? order : existing.order,
-        rewardType: rewardType !== undefined ? rewardType : existing.rewardType,
-        badgeUrl: badgeUrl !== undefined ? badgeUrl : existing.badgeUrl,
         certificateTemplateId: certificateTemplateId !== undefined ? certificateTemplateId : existing.certificateTemplateId,
+        awardId: awardId !== undefined ? awardId : existing.awardId,
         requirements: {
           deleteMany: {},
           create: requirements.map((req: { challengeId: string; order: number }) => ({

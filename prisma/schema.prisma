@@ -673,32 +673,47 @@ model WorkReview {
   @@index([status])
 }
 
+// Новая модель Award - отдельная таблица наград
+model Award {
+  id                    String             @id @default(cuid())
+  name                  String
+  type                  AwardType
+  badgeUrl              String?
+  certificateTemplateId String?
+  awardText             String?
+  isPublic              Boolean            @default(false)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  
+  certifications        Certification[]
+  certificationAwards   CertificationAward[]
+
+  @@index([type])
+  @@index([isPublic])
+}
+
 model Certification {
   id                    String                     @id @default(cuid())
   slug                  String                     @unique
   title                 String
   description           String?
-  // Текст для сертификата (что присваивается, например "уровень квалификации 1")
   awardText             String?
   level                 Int?
   isActive              Boolean                    @default(true)
   order                 Int                        @default(0)
-  // Тип награды: "certificate" — сертификат (генерируется PNG), "badge" — ачивка (картинка badgeUrl)
-  rewardType            String                     @default("certificate")
-  badgeUrl              String?
-  certificateTemplateId String?
-  // Отображать ли награду этой сертификации на сайте (публично)
-  isPublic              Boolean                    @default(false)
+  awardId               String?
   createdAt             DateTime                   @default(now())
   updatedAt             DateTime                   @updatedAt
   awards                CertificationAward[]
   requirements          CertificationRequirement[]
+  award                 Award?                     @relation(fields: [awardId], references: [id], onDelete: SetNull)
   certificateTemplate   CertificateTemplate?       @relation(fields: [certificateTemplateId], references: [id], onDelete: SetNull)
+  certificateTemplateId String?
 
   @@index([slug])
   @@index([isActive])
+  @@index([awardId])
   @@index([certificateTemplateId])
-  @@index([isPublic])
 }
 
 model CertificationRequirement {
@@ -717,9 +732,11 @@ model CertificationAward {
   id              String         @id @default(cuid())
   certificationId String?
   userId          String
+  awardId         String?
   awardedAt       DateTime       @default(now())
   certificateId   String?
   certification   Certification? @relation(fields: [certificationId], references: [id], onDelete: SetNull)
+  award           Award?         @relation(fields: [awardId], references: [id], onDelete: SetNull)
   user            User           @relation("CertificationAwards", fields: [userId], references: [id], onDelete: Cascade)
   certificate     Certificate?   @relation(fields: [certificateId], references: [id], onDelete: SetNull)
 
@@ -727,6 +744,7 @@ model CertificationAward {
   @@index([userId, certificationId, certificateId])
   @@index([certificationId])
   @@index([certificateId])
+  @@index([awardId])
 }
 
 model OnboardingTip {
@@ -861,6 +879,11 @@ enum WorkReviewStatus {
   TAKEN
   COMPLETED
   CANCELLED
+}
+
+enum AwardType {
+  CERTIFICATE
+  BADGE
 }
 
 enum QuestionnaireStatus {

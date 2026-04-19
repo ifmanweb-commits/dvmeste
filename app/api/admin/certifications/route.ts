@@ -60,14 +60,13 @@ export async function POST(request: NextRequest) {
     let slug: string = '';
     let title: string = '';
     let description: string = '';
-    let awardText: string | null = null;
+    let awardText: string = '';
     let isActive: boolean = true;
-    let isPublic: boolean = false;
     let level: number | null = null;
     let order: number = 0;
-    let rewardType: string = 'certificate';
     let certificateTemplateId: string | null = null;
     let badgeFile: File | null = null;
+    let awardId: string | null = null;
     let requirements: Array<{ challengeId: string; order: number }> = [];
 
     if (contentType.includes('multipart/form-data')) {
@@ -75,14 +74,13 @@ export async function POST(request: NextRequest) {
       slug = formData.get('slug') as string;
       title = formData.get('title') as string;
       description = formData.get('description') as string || '';
-      awardText = formData.get('awardText') as string || null;
+      awardText = formData.get('awardText') as string || '';
       isActive = formData.get('isActive') === 'on';
-      isPublic = formData.get('isPublic') === 'on';
       level = formData.get('level') === '' ? null : parseInt(formData.get('level') as string);
       order = parseInt(formData.get('order') as string) || 0;
-      rewardType = (formData.get('rewardType') as string) || 'certificate';
       certificateTemplateId = formData.get('certificateTemplateId') as string || null;
       badgeFile = formData.get('badge') as File | null || null;
+      awardId = formData.get('awardId') as string || null;
 
       // Парсим требования из FormData
       const reqKeys = Array.from(formData.keys()).filter(k => k.startsWith('requirements['));
@@ -100,13 +98,12 @@ export async function POST(request: NextRequest) {
       slug = body.slug;
       title = body.title;
       description = body.description || '';
-      awardText = body.awardText || null;
+      awardText = body.awardText || '';
       isActive = body.isActive ?? true;
-      isPublic = body.isPublic ?? false;
       level = body.level ?? null;
       order = body.order ?? 0;
-      rewardType = body.rewardType || 'certificate';
       certificateTemplateId = body.certificateTemplateId || null;
+      awardId = body.awardId || null;
       requirements = body.requirements || [];
     }
 
@@ -157,12 +154,10 @@ export async function POST(request: NextRequest) {
         description,
         awardText,
         isActive,
-        isPublic,
         level,
         order,
-        rewardType,
-        badgeUrl,
         certificateTemplateId: certificateTemplateId || undefined,
+        awardId: awardId || undefined,
         requirements: {
           create: requirements.map((req: { challengeId: string; order: number }) => ({
             challengeId: req.challengeId,

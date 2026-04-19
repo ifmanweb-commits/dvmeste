@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 const tabs = [
   { label: 'Сертификации', href: '/admin/certifications' },
   { label: 'Испытания', href: '/admin/challenges' },
+  { label: 'Награды', href: '/admin/awards' },
   { label: 'Выданные сертификаты', href: '/admin/certificates' },
   { label: 'Шаблоны сертификатов', href: '/admin/certificate-templates' },
 ];

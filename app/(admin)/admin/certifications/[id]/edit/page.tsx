@@ -39,20 +39,27 @@ interface CertificateTemplate {
   isActive: boolean;
 }
 
+interface Award {
+  id: string;
+  name: string;
+  type: 'CERTIFICATE' | 'BADGE';
+  isPublic: boolean;
+  certificateTemplateId: string | null;
+  awardText: string | null;
+}
+
 interface Certification {
   id: string;
   slug: string;
   title: string;
   description: string | null;
-  awardText: string | null;
   isActive: boolean;
   isPublic: boolean;
   level: number | null;
   order: number;
-  rewardType: string;
-  badgeUrl: string | null;
+  awardId: string | null;
+  award: Award | null;
   certificateTemplateId: string | null;
-  certificateTemplate: CertificateTemplate | null;
   requirements: Requirement[];
 }
 
@@ -72,22 +79,18 @@ export default function EditCertificationPage() {
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
-  const [awardText, setAwardText] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [isPublic, setIsPublic] = useState(false);
   const [level, setLevel] = useState<number | ''>('');
   const [order, setOrder] = useState(0);
 
-  // Настройки награды
-  const [rewardType, setRewardType] = useState<'certificate' | 'badge'>('certificate');
+  // Шаблон сертификата (выбирается из награды)
   const [certificateTemplateId, setCertificateTemplateId] = useState<string>('');
-  const [badgeFile, setBadgeFile] = useState<File | null>(null);
-  const [badgePreview, setBadgePreview] = useState<string | null>(null);
-  const [existingBadgeUrl, setExistingBadgeUrl] = useState<string | null>(null);
 
-  // Шаблоны сертификатов
-  const [certificateTemplates, setCertificateTemplates] = useState<CertificateTemplate[]>([]);
-  const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
+  // Награды
+  const [awards, setAwards] = useState<Award[]>([]);
+  const [isLoadingAwards, setIsLoadingAwards] = useState(true);
+  const [selectedAwardId, setSelectedAwardId] = useState<string>('');
 
   // Требования
   const [requirements, setRequirements] = useState<Requirement[]>([]);
@@ -120,41 +123,25 @@ export default function EditCertificationPage() {
     fetchChallenges();
   }, []);
 
-  // Загрузка списка шаблонов сертификатов
+  // Загрузка списка наград
   useEffect(() => {
-    const fetchTemplates = async () => {
+    const fetchAwards = async () => {
       try {
-        const response = await fetch('/api/admin/certificate-templates');
+        const response = await fetch('/api/admin/awards');
         if (!response.ok) {
-          throw new Error('Ошибка при загрузке шаблонов');
+          throw new Error('Ошибка при загрузке наград');
         }
         const data = await response.json();
-        setCertificateTemplates(data);
+        setAwards(data);
       } catch (err: any) {
-        console.error('Error fetching certificate templates:', err);
+        console.error('Error fetching awards:', err);
       } finally {
-        setIsLoadingTemplates(false);
+        setIsLoadingAwards(false);
       }
     };
 
-    fetchTemplates();
+    fetchAwards();
   }, []);
-
-  // Обработка загрузки файла ачивки
-  const handleBadgeFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setBadgeFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setBadgePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setBadgeFile(null);
-      setBadgePreview(null);
-    }
-  };
 
   // Загрузка данных сертификации
   useEffect(() => {
@@ -169,17 +156,12 @@ export default function EditCertificationPage() {
         setTitle(data.title);
         setSlug(data.slug);
         setDescription(data.description || '');
-        setAwardText(data.awardText || '');
         setIsActive(data.isActive);
         setIsPublic(data.isPublic);
         setLevel(data.level ?? '');
         setOrder(data.order ?? 0);
-        setRewardType((data.rewardType as 'certificate' | 'badge') || 'certificate');
         setCertificateTemplateId(data.certificateTemplateId || '');
-        setExistingBadgeUrl(data.badgeUrl || null);
-        if (data.badgeUrl) {
-          setBadgePreview(data.badgeUrl);
-        }
+        setSelectedAwardId(data.awardId || '');
         setRequirements(data.requirements || []);
 
         setIsLoading(false);
@@ -256,21 +238,15 @@ export default function EditCertificationPage() {
     setError(null);
     setMessage(null);
 
-    // Создаем FormData для отправки файла ачивки
     const formData = new FormData();
     formData.append('slug', slug);
     formData.append('title', title);
     formData.append('description', description);
-    formData.append('awardText', awardText);
     formData.append('isActive', isActive ? 'on' : 'off');
     formData.append('isPublic', isPublic ? 'on' : 'off');
     formData.append('level', level === '' ? '' : String(level));
     formData.append('order', String(order));
-    formData.append('rewardType', rewardType);
-    formData.append('certificateTemplateId', certificateTemplateId || '');
-    if (badgeFile) {
-      formData.append('badge', badgeFile);
-    }
+    formData.append('awardId', selectedAwardId || '');
     requirements.filter(r => r.challengeId).forEach((req, index) => {
       formData.append(`requirements[${index}][challengeId]`, req.challengeId);
       formData.append(`requirements[${index}][order]`, String(req.order));
@@ -357,126 +333,42 @@ export default function EditCertificationPage() {
             </h2>
           </div>
           <div className="p-6 space-y-6">
-            {/* Настройки награды */}
+            {/* Выбор награды */}
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <h3 className="mb-3 text-sm font-semibold text-gray-700">Настройки награды</h3>
+              <h3 className="mb-3 text-sm font-semibold text-gray-700">Награда</h3>
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Тип награды
+                  Выберите награду
                 </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="rewardType"
-                      value="certificate"
-                      checked={rewardType === 'certificate'}
-                      onChange={(e) => setRewardType(e.target.value as 'certificate' | 'badge')}
-                      className="h-4 w-4 text-[#5858E2] focus:ring-[#5858E2]"
-                    />
-                    <span className="text-sm text-gray-700">Сертификат</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="rewardType"
-                      value="badge"
-                      checked={rewardType === 'badge'}
-                      onChange={(e) => setRewardType(e.target.value as 'certificate' | 'badge')}
-                      className="h-4 w-4 text-[#5858E2] focus:ring-[#5858E2]"
-                    />
-                    <span className="text-sm text-gray-700">Ачивка</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isPublic}
-                    onChange={(e) => setIsPublic(e.target.checked)}
-                    className="mr-2 h-4 w-4 rounded border-gray-300 text-[#5858E2] focus:ring-[#5858E2]"
-                  />
-                  <span className="text-sm text-gray-700">Отображать на сайте</span>
-                </label>
+                <select
+                  value={selectedAwardId}
+                  onChange={(e) => {
+                    setSelectedAwardId(e.target.value);
+                    const selected = awards.find(a => a.id === e.target.value);
+                    if (selected) {
+                      setIsPublic(selected.isPublic);
+                      if (selected.certificateTemplateId) {
+                        setCertificateTemplateId(selected.certificateTemplateId);
+                      }
+                    }
+                  }}
+                  className={inputClasses}
+                >
+                  <option value="">Не выбрано</option>
+                  {awards.map((award) => (
+                    <option key={award.id} value={award.id}>
+                      {award.name} ({award.type === 'CERTIFICATE' ? 'Сертификат' : 'Ачивка'})
+                    </option>
+                  ))}
+                </select>
+                {isLoadingAwards && (
+                  <p className="mt-1 text-xs text-gray-500">Загрузка наград...</p>
+                )}
                 <p className="mt-1 text-xs text-gray-500">
-                  Если включено, награда будет показана в профиле психолога на сайте
+                  Выберите награду из списка. Награды создаются в разделе "Награды"
                 </p>
               </div>
-
-              {rewardType === 'certificate' ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className={labelClasses}>
-                      Шаблон сертификата
-                    </label>
-                    <select
-                      value={certificateTemplateId}
-                      onChange={(e) => setCertificateTemplateId(e.target.value)}
-                      className={inputClasses}
-                    >
-                      <option value="">Выберите шаблон</option>
-                      {certificateTemplates.map((template) => (
-                        <option key={template.id} value={template.id}>
-                          {template.name}
-                        </option>
-                      ))}
-                    </select>
-                    {isLoadingTemplates && (
-                      <p className="mt-1 text-xs text-gray-500">Загрузка шаблонов...</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label className={labelClasses}>
-                      Текст для сертификата
-                    </label>
-                    <textarea
-                      value={awardText}
-                      onChange={(e) => setAwardText(e.target.value)}
-                      rows={2}
-                      placeholder="Например: уровень квалификации 1"
-                      className={inputClasses}
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      Текст, который будет подставлен в сертификат после слова "Присваивается"
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <label className={labelClasses}>
-                    Изображение ачивки
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    onChange={handleBadgeFileChange}
-                    className={inputClasses}
-                  />
-                  {badgePreview && (
-                    <div className="mt-3">
-                      <img
-                        src={badgePreview}
-                        alt="Preview"
-                        className="h-24 w-24 object-contain rounded-lg border border-gray-200"
-                      />
-                    </div>
-                  )}
-                  {existingBadgeUrl && !badgePreview && (
-                    <div className="mt-3">
-                      <p className="text-xs text-gray-500 mb-2">Текущее изображение:</p>
-                      <img
-                        src={existingBadgeUrl}
-                        alt="Current badge"
-                        className="h-24 w-24 object-contain rounded-lg border border-gray-200"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

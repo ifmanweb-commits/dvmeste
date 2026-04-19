@@ -32,7 +32,6 @@ export async function GET(
       include: {
         certification: {
           where: {
-            isPublic: true,
             isActive: true,
           },
           include: {
@@ -42,6 +41,14 @@ export async function GET(
                 name: true,
                 slug: true,
                 backgroundUrl: true,
+              },
+            },
+            award: {
+              select: {
+                id: true,
+                type: true,
+                badgeUrl: true,
+                isPublic: true,
               },
             },
           },
@@ -59,10 +66,10 @@ export async function GET(
       },
     });
 
-    // Фильтруем награды (оставляем только те, где сертификация публичная и активная)
+    // Фильтруем награды (оставляем только те, где сертификация активная и award публичный)
     // и сортируем по порядку сертификации
     const result = awards
-      .filter(award => award.certification)
+      .filter(award => award.certification && (award.certification.award?.isPublic !== false))
       .sort((a, b) => {
         // Сортировка по order сертификации
         return (a.certification?.order ?? 0) - (b.certification?.order ?? 0);
@@ -70,6 +77,13 @@ export async function GET(
       .map(award => {
         const cert = award.certification!;
         const certificate = award.certificate;
+        const awardData = cert.award;
+        
+        // Определяем тип награды: если есть award - используем его type, иначе по умолчанию CERTIFICATE
+        const rewardType = awardData?.type ?? 'CERTIFICATE';
+        // Для badgeUrl используем award.badgeUrl
+        const badgeUrl = awardData?.badgeUrl ?? null;
+        
         return {
           id: cert.id,
           slug: cert.slug,
@@ -77,8 +91,8 @@ export async function GET(
           description: cert.description,
           awardText: cert.awardText,
           level: cert.level,
-          rewardType: cert.rewardType,
-          badgeUrl: cert.badgeUrl,
+          rewardType: rewardType === 'CERTIFICATE' ? 'certificate' : 'badge',
+          badgeUrl,
           awardedAt: award.awardedAt,
           certificateTemplate: cert.certificateTemplate,
           // Для сертификата используем verificationCode из Certificate
