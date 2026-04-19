@@ -1,26 +1,72 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getOrCreateCatalogPage, updateCatalogPageSections } from "@/lib/actions/admin-pages";
+import { prisma } from "@/lib/prisma";
+import { isDbSyncError } from "@/lib/db-error";
 import { parseCatalogPageSections } from "@/lib/catalog-page-config";
-import { DB_SYNC_MESSAGE } from "@/lib/db-error";
+import { CATALOG_PAGE_SLUG } from "@/lib/catalog-page-config";
 
 const ERROR_MESSAGES: Record<string, string> = {
   db_unavailable: "База данных недоступна.",
-  db_sync: DB_SYNC_MESSAGE,
+  db_sync: "Ошибка синхронизации базы данных.",
   update_failed: "Не удалось сохранить настройки страницы каталога.",
+  catalog_not_found: "Страница каталога не найдена. Создайте её вручную через админ-панель страниц.",
 };
+
+async function updateCatalogPage(formData: FormData) {
+  "use server";
+  
+  const topHtml = ((formData.get("topHtml") as string) || "").trim();
+  const bottomHtml = ((formData.get("bottomHtml") as string) || "").trim();
+  
+  try {
+    const page = await prisma?.page.findUnique({
+      where: { slug: CATALOG_PAGE_SLUG },
+    });
+    
+    if (!page) {
+      redirect("/admin/pages?error=catalog_not_found");
+    }
+    
+    const serializedContent = JSON.stringify({ version: 1, topHtml, bottomHtml });
+    
+    await prisma?.page.update({
+      where: { id: page.id },
+      data: { content: serializedContent },
+    });
+  } catch (err) {
+    if (isDbSyncError(err)) {
+      redirect("/admin/pages?error=db_sync");
+    }
+    console.error("Error updating catalog page:", err);
+    redirect("/admin/pages?error=update_failed");
+  }
+  
+  redirect("/admin/pages/catalog?saved=1");
+}
 
 export default async function AdminCatalogPageSettings({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [page, params] = await Promise.all([getOrCreateCatalogPage(), searchParams]);
-
-  if (!page) {
-    redirect("/admin/pages?error=db_unavailable");
+  let page: { id: string; content: string | null } | null = null;
+  
+  try {
+    page = await prisma?.page.findUnique({
+      where: { slug: CATALOG_PAGE_SLUG },
+      select: { id: true, content: true },
+    }) || null;
+  } catch (err) {
+    if (!isDbSyncError(err)) {
+      console.error("Error fetching catalog page:", err);
+    }
   }
 
+  if (!page) {
+    redirect("/admin/pages?error=catalog_not_found");
+  }
+
+  const params = await searchParams;
   const sections = parseCatalogPageSections(page.content);
   const saved = params.saved === "1";
   const errorCode = typeof params.error === "string" ? params.error : "";
@@ -54,7 +100,7 @@ export default async function AdminCatalogPageSettings({
             Если верхний блок пустой, каталог показывается сразу после меню.
           </p>
 
-          <form action={updateCatalogPageSections} className="mt-6 space-y-6">
+          <form action={updateCatalogPage} className="mt-6 space-y-6">
             <div>
               <label htmlFor="topHtml" className="block text-sm font-medium text-gray-900">
                 Верхний текст (HTML)

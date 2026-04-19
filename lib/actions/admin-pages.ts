@@ -7,9 +7,8 @@ import { promises as fs } from "fs";
 import path from "path";
 import { prisma } from "@/lib/prisma";
 import { isDbSyncError } from "@/lib/db-error";
-import { getSystemPageBySlug, isSystemPageSlug, SYSTEM_PAGE_CONFIG, SYSTEM_PAGE_SLUGS } from "@/lib/system-pages";
-import { getSystemPageDefaultContentBySlug } from "@/lib/system-page-default-content";
-import { CATALOG_PAGE_SLUG, serializeCatalogPageSections } from "@/lib/catalog-page-config";
+import { CATALOG_PAGE_SLUG } from "@/lib/catalog-page-config";
+import { FOOTER_PAGE_SLUG } from "@/lib/footer-config";
 import { requireAdmin } from '@/lib/auth/require';
 import { isReservedSlug, makeSlugSafe } from '@/lib/constants/reserved-slugs';
 
@@ -24,15 +23,6 @@ function isNextRedirectError(err: unknown): err is { digest: string } {
   );
 }
 
-type SystemPageRecord = {
-  id: string;
-  slug: string;
-  adminTitle: string;
-  template: string;
-  content: string;
-  isPublished: boolean;
-  updatedAt: Date;
-};
 export type ActionResult = 
   | { success: true }
   | { success: false; error: string };
@@ -43,9 +33,8 @@ export async function getPagesList() {
   try {
     // Исключаем только те системные страницы, которые НЕ должны быть в списке
     const excludedSlugs = [
-      SYSTEM_PAGE_CONFIG.footer.slug,  // футер оставляем в отдельном блоке
-      // SYSTEM_PAGE_CONFIG.connect.slug, // connect теперь показываем в списке
-      SYSTEM_PAGE_CONFIG.catalog.slug,  // каталог пока оставляем в отдельном блоке
+      FOOTER_PAGE_SLUG,  // футер оставляем в отдельном блоке
+      CATALOG_PAGE_SLUG,  // каталог пока оставляем в отдельном блоке
     ];
 
     const list = await prisma.page.findMany({
@@ -385,96 +374,6 @@ async function moveFiles(tempKey: string, finalKey: string) {
   }
 }*/
 
-async function getOrCreateSystemPage(systemSlug: string): Promise<SystemPageRecord | null> {
-  const systemPage = getSystemPageBySlug(systemSlug);
-  if (!prisma || !systemPage) return null;
-
-  try {
-    const found = await prisma.page.findUnique({
-      where: { slug: systemPage.slug },
-      select: {
-        id: true,
-        slug: true,
-        adminTitle: true,
-        template: true,
-        content: true,
-        isPublished: true,
-        updatedAt: true,
-      },
-    });
-
-    if (found) {
-      const hasContent = Boolean(found.content?.trim());
-      const needsDefaultContent = !hasContent;
-      const needsNormalization =
-        found.adminTitle !== systemPage.title ||
-        found.template !== "empty" ||
-        !found.isPublished ||
-        needsDefaultContent;
-
-      if (!needsNormalization) return found;
-
-      const normalized = await prisma.page.update({
-        where: { id: found.id },
-        data: {
-          adminTitle: systemPage.title,
-          template: "empty",
-          isPublished: true,
-          content: hasContent ? found.content : getSystemPageDefaultContentBySlug(systemPage.slug),
-        },
-        select: {
-          id: true,
-          slug: true,
-          adminTitle: true,
-          template: true,
-          content: true,
-          isPublished: true,
-          updatedAt: true,
-        },
-      });
-
-      return normalized;
-    }
-
-    const created = await prisma.page.create({
-      data: {
-        slug: systemPage.slug,
-        adminTitle: systemPage.title,
-        template: "empty",
-        content: getSystemPageDefaultContentBySlug(systemPage.slug),
-        isPublished: true,
-        images: [],
-      },
-      select: {
-        id: true,
-        slug: true,
-        adminTitle: true,
-        template: true,
-        content: true,
-        isPublished: true,
-        updatedAt: true,
-      },
-    });
-
-    return created;
-  } catch (err) {
-    if (isDbSyncError(err)) return null;
-    throw err;
-  }
-}
-
-                                                     
-export async function getOrCreateFooterPage() {
-  return getOrCreateSystemPage(SYSTEM_PAGE_CONFIG.footer.slug);
-}
-
-                                                      
-
-
-                                                       
-export async function getOrCreateCatalogPage() {
-  return getOrCreateSystemPage(SYSTEM_PAGE_CONFIG.catalog.slug);
-}
 
 function revalidatePublicPathBySlug(slug?: string | null) {
   if (!slug) return;
@@ -516,34 +415,3 @@ function revalidatePageTargets(slug?: string | null, oldSlug?: string | null) {
 }
 
                                                                           
-export async function updateCatalogPageSections(formData: FormData) {
-  if (!prisma) redirect("/admin/pages/catalog?error=db_unavailable");
-
-  const topHtml = ((formData.get("topHtml") as string) || "").trim();
-  const bottomHtml = ((formData.get("bottomHtml") as string) || "").trim();
-  const page = await getOrCreateCatalogPage();
-
-  if (!page) {
-    redirect("/admin/pages/catalog?error=db_unavailable");
-  }
-
-  try {
-    await prisma.page.update({
-      where: { id: page.id },
-      data: {
-        slug: SYSTEM_PAGE_CONFIG.catalog.slug,
-        adminTitle: SYSTEM_PAGE_CONFIG.catalog.title,
-        template: "empty",
-        isPublished: true,
-        content: serializeCatalogPageSections({ topHtml, bottomHtml }),
-      },
-    });
-  } catch (err: unknown) {
-    if (isDbSyncError(err)) redirect("/admin/pages/catalog?error=db_sync");
-    console.error("admin.pages.updateCatalogPageSections failed", { err });
-    redirect("/admin/pages/catalog?error=update_failed");
-  }
-
-  revalidatePageTargets(SYSTEM_PAGE_CONFIG.catalog.slug);
-  redirect("/admin/pages/catalog?saved=1");
-}

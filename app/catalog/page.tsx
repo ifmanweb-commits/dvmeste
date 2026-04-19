@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 
 export const metadata = buildMetadata({
   title: "Каталог психологов — Давай вместе",
-  description: "Найдите проверенного психолога по специализации, цене и опыту.",
+  description: "Найдите проверенного психолога с доказанной квалификацией и свяжитесь с ним напрямую, без комиссии.",
   path: "/catalog",
 });
 
