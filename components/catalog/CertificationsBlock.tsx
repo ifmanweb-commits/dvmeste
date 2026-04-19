@@ -117,14 +117,14 @@ export function CertificationsBlock({ psychologistSlug }: CertificationsBlockPro
                   <img
                     src={imageUrl}
                     alt={cert.title}
-                    className="h-24 w-auto object-contain rounded-lg border border-gray-200 bg-white"
+                    className="h-24 w-auto object-contain rounded-lg bg-white"
                   />
                 </a>
               ) : (
                 <img
                   src={imageUrl}
                   alt={cert.title}
-                  className="h-24 w-auto object-contain rounded-lg border border-gray-200 bg-white"
+                  className="h-24 w-auto object-contain rounded-lg bg-white"
                 />
               )}
               {/* Подпись с названием квалификации */}
