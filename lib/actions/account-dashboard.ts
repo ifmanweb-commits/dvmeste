@@ -182,16 +182,24 @@ export async function getDashboardData(psychologistId: string): Promise<{ succes
             imageUrl: true,
           },
         },
+        award: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            badgeUrl: true,
+          },
+        },
       },
       orderBy: {
         awardedAt: 'desc',
       },
     });
 
-    // Форматируем награды: сначала сертификаты, потом ачивки
-    const formattedAwards = awardsData
-      .filter((award): award is typeof award & { certification: NonNullable<typeof award.certification> } => !!award.certification)
-      .map(award => {
+    // Форматируем награды: включая награды без certification (выданные через ключ)
+    const formattedAwards = awardsData.map(award => {
+      // Если есть certification - используем его данные
+      if (award.certification) {
         const awardType = award.certification.award?.type ?? 'CERTIFICATE';
         const badgeUrl = award.certification.award?.badgeUrl ?? null;
         const certificateImageUrl = award.certificate?.imageUrl ?? award.certification.certificateTemplate?.backgroundUrl ?? null;
@@ -205,14 +213,27 @@ export async function getDashboardData(psychologistId: string): Promise<{ succes
           awardedAt: award.awardedAt,
           level: award.certification.level,
         };
-      })
-      .sort((a, b) => {
-        // Сначала сертификаты (rewardType = 'certificate'), потом ачивки
-        if (a.rewardType === 'certificate' && b.rewardType !== 'certificate') return -1;
-        if (a.rewardType !== 'certificate' && b.rewardType === 'certificate') return 1;
-        // Внутри каждой группы сортируем по дате получения
-        return new Date(b.awardedAt).getTime() - new Date(a.awardedAt).getTime();
-      });
+      }
+      // Если нет certification - это награда без привязки (например, выданная через ключ)
+      const badgeUrl = award.award?.badgeUrl ?? null;
+      return {
+        id: award.id,
+        certificationId: null,
+        certificationTitle: award.award?.name || 'Награда',
+        rewardType: award.award?.type === 'BADGE' ? 'badge' : 'certificate',
+        badgeUrl,
+        certificateImageUrl: null,
+        awardedAt: award.awardedAt,
+        level: null,
+      };
+    })
+    .sort((a, b) => {
+      // Сначала сертификаты (rewardType = 'certificate'), потом ачивки
+      if (a.rewardType === 'certificate' && b.rewardType !== 'certificate') return -1;
+      if (a.rewardType !== 'certificate' && b.rewardType === 'certificate') return 1;
+      // Внутри каждой группы сортируем по дате получения
+      return new Date(b.awardedAt).getTime() - new Date(a.awardedAt).getTime();
+    });
 
     // 7. Получаем количество статей
     const [submittedArticlesCount, publishedArticlesCount] = await Promise.all([

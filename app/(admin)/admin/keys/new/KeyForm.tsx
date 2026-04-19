@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { createKey, updateKeyAction } from '../actions';
 import { KeyAction } from '../actions';
@@ -22,6 +22,12 @@ interface Challenge {
   title: string;
   slug: string;
   type: string;
+}
+
+interface Award {
+  id: string;
+  name: string;
+  type: 'CERTIFICATE' | 'BADGE';
 }
 
 interface KeyFormProps {
@@ -47,6 +53,7 @@ const ACTION_TYPES = [
   { value: 'add_balance', label: 'Начислить рубли' },
   { value: 'subtract_balance', label: 'Списать рубли' },
   { value: 'add_attempts', label: 'Дать попытки' },
+  { value: 'give_award', label: 'Выдать награду' },
 ] as const;
 
 export default function KeyForm({ pages, courses, challenges, initialData }: KeyFormProps) {
@@ -60,6 +67,25 @@ export default function KeyForm({ pages, courses, challenges, initialData }: Key
   const [actions, setActions] = useState<KeyAction[]>(
     initialData?.actionsJson?.actions || []
   );
+  const [awards, setAwards] = useState<Award[]>([]);
+
+  // Загрузка наград типа BADGE
+  useEffect(() => {
+    const fetchAwards = async () => {
+      try {
+        const response = await fetch('/api/admin/awards');
+        if (response.ok) {
+          const data = await response.json();
+          // Фильтруем только BADGE
+          setAwards(data.filter((a: Award) => a.type === 'BADGE'));
+        }
+      } catch (err) {
+        console.error('Error fetching awards:', err);
+      }
+    };
+
+    fetchAwards();
+  }, []);
 
   const generateCode = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -338,6 +364,30 @@ export default function KeyForm({ pages, courses, challenges, initialData }: Key
                       placeholder="100"
                       required
                     />
+                  </div>
+                ) : action.type === 'give_award' ? (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      Награда (ачивка)
+                    </label>
+                    <select
+                      value={action.awardId || ''}
+                      onChange={(e) => updateAction(index, 'awardId', e.target.value)}
+                      className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm bg-white focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+                      required
+                    >
+                      <option value="">Выберите награду</option>
+                      {awards.map((award) => (
+                        <option key={award.id} value={award.id}>
+                          {award.name}
+                        </option>
+                      ))}
+                    </select>
+                    {awards.length === 0 && (
+                      <p className="mt-1 text-xs text-orange-600">
+                        Нет доступных наград типа "Ачивка". Создайте награду в разделе "Награды".
+                      </p>
+                    )}
                   </div>
                 ) : null}
               </div>

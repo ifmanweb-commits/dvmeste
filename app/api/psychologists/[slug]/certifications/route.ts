@@ -60,45 +60,85 @@ export async function GET(
             imageUrl: true,
           },
         },
+        award: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            badgeUrl: true,
+            isPublic: true,
+          },
+        },
       },
       orderBy: {
         awardedAt: 'desc',
       },
     });
 
-    // Фильтруем награды (оставляем только те, где сертификация активная и award публичный)
-    // и сортируем по порядку сертификации
+    // Фильтруем награды и сортируем по порядку сертификации
     const result = awards
-      .filter(award => award.certification && (award.certification.award?.isPublic !== false))
+      .filter(award => {
+        // Если есть certification - проверяем isActive и isPublic
+        if (award.certification) {
+          return award.certification.isActive && (award.certification.award?.isPublic !== false);
+        }
+        // Если нет certification - проверяем award.isPublic
+        return award.award?.isPublic !== false;
+      })
       .sort((a, b) => {
-        // Сортировка по order сертификации
-        return (a.certification?.order ?? 0) - (b.certification?.order ?? 0);
+        // Сортировка по order сертификации (сначала с certification, потом без)
+        if (a.certification && b.certification) {
+          return (a.certification.order ?? 0) - (b.certification.order ?? 0);
+        }
+        if (a.certification && !b.certification) return -1;
+        if (!a.certification && b.certification) return 1;
+        return 0;
       })
       .map(award => {
-        const cert = award.certification!;
         const certificate = award.certificate;
-        const awardData = cert.award;
         
-        // Определяем тип награды: если есть award - используем его type, иначе по умолчанию CERTIFICATE
+        // Если есть certification - используем её данные
+        if (award.certification) {
+          const cert = award.certification;
+          const awardData = cert.award;
+          
+          const rewardType = awardData?.type ?? 'CERTIFICATE';
+          const badgeUrl = awardData?.badgeUrl ?? null;
+          
+          return {
+            id: cert.id,
+            slug: cert.slug,
+            title: cert.title,
+            description: cert.description,
+            awardText: cert.awardText,
+            level: cert.level,
+            rewardType: rewardType === 'CERTIFICATE' ? 'certificate' : 'badge',
+            badgeUrl,
+            awardedAt: award.awardedAt,
+            certificateTemplate: cert.certificateTemplate,
+            verificationCode: certificate?.verificationCode,
+            certificateImageUrl: certificate?.imageUrl,
+          };
+        }
+        
+        // Если нет certification - это награда без привязки (выданная через ключ)
+        const awardData = award.award;
         const rewardType = awardData?.type ?? 'CERTIFICATE';
-        // Для badgeUrl используем award.badgeUrl
         const badgeUrl = awardData?.badgeUrl ?? null;
         
         return {
-          id: cert.id,
-          slug: cert.slug,
-          title: cert.title,
-          description: cert.description,
-          awardText: cert.awardText,
-          level: cert.level,
-          rewardType: rewardType === 'CERTIFICATE' ? 'certificate' : 'badge',
+          id: award.id,
+          slug: null,
+          title: awardData?.name || 'Награда',
+          description: null,
+          awardText: null,
+          level: null,
+          rewardType: rewardType === 'BADGE' ? 'badge' : 'certificate',
           badgeUrl,
           awardedAt: award.awardedAt,
-          certificateTemplate: cert.certificateTemplate,
-          // Для сертификата используем verificationCode из Certificate
-          verificationCode: certificate?.verificationCode,
-          // Если есть сгенерированный сертификат, используем его imageUrl
-          certificateImageUrl: certificate?.imageUrl,
+          certificateTemplate: null,
+          verificationCode: null,
+          certificateImageUrl: null,
         };
       });
 

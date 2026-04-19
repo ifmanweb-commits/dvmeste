@@ -231,6 +231,20 @@ async function executeAction(action: KeyAction, userId: string) {
       break;
     }
 
+    case 'give_award': {
+      if (!action.awardId) throw new Error('Не указан awardId');
+      
+      // Создаём запись о выданной награде в CertificationAward
+      await prisma.certificationAward.create({
+        data: {
+          userId,
+          awardId: action.awardId,
+          awardedAt: new Date(),
+        },
+      });
+      break;
+    }
+
     default:
       console.warn(`Неизвестный тип действия: ${action.type}`);
   }
@@ -246,6 +260,7 @@ function getActionLabel(action: KeyAction): string {
     add_balance: 'Начислены средства',
     subtract_balance: 'Списаны средства',
     add_attempts: 'Добавлены попытки',
+    give_award: 'Выдана награда',
   };
   return labels[action.type] || action.type;
 }

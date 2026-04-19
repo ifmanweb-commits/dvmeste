@@ -25,6 +25,9 @@ export default async function CertificationPage() {
       },
       awards: {
         where: { userId: user.id },
+        include: {
+          award: true,
+        },
       },
       certificateTemplate: true,
       award: {
@@ -39,6 +42,16 @@ export default async function CertificationPage() {
     orderBy: { createdAt: 'asc' },
   });
 
+  // Получаем все награды пользователя (включая награды без привязки к сертификации)
+  const allUserAwards = await prisma.certificationAward.findMany({
+    where: { userId: user.id },
+    include: {
+      award: true,
+      certification: true,
+    },
+    orderBy: { awardedAt: 'desc' },
+  });
+
   // Получаем сгенерированные сертификаты пользователя
   const userCertificates = await prisma.certificate.findMany({
     where: { userId: user.id },
@@ -47,100 +60,107 @@ export default async function CertificationPage() {
     },
   });
 
-  // Разделяем на полученные и доступные
-  const awardedCertifications = certifications.filter(cert => cert.awards.length > 0);
-  const availableCertifications = certifications.filter(cert => cert.awards.length === 0);
-
-  // Функция для определения типа награды и badgeUrl
-  const getAwardTypeAndBadge = (cert: typeof certifications[0]) => {
-    // Если есть связь award - используем её
-    if (cert.award) {
+  // Формируем список всех наград для отображения
+  const allRewards = allUserAwards.map(awardRecord => {
+    // Если есть certification - используем его данные
+    if (awardRecord.certification) {
+      const cert = certifications.find(c => c.id === awardRecord.certification?.id);
       return {
-        rewardType: cert.award.type === 'CERTIFICATE' ? 'certificate' : 'badge',
-        badgeUrl: cert.award.badgeUrl,
+        id: awardRecord.id,
+        title: awardRecord.certification.title,
+        description: awardRecord.certification.description,
+        awardedAt: awardRecord.awardedAt,
+        certificationId: awardRecord.certification.id,
+        badgeUrl: awardRecord.award?.badgeUrl || null,
+        rewardType: awardRecord.award?.type || 'CERTIFICATE',
+        hasCertification: !!cert,
       };
     }
-    // По умолчанию считаем сертификатом
+    // Если нет certification - это награда без привязки (например, выданная через ключ)
     return {
-      rewardType: 'certificate' as const,
-      badgeUrl: null,
+      id: awardRecord.id,
+      title: awardRecord.award?.name || 'Награда',
+      description: null,
+      awardedAt: awardRecord.awardedAt,
+      certificationId: null,
+      badgeUrl: awardRecord.award?.badgeUrl || null,
+      rewardType: awardRecord.award?.type || 'CERTIFICATE',
+      hasCertification: false,
     };
-  };
+  });
 
-  // Для доступных сертификаций считаем прогресс
+  // Для доступных сертификаций (без наград) считаем прогресс
   const availableCertsWithProgress = await Promise.all(
-    availableCertifications.map(async (cert) => {
-      const completedChallengeIds = new Set<string>();
-      const requirementsWithStatus = [];
-      
-      for (const req of cert.requirements) {
-        // Для TEST проверяем challengeAttempt, для WORK - workSubmission, для LESSON - lessonCompletion
-        let isCompleted = false;
+    certifications
+      .filter(cert => !allUserAwards.some(award => award.certificationId === cert.id))
+      .map(async (cert) => {
+        const completedChallengeIds = new Set<string>();
+        const requirementsWithStatus = [];
         
-        if (req.challenge.type === 'TEST') {
-          const successfulAttempt = await prisma.challengeAttempt.findFirst({
-            where: {
-              userId: user.id,
-              challengeId: req.challengeId,
-              passed: true,
-            },
-          });
-          isCompleted = !!successfulAttempt;
-        } else if (req.challenge.type === 'WORK') {
-          // Для работы проверяем, есть ли одобренная submission
-          const approvedSubmission = await prisma.workSubmission.findFirst({
-            where: {
-              userId: user.id,
-              challengeId: req.challengeId,
-              status: 'APPROVED',
-            },
-          });
-          isCompleted = !!approvedSubmission;
-        } else if (req.challenge.type === 'LESSON') {
-          // Для урока проверяем, есть ли запись о просмотре
-          const lessonCompletion = await prisma.lessonCompletion.findUnique({
-            where: {
-              challengeId_userId: {
-                challengeId: req.challengeId,
+        for (const req of cert.requirements) {
+          let isCompleted = false;
+          
+          if (req.challenge.type === 'TEST') {
+            const successfulAttempt = await prisma.challengeAttempt.findFirst({
+              where: {
                 userId: user.id,
+                challengeId: req.challengeId,
+                passed: true,
               },
-            },
+            });
+            isCompleted = !!successfulAttempt;
+          } else if (req.challenge.type === 'WORK') {
+            const approvedSubmission = await prisma.workSubmission.findFirst({
+              where: {
+                userId: user.id,
+                challengeId: req.challengeId,
+                status: 'APPROVED',
+              },
+            });
+            isCompleted = !!approvedSubmission;
+          } else if (req.challenge.type === 'LESSON') {
+            const lessonCompletion = await prisma.lessonCompletion.findUnique({
+              where: {
+                challengeId_userId: {
+                  challengeId: req.challengeId,
+                  userId: user.id,
+                },
+              },
+            });
+            isCompleted = !!lessonCompletion;
+          } else if (req.challenge.type === 'QUESTIONNAIRE') {
+            const approvedSubmission = await prisma.questionnaireSubmission.findFirst({
+              where: {
+                userId: user.id,
+                challengeId: req.challengeId,
+                status: 'APPROVED',
+              },
+            });
+            isCompleted = !!approvedSubmission;
+          }
+          
+          if (isCompleted) {
+            completedChallengeIds.add(req.challengeId);
+          }
+          
+          requirementsWithStatus.push({
+            ...req,
+            isCompleted,
           });
-          isCompleted = !!lessonCompletion;
-        } else if (req.challenge.type === 'QUESTIONNAIRE') {
-          // Для вопросника проверяем, есть ли одобренная submission
-          const approvedSubmission = await prisma.questionnaireSubmission.findFirst({
-            where: {
-              userId: user.id,
-              challengeId: req.challengeId,
-              status: 'APPROVED',
-            },
-          });
-          isCompleted = !!approvedSubmission;
         }
-        
-        if (isCompleted) {
-          completedChallengeIds.add(req.challengeId);
-        }
-        
-        requirementsWithStatus.push({
-          ...req,
-          isCompleted,
-        });
-      }
 
-      const completedCount = completedChallengeIds.size;
-      const totalCount = cert.requirements.length;
-      const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+        const completedCount = completedChallengeIds.size;
+        const totalCount = cert.requirements.length;
+        const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
-      return {
-        ...cert,
-        completedCount,
-        totalCount,
-        progress,
-        requirementsWithStatus,
-      };
-    })
+        return {
+          ...cert,
+          completedCount,
+          totalCount,
+          progress,
+          requirementsWithStatus,
+        };
+      })
   );
 
   return (
@@ -156,41 +176,43 @@ export default async function CertificationPage() {
         {/* Навигационная панель */}
         <CertificationHorNav activeTab="certifications" />
 
-        {/* РАЗДЕЛ 1 — Полученные награды */}
-        {awardedCertifications.length > 0 && (
+        {/* РАЗДЕЛ 1 — Все полученные награды */}
+        {allRewards.length > 0 && (
           <section className="mb-10">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">
               Полученные награды
             </h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {awardedCertifications.map((cert) => {
-                const awardedYear = new Date(cert.awards[0].awardedAt).getFullYear();
+              {allRewards.map((reward) => {
+                const awardedYear = new Date(reward.awardedAt).getFullYear();
                 
                 // Определяем изображение для отображения
                 let imageUrl = '/images/icons/award-gold-500-tp.png';
-                let imageAlt = 'Сертификат получен';
+                let imageAlt = 'Награда получена';
+                let linkHref = reward.certificationId ? `/account/certification/${reward.certificationId}` : '#';
                 
-                const { rewardType, badgeUrl } = getAwardTypeAndBadge(cert);
-                
-                if (rewardType === 'badge' && badgeUrl) {
+                if (reward.rewardType === 'BADGE' && reward.badgeUrl) {
                   // Для ачивки используем badgeUrl
-                  imageUrl = badgeUrl;
-                  imageAlt = `Ачивка: ${cert.title}`;
-                } else if (rewardType === 'certificate' && cert.certificateTemplateId) {
+                  imageUrl = reward.badgeUrl;
+                  imageAlt = `Ачивка: ${reward.title}`;
+                } else if (reward.rewardType === 'CERTIFICATE' && reward.certificationId) {
                   // Для сертификата ищем сгенерированный сертификат
-                  const generatedCert = userCertificates.find(
-                    (gc) => gc.templateId === cert.certificateTemplateId
-                  );
-                  if (generatedCert && generatedCert.imageUrl) {
-                    imageUrl = generatedCert.imageUrl;
-                    imageAlt = `Сертификат: ${cert.title}`;
+                  const cert = certifications.find(c => c.id === reward.certificationId);
+                  if (cert?.certificateTemplateId) {
+                    const generatedCert = userCertificates.find(
+                      (gc) => gc.templateId === cert.certificateTemplateId
+                    );
+                    if (generatedCert && generatedCert.imageUrl) {
+                      imageUrl = generatedCert.imageUrl;
+                      imageAlt = `Сертификат: ${reward.title}`;
+                    }
                   }
                 }
                 
                 return (
                   <Link
-                    key={cert.id}
-                    href={`/account/certification/${cert.id}`}
+                    key={reward.id}
+                    href={linkHref}
                     className="group relative overflow-hidden rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm transition-all hover:shadow-md hover:border-[#5858E2]/40"
                   >
                     {/* Бейдж с иконкой */}
@@ -211,9 +233,9 @@ export default async function CertificationPage() {
                       {awardedYear}
                     </p>
                     
-                    {/* Название сертификата */}
+                    {/* Название награды */}
                     <h3 className="text-center text-base font-semibold text-gray-900 group-hover:text-[#5858E2]">
-                      {cert.title}
+                      {reward.title}
                     </h3>
                   </Link>
                 );
@@ -341,7 +363,7 @@ export default async function CertificationPage() {
         )}
 
         {/* Пустое состояние */}
-        {awardedCertifications.length === 0 && availableCertsWithProgress.length === 0 && (
+        {allRewards.length === 0 && availableCertsWithProgress.length === 0 && (
           <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center">
             <Award className="mx-auto h-14 w-14 text-gray-300" />
             <h3 className="mt-4 text-lg font-medium text-gray-900">

@@ -13,13 +13,15 @@ export interface KeyAction {
     | 'complete_challenge'
     | 'add_balance'
     | 'subtract_balance'
-    | 'add_attempts';
+    | 'add_attempts'
+    | 'give_award';
   pageId?: string;
   courseId?: string;
   challengeId?: string;
   status?: 'enrolled' | 'graduated';
   quantity?: number;
   amount?: number;
+  awardId?: string;
 }
 
 export interface KeyActionsData {
