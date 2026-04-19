@@ -21,10 +21,10 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
     ? `Статьи по теме «${tag}»` 
     : search 
       ? `Результаты поиска «${search}»` 
-      : "Статьи";
+      : "Статьи по психологии";
 
   return buildMetadata({
-    title: `${titlePart} — Библиотека — Давай вместе`,
+    title: `${titlePart} — Давай вместе`,
     description: tag
       ? `Статьи по психологии на тему «${tag}» от психологов реестра «Давай вместе».`
       : "Тематические статьи по психологии и психотерапии от психологов реестра «Давай вместе».",

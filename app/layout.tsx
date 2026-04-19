@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import BlockRenderer from "@/components/BlockRenderer";
+import CookieBanner from "@/components/layout/CookieBanner";
 
 import {
   buildMetadata,
@@ -91,6 +92,9 @@ export default async function RootLayout({
         
         {/* Глобальные блоки body-end перед закрывающим тегом body */}
         <BlockRenderer slugs={['body-end']} variant="body" />
+        
+        {/* Баннер cookie */}
+        <CookieBanner />
       </body>
     </html>
   );
