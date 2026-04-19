@@ -160,18 +160,20 @@ export default function NewAwardPage() {
           </div>
         )}
 
-        <div>
-          <label htmlFor="awardText" className="block text-sm font-medium text-gray-700">
-            Текст награды
-          </label>
-          <textarea
-            id="awardText"
-            name="awardText"
-            rows={3}
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
-            placeholder="Текст, который будет отображаться при выдаче награды"
-          />
-        </div>
+        {awardType === 'CERTIFICATE' && (
+          <div>
+            <label htmlFor="awardText" className="block text-sm font-medium text-gray-700">
+              Текст на сертификате
+            </label>
+            <textarea
+              id="awardText"
+              name="awardText"
+              rows={3}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-[#5858E2] focus:outline-none focus:ring-1 focus:ring-[#5858E2]"
+              placeholder="Текст, который будет написан на сертификате"
+            />
+          </div>
+        )}
 
         <div className="flex items-center">
           <input
