@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { emailService } from "@/lib/email.service"
 import { NotificationType } from "@prisma/client"
+import { SITE } from "@/lib/config"
 
 /**
  * Данные для отправки уведомления
@@ -31,11 +32,26 @@ export interface SendNotificationResult {
  * @param data - данные уведомления
  * @returns результат отправки
  */
+/**
+ * Преобразует относительный URL в абсолютный используя SITE.baseUrl
+ */
+function toAbsoluteUrl(url?: string): string | undefined {
+  if (!url) return undefined
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  // Убираем ведущий слэш и соединяем с baseUrl
+  const cleanPath = url.startsWith('/') ? url.slice(1) : url
+  const base = SITE.baseUrl.endsWith('/') ? SITE.baseUrl.slice(0, -1) : SITE.baseUrl
+  return `${base}/${cleanPath}`
+}
+
 export async function sendNotification(
   userId: string,
   data: NotificationData
 ): Promise<SendNotificationResult> {
   const sentVia: string[] = []
+
+  // Преобразуем относительные URL в абсолютные
+  const absoluteUrl = toAbsoluteUrl(data.linkUrl)
 
   try {
     // Получаем пользователя из БД
@@ -54,7 +70,7 @@ export async function sendNotification(
     // Отправляем email если не отписан
     if (user.email && !user.unsubscribed) {
       try {
-        await sendEmailNotification(user.email, data)
+        await sendEmailNotification(user.email, data, absoluteUrl)
         sentVia.push("email")
       } catch (emailError) {
         console.error("Error sending email notification:", emailError)
@@ -63,7 +79,7 @@ export async function sendNotification(
 
     // Отправляем push уведомление
     try {
-      const pushSent = await sendPushNotification(userId, data)
+      const pushSent = await sendPushNotification(userId, data, absoluteUrl)
       if (pushSent) {
         sentVia.push("push")
       }
@@ -89,8 +105,8 @@ export async function sendNotification(
 /**
  * Отправка email уведомления с универсальным шаблоном
  */
-async function sendEmailNotification(email: string, data: NotificationData): Promise<void> {
-  const html = buildUniversalEmailHtml(data)
+async function sendEmailNotification(email: string, data: NotificationData, absoluteUrl?: string): Promise<void> {
+  const html = buildUniversalEmailHtml(data, absoluteUrl)
 
   await emailService.sendEmail({
     to: email,
@@ -102,9 +118,7 @@ async function sendEmailNotification(email: string, data: NotificationData): Pro
 /**
  * Построение универсального HTML шаблона для email
  */
-function buildUniversalEmailHtml(data: NotificationData): string {
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000"
-  
+function buildUniversalEmailHtml(data: NotificationData, absoluteUrl?: string): string {
   return `
 <!DOCTYPE html>
 <html>
@@ -115,9 +129,9 @@ function buildUniversalEmailHtml(data: NotificationData): string {
   <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <h2 style="color: #5858E2; border-bottom: 2px solid #5858E2; padding-bottom: 10px;">${escapeHtml(data.title)}</h2>
     <p style="font-size: 16px; margin: 20px 0;">${escapeHtml(data.message)}</p>
-    ${data.linkUrl ? `
+    ${absoluteUrl ? `
     <p style="margin-top: 30px;">
-      <a href="${escapeHtml(data.linkUrl)}" 
+      <a href="${escapeHtml(absoluteUrl)}" 
          style="background-color: #5858E2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
         ${escapeHtml(data.linkText || "Перейти")}
       </a>
@@ -134,7 +148,7 @@ function buildUniversalEmailHtml(data: NotificationData): string {
  * Отправка Web Push уведомления
  * @returns true если уведомление было отправлено хотя бы одному устройству
  */
-async function sendPushNotification(userId: string, data: NotificationData): Promise<boolean> {
+async function sendPushNotification(userId: string, data: NotificationData, absoluteUrl?: string): Promise<boolean> {
   try {
     const webPush = await import("web-push")
 
@@ -164,7 +178,7 @@ async function sendPushNotification(userId: string, data: NotificationData): Pro
     const notificationPayload = JSON.stringify({
       title: data.title,
       body: data.message,
-      url: data.linkUrl || `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/account/notifications`,
+      url: absoluteUrl || data.linkUrl || `${SITE.baseUrl}/account/notifications`,
       icon: "/icon.png",
     })
 

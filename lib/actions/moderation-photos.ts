@@ -2,10 +2,11 @@
 
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth/require'
-import { DocumentType } from '@prisma/client'
+import { DocumentType, NotificationType } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { promises as fs } from 'fs'
 import path from 'path'
+import { sendNotification } from '@/lib/notifications'
 
 // ======================================
 // ТИПЫ
@@ -180,6 +181,19 @@ export async function rejectPhoto(photoId: string) {
     revalidatePath('/admin/moderation/photos')
     revalidatePath('/catalog') // Обновить кэш каталога
     revalidatePath('/catalog/[slug]') // Обновить кэш профиля
+    
+    // Отправляем уведомление об отклонении фото
+    await sendNotification(photo.userId, {
+      type: NotificationType.PHOTO_REJECTED,
+      title: 'Фото отклонено',
+      message: 'Ваше загруженное фото было отклонено модератором.',
+      linkUrl: '/account/profile',
+      linkText: 'Перейти к профилю',
+      metadata: {
+        userId: photo.userId,
+        documentId: photoId,
+      },
+    });
   } catch (error) {
     console.error('Error rejecting photo:', error)
     throw error

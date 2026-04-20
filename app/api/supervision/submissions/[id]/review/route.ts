@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
 import { creditSupervisor } from '@/lib/billing';
 import { checkCertificationCompletion } from '@/lib/check-certification-completion';
+import { sendNotification } from '@/lib/notifications';
+import { NotificationType } from '@prisma/client';
 
 // POST /api/supervision/submissions/:id/review - вынести вердикт
 export async function POST(
@@ -160,10 +162,31 @@ export async function POST(
       return finalSubmission;
     });
 
-    // Если работа одобрена — проверяем сертификацию
-    if (result.status === 'APPROVED') {
-      await checkCertificationCompletion(result.userId, result.challengeId);
-    }
+      // Если работа одобрена — проверяем сертификацию
+      if (result.status === 'APPROVED') {
+        await checkCertificationCompletion(result.userId, result.challengeId);
+      }
+
+      // Отправляем уведомление психологу о результате проверки работы
+      // Только при финальном статусе (APPROVED или REJECTED)
+      if (result.status === 'APPROVED' || result.status === 'REJECTED') {
+        const isApproved = result.status === 'APPROVED';
+        await sendNotification(result.userId, {
+          type: NotificationType.WORK_REVIEWED,
+          title: isApproved ? 'Работа принята' : 'Работа отправлена на доработку',
+          message: isApproved
+            ? `Ваша работа по испытанию "${result.challenge.title}" была успешно принята супервизором.`
+            : `Ваша работа по испытанию "${result.challenge.title}" требует доработки. Проверьте комментарии супервизора.`,
+          linkUrl: `/account/supervision`,
+          linkText: 'Перейти к супервизии',
+          metadata: {
+            submissionId: result.id,
+            challengeId: result.challengeId,
+            challengeTitle: result.challenge.title,
+            verdict: verdict,
+          },
+        });
+      }
 
     // Начисляем оплату супервизору (отдельно от транзакции)
     const price = workChallenge?.reviewPrice || 0;

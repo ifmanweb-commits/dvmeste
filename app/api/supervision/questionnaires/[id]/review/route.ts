@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth/session';
 import { creditSupervisor } from '@/lib/billing';
 import { checkCertificationCompletion } from '@/lib/check-certification-completion';
+import { sendNotification } from '@/lib/notifications';
+import { NotificationType } from '@prisma/client';
 
 // POST /api/supervision/questionnaires/:id/review - вынести вердикт
 export async function POST(
@@ -163,6 +165,27 @@ export async function POST(
     // Если вопросник одобрен — проверяем сертификацию
     if (result.status === 'APPROVED') {
       await checkCertificationCompletion(result.userId, result.challengeId);
+    }
+
+    // Отправляем уведомление психологу о результате проверки вопросника
+    // Только при финальном статусе (APPROVED или REJECTED)
+    if (result.status === 'APPROVED' || result.status === 'REJECTED') {
+      const isApproved = result.status === 'APPROVED';
+      await sendNotification(result.userId, {
+        type: NotificationType.QUESTIONNAIRE_REVIEWED,
+        title: isApproved ? 'Вопросник принят' : 'Вопросник отправлен на доработку',
+        message: isApproved
+          ? `Ваш вопросник по испытанию "${result.challenge.title}" был успешно принят супервизором.`
+          : `Ваш вопросник по испытанию "${result.challenge.title}" требует доработки. Проверьте комментарии супервизора.`,
+        linkUrl: `/account/supervision`,
+        linkText: 'Перейти к супервизии',
+        metadata: {
+          submissionId: result.id,
+          challengeId: result.challengeId,
+          challengeTitle: result.challenge.title,
+          verdict: verdict,
+        },
+      });
     }
 
     // Начисляем оплату супервизору (отдельно от транзакции)

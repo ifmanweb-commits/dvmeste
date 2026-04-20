@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
+import { sendNotification } from '@/lib/notifications'
+import { NotificationType } from '@prisma/client'
+import { SITE } from '@/lib/config'
 
 export const runtime = 'nodejs'
 
@@ -71,8 +74,27 @@ export async function POST(request: NextRequest) {
         clientId,
         message,
         status: 'NEW'
+      },
+      include: {
+        psychologist: true
       }
     })
+    
+    // Отправляем уведомление психологу
+    try {
+      const absoluteUrl = `${SITE.baseUrl}/account/leads/${lead.id}`
+      await sendNotification(lead.psychologistId, {
+        type: NotificationType.LEAD,
+        title: '📬 Новая заявка от клиента',
+        message: 'Клиент оставил заявку на консультацию. Пожалуйста, перейдите в личный кабинет и примите решение.',
+        linkUrl: absoluteUrl,
+        linkText: 'Перейти к заявкам',
+        metadata: { leadId: lead.id }
+      })
+    } catch (notifyError) {
+      console.error('Error sending lead notification:', notifyError)
+      // Не блокируем создание заявки при ошибке уведомления
+    }
     
     return NextResponse.json({ 
       success: true, 

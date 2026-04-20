@@ -2,11 +2,12 @@
 
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth/require'
-import { DocumentType } from '@prisma/client'
+import { DocumentType, NotificationType } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { getDocumentTypeLabel, formatFileSize } from '@/lib/utils/moderation-helpers'
+import { sendNotification } from '@/lib/notifications'
 
 // ======================================
 // ТИПЫ
@@ -199,6 +200,27 @@ export async function rejectDocument(docId: string) {
     revalidatePath('/admin/moderation/documents')
     revalidatePath('/catalog') // Обновить кэш каталога
     revalidatePath('/catalog/[slug]') // Обновить кэш профиля
+    
+    // Получаем userId документа для отправки уведомления
+    const doc = await prisma.document.findUnique({
+      where: { id: docId },
+      select: { userId: true }
+    });
+    
+    if (doc) {
+      // Отправляем уведомление об отклонении документа
+      await sendNotification(doc.userId, {
+        type: NotificationType.DOCUMENT_REJECTED,
+        title: 'Документ отклонён',
+        message: 'Ваш загруженный документ был отклонён модератором.',
+        linkUrl: '/account/profile',
+        linkText: 'Перейти к профилю',
+        metadata: {
+          userId: doc.userId,
+          documentId: docId,
+        },
+      });
+    }
   } catch (error) {
     console.error('Error rejecting document:', error)
     throw error

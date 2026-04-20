@@ -3,10 +3,11 @@
 import { prisma } from '@/lib/prisma'
 import { User } from '@prisma/client';
 import { requireAdmin } from '@/lib/auth/require'
-import { Prisma, PsychologistStatus } from '@prisma/client'
+import { Prisma, PsychologistStatus, NotificationType } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { promises as fs } from "fs";
 import path from "path";
+import { sendNotification } from '@/lib/notifications';
 
 // ======================================
 // ТИПЫ И ИНТЕРФЕЙСЫ
@@ -522,6 +523,18 @@ export async function approveProfileDraft(userId: string) {
     revalidatePath('/admin/moderation/profiles');
     revalidatePath(`/admin/psychologists/${userId}/edit`);
     
+    // Отправляем уведомление о размещении в каталоге
+    await sendNotification(userId, {
+      type: NotificationType.CATALOG_PUBLISHED,
+      title: 'Профиль размещён в каталоге',
+      message: 'Ваш профиль успешно прошёл модерацию и теперь доступен в каталоге психологов.',
+      linkUrl: `/catalog/${user.email}`,
+      linkText: 'Перейти к профилю',
+      metadata: {
+        userId,
+      },
+    });
+    
     return { success: true };
   } catch (error) {
     console.error('Error approving profile draft:', error);
@@ -594,6 +607,19 @@ export async function rejectProfileDraft(userId: string, comment: string) {
     revalidatePath('/admin/moderation/profiles');
     revalidatePath('/admin/moderation/profiles/rejected');
     revalidatePath(`/admin/psychologists/${userId}/edit`);
+    
+    // Отправляем уведомление об отклонении профиля
+    await sendNotification(userId, {
+      type: NotificationType.PROFILE_REJECTED,
+      title: 'Профиль отправлен на доработку',
+      message: `Ваш профиль требует доработки. ${comment.trim()}`,
+      linkUrl: '/account/profile',
+      linkText: 'Перейти к профилю',
+      metadata: {
+        userId,
+        comment: comment.trim(),
+      },
+    });
     
     return { success: true };
   } catch (error) {

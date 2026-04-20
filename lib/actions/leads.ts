@@ -7,6 +7,7 @@ import { emailService } from "@/lib/email.service";
 import { revalidatePath } from "next/cache";
 import { LeadStatus, LeadResolution, NotificationType } from "@prisma/client";
 import { sendNotification } from "@/lib/notifications";
+import { SITE } from "@/lib/config";
 
 // ==================== ИНТЕРФЕЙСЫ ====================
 
@@ -538,18 +539,35 @@ export async function viewLead(leadId: string): Promise<{ success: boolean; erro
 async function sendLeadNotifications(lead: any) {
   const psychologist = lead.psychologist;
 
-  if (!psychologist) return;
+  if (!psychologist) {
+    console.error("[sendLeadNotifications] Psychologist not found in lead:", lead);
+    return;
+  }
 
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  if (!psychologist.id) {
+    console.error("[sendLeadNotifications] Psychologist ID is missing:", psychologist);
+    return;
+  }
 
-  await sendNotification(psychologist.id, {
-    type: NotificationType.LEAD,
-    title: "📬 Новая заявка от клиента",
-    message: "Клиент оставил заявку на консультацию. Пожалуйста, перейдите в личный кабинет и примите решение.",
-    linkUrl: `${baseUrl}/account/leads/${lead.id}`,
-    linkText: "Перейти к заявкам",
-    metadata: { leadId: lead.id },
-  });
+  // Используем SITE.baseUrl для консистентности с другими уведомлениями
+  const absoluteUrl = `${SITE.baseUrl}/account/leads/${lead.id}`;
+
+  console.log("[sendLeadNotifications] Sending notification to psychologist:", psychologist.id, "URL:", absoluteUrl);
+
+  try {
+    await sendNotification(psychologist.id, {
+      type: NotificationType.LEAD,
+      title: "📬 Новая заявка от клиента",
+      message: "Клиент оставил заявку на консультацию. Пожалуйста, перейдите в личный кабинет и примите решение.",
+      linkUrl: absoluteUrl,
+      linkText: "Перейти к заявкам",
+      metadata: { leadId: lead.id },
+    });
+    console.log("[sendLeadNotifications] Notification sent successfully");
+  } catch (error) {
+    console.error("[sendLeadNotifications] Error sending notification:", error);
+    throw error;
+  }
 }
 
 /**

@@ -3,7 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
-import { markdownToHtml } from "@/lib/markdownToHtml"; // ← импортируем
+import { markdownToHtml } from "@/lib/markdownToHtml";
+import { sendNotification } from "@/lib/notifications";
+import { NotificationType } from "@prisma/client";
 
 async function checkModerator() {
   const user = await getCurrentUser();
@@ -101,6 +103,21 @@ export async function approveArticle(articleId: string, htmlContent: string) {
 
     revalidatePath("/admin/moderation/articles");
     
+    // Отправляем уведомление автору о принятии статьи
+    if (article.userId) {
+      await sendNotification(article.userId, {
+        type: NotificationType.ARTICLE_APPROVED,
+        title: "Статья принята",
+        message: `Ваша статья "${article.title}" была принята модератором и опубликована.`,
+        linkUrl: `/articles/${article.slug}`,
+        linkText: "Читать статью",
+        metadata: {
+          articleId: article.id,
+          articleSlug: article.slug,
+        },
+      });
+    }
+    
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -137,6 +154,21 @@ export async function revisionArticle(articleId: string, comment: string) {
     });
 
     revalidatePath("/admin/moderation/articles");
+    
+    // Отправляем уведомление автору о необходимости доработки статьи
+    if (article.userId) {
+      await sendNotification(article.userId, {
+        type: NotificationType.ARTICLE_REVISION,
+        title: "Статья требует доработки",
+        message: `Ваша статья "${article.title}" требует доработки. Проверьте комментарии модератора.`,
+        linkUrl: "/account/articles",
+        linkText: "Перейти к статьям",
+        metadata: {
+          articleId: article.id,
+          comment: comment.trim(),
+        },
+      });
+    }
     
     return { success: true };
   } catch (error: any) {

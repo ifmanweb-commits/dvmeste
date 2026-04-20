@@ -3,7 +3,8 @@
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth/session"
 import { revalidatePath } from "next/cache"
-import { DialogStatus } from "@prisma/client"
+import { DialogStatus, NotificationType } from "@prisma/client"
+import { sendNotification } from "@/lib/notifications"
 
 const ARCHIVE_PAGE_SIZE = 20
 
@@ -312,6 +313,26 @@ export async function sendModerMessage(dialogId: string, text: string) {
 
     revalidatePath(`/admin/messages/${dialogId}`)
     revalidatePath("/admin/messages")
+
+    // Получаем userId для отправки уведомления
+    const dialog = await prisma.dialog.findUnique({
+      where: { id: dialogId },
+      select: { userId: true }
+    });
+
+    if (dialog) {
+      // Отправляем уведомление пользователю о новом сообщении от модератора
+      await sendNotification(dialog.userId, {
+        type: NotificationType.MODERATOR_MESSAGE,
+        title: "Новое сообщение от модератора",
+        message: "Вам пришло новое сообщение от модератора. Проверьте свой диалог.",
+        linkUrl: "/account/messages",
+        linkText: "Перейти к сообщениям",
+        metadata: {
+          dialogId,
+        },
+      });
+    }
 
     return { success: true }
   } catch (error) {

@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { generateAndSaveCertificate } from './actions/certificate-templates';
+import { sendNotification } from '@/lib/notifications';
+import { NotificationType } from '@prisma/client';
 
 /**
  * Проверяет, завершена ли сертификация после прохождения испытания.
@@ -116,6 +118,20 @@ export async function checkCertificationCompletion(
             certificationId: cert.id,
             userId,
             awardId: cert.awardId || undefined,
+          },
+        });
+
+        // Отправляем уведомление пользователю о завершении сертификации
+        await sendNotification(userId, {
+          type: NotificationType.CERTIFICATION_PASSED,
+          title: 'Сертификация пройдена!',
+          message: `Поздравляем! Вы успешно завершили сертификацию "${cert.title}".${cert.award?.type === 'CERTIFICATE' ? ' Сертификат доступен в вашем кабинете.' : ''}`,
+          linkUrl: '/account/certification',
+          linkText: 'Перейти к сертификации',
+          metadata: {
+            certificationId: cert.id,
+            certificationTitle: cert.title,
+            awardId: award.id,
           },
         });
 
