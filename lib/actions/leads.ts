@@ -5,7 +5,8 @@ import { hashEmail } from "@/lib/utils/hash-email";
 import { getClientIpFromRequest } from "@/lib/utils/get-client-ip";
 import { emailService } from "@/lib/email.service";
 import { revalidatePath } from "next/cache";
-import { LeadStatus, LeadResolution } from "@prisma/client";
+import { LeadStatus, LeadResolution, NotificationType } from "@prisma/client";
+import { sendNotification } from "@/lib/notifications";
 
 // ==================== ИНТЕРФЕЙСЫ ====================
 
@@ -532,56 +533,22 @@ export async function viewLead(leadId: string): Promise<{ success: boolean; erro
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 
 /**
- * Отправка уведомлений психологу о новой заявке
+ * Отправка уведомлений психологу о новой заявке через новую библиотеку
  */
 async function sendLeadNotifications(lead: any) {
   const psychologist = lead.psychologist;
 
   if (!psychologist) return;
 
-  // Email уведомление
-  if (psychologist.email && !psychologist.unsubscribed) {
-    await sendLeadEmailNotification(psychologist.email, lead);
-  }
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
-  // Push уведомление
-  await sendLeadPushNotification(psychologist.id, lead);
-
-  // Запись в таблицу уведомлений
-  await createLeadNotificationRecord(psychologist.id, lead.id);
-}
-
-/**
- * Отправка email уведомления о новой заявке
- */
-async function sendLeadEmailNotification(psychologistEmail: string, lead: any) {
-  const html = `
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>Новая заявка</title>
-  </head>
-  <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <h2 style="color: #5858E2; border-bottom: 2px solid #5858E2; padding-bottom: 10px;">Новая заявка от клиента</h2>
-    <p>Клиент оставил заявку на консультацию.</p>
-    <p>Пожалуйста, как можно скорее перейдите в личный кабинет и примите решение — берете вы эту заявку или нет.</p>
-    <p style="margin-top: 30px;">
-      <a href="${process.env.NEXTAUTH_URL || "http://localhost:3000"}/account/leads" 
-         style="background-color: #5858E2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
-        Перейти к заявкам
-      </a>
-    </p>
-    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-    <p style="color: #777; font-size: 14px;">Это письмо отправлено автоматически.</p>
-  </body>
-</html>
-  `;
-
-  await emailService.sendEmail({
-    to: psychologistEmail,
-    subject: "📬 Новая заявка от клиента",
-    html,
+  await sendNotification(psychologist.id, {
+    type: NotificationType.LEAD,
+    title: "📬 Новая заявка от клиента",
+    message: "Клиент оставил заявку на консультацию. Пожалуйста, перейдите в личный кабинет и примите решение.",
+    linkUrl: `${baseUrl}/account/leads/${lead.id}`,
+    linkText: "Перейти к заявкам",
+    metadata: { leadId: lead.id },
   });
 }
 
@@ -622,86 +589,6 @@ async function sendRejectionEmail(clientEmail: string, reason: string) {
     subject: "Ответ на вашу заявку",
     html,
   });
-}
-
-/**
- * Отправка push уведомления о новой заявке
- */
-async function sendLeadPushNotification(psychologistId: string, lead: any) {
-  try {
-    const webPush = await import("web-push");
-
-    const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
-    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-
-    if (!vapidPublicKey || !vapidPrivateKey) {
-      console.warn("VAPID keys not configured");
-      return;
-    }
-
-    webPush.setVapidDetails(
-      "mailto:admin@dvmeste.ru",
-      vapidPublicKey,
-      vapidPrivateKey
-    );
-
-    // Получаем подписки психолога
-    const subscriptions = await prisma.pushSubscription.findMany({
-      where: { userId: psychologistId },
-    });
-
-    const notificationPayload = JSON.stringify({
-      title: "📬 Новая заявка",
-      body: `Заявка от ${lead.client.name || "клиента"}`,
-      url: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/account/leads`,
-      icon: "/icon.png",
-    });
-
-    // Отправляем push каждой подписке
-    for (const subscription of subscriptions) {
-      try {
-        await webPush.sendNotification(
-          {
-            endpoint: subscription.endpoint,
-            keys: {
-              p256dh: subscription.p256dh,
-              auth: subscription.auth,
-            },
-          },
-          notificationPayload
-        );
-      } catch (error: any) {
-        // Если подписка недействительна — удаляем её
-        if (error.statusCode === 410) {
-          await prisma.pushSubscription.delete({
-            where: { endpoint: subscription.endpoint },
-          });
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Error sending push notification:", error);
-  }
-}
-
-/**
- * Создание записи уведомления в БД
- */
-async function createLeadNotificationRecord(psychologistId: string, leadId: string) {
-  try {
-    await prisma.notification.create({
-      data: {
-        userId: psychologistId,
-        type: "LEAD",
-        title: "Новая заявка",
-        message: "Клиент оставил заявку на консультацию",
-        linkUrl: `/account/leads/${leadId}`,
-        metadata: { leadId },
-      },
-    });
-  } catch (error) {
-    console.error("Error creating notification record:", error);
-  }
 }
 
 // ==================== ADMIN SERVER ACTIONS ====================
