@@ -62,6 +62,7 @@ export async function PUT(
     let name: string | undefined;
     let type: 'CERTIFICATE' | 'BADGE' | undefined;
     let awardText: string | null | undefined;
+    let explanationText: string | null | undefined;
     let isPublic: boolean | undefined;
     let certificateTemplateId: string | null | undefined;
     let badgeFile: File | null = null;
@@ -71,6 +72,7 @@ export async function PUT(
       name = formData.get('name') as string | undefined;
       type = formData.get('type') as 'CERTIFICATE' | 'BADGE' | undefined;
       awardText = formData.get('awardText') as string | null | undefined;
+      explanationText = formData.get('explanationText') as string | null | undefined;
       isPublic = formData.get('isPublic') === 'on';
       certificateTemplateId = formData.get('certificateTemplateId') as string | null | undefined;
       badgeFile = formData.get('badge') as File | null || null;
@@ -79,6 +81,7 @@ export async function PUT(
       name = body.name;
       type = body.type;
       awardText = body.awardText;
+      explanationText = body.explanationText;
       isPublic = body.isPublic;
       certificateTemplateId = body.certificateTemplateId;
     }
@@ -112,6 +115,7 @@ export async function PUT(
         ...(name !== undefined ? { name } : {}),
         ...(type !== undefined ? { type } : {}),
         ...(awardText !== undefined ? { awardText } : {}),
+        ...(explanationText !== undefined ? { explanationText } : {}),
         ...(isPublic !== undefined ? { isPublic } : {}),
         ...(certificateTemplateId !== undefined ? { certificateTemplateId } : {}),
         ...(badgeUrl !== undefined ? { badgeUrl } : {}),

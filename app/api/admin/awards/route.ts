@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
     let name: string = '';
     let type: 'CERTIFICATE' | 'BADGE' = 'CERTIFICATE';
     let awardText: string | null = null;
+    let explanationText: string | null = null;
     let isPublic: boolean = false;
     let certificateTemplateId: string | null = null;
     let badgeFile: File | null = null;
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
       name = formData.get('name') as string;
       type = (formData.get('type') as 'CERTIFICATE' | 'BADGE') || 'CERTIFICATE';
       awardText = formData.get('awardText') as string || null;
+      explanationText = formData.get('explanationText') as string || null;
       isPublic = formData.get('isPublic') === 'on';
       certificateTemplateId = formData.get('certificateTemplateId') as string || null;
       badgeFile = formData.get('badge') as File | null || null;
@@ -59,6 +61,7 @@ export async function POST(request: NextRequest) {
       name = body.name;
       type = body.type || 'CERTIFICATE';
       awardText = body.awardText || null;
+      explanationText = body.explanationText || null;
       isPublic = body.isPublic ?? false;
       certificateTemplateId = body.certificateTemplateId || null;
     }
@@ -90,6 +93,7 @@ export async function POST(request: NextRequest) {
         name,
         type,
         awardText,
+        explanationText,
         isPublic,
         certificateTemplateId: certificateTemplateId || undefined,
         badgeUrl,

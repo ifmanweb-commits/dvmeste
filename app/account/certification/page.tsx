@@ -3,8 +3,8 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Award, CheckCircle } from 'lucide-react';
-import Image from 'next/image';
 import CertificationHorNav from '@/components/account/CertificationHorNav';
+import { AwardsSection } from '@/components/account/AwardsSection';
 
 export default async function CertificationPage() {
   const user = await getCurrentUser();
@@ -36,6 +36,7 @@ export default async function CertificationPage() {
           type: true,
           badgeUrl: true,
           isPublic: true,
+          explanationText: true,
         },
       },
     },
@@ -46,7 +47,15 @@ export default async function CertificationPage() {
   const allUserAwards = await prisma.certificationAward.findMany({
     where: { userId: user.id },
     include: {
-      award: true,
+      award: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          badgeUrl: true,
+          explanationText: true,
+        },
+      },
       certification: true,
     },
     orderBy: { awardedAt: 'desc' },
@@ -74,6 +83,7 @@ export default async function CertificationPage() {
         badgeUrl: awardRecord.award?.badgeUrl || null,
         rewardType: awardRecord.award?.type || 'CERTIFICATE',
         hasCertification: !!cert,
+        explanationText: null,
       };
     }
     // Если нет certification - это награда без привязки (например, выданная через ключ)
@@ -86,6 +96,7 @@ export default async function CertificationPage() {
       badgeUrl: awardRecord.award?.badgeUrl || null,
       rewardType: awardRecord.award?.type || 'CERTIFICATE',
       hasCertification: false,
+      explanationText: awardRecord.award?.explanationText || null,
     };
   });
 
@@ -178,70 +189,11 @@ export default async function CertificationPage() {
 
         {/* РАЗДЕЛ 1 — Все полученные награды */}
         {allRewards.length > 0 && (
-          <section className="mb-10">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
-              Полученные награды
-            </h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {allRewards.map((reward) => {
-                const awardedYear = new Date(reward.awardedAt).getFullYear();
-                
-                // Определяем изображение для отображения
-                let imageUrl = '/images/icons/award-gold-500-tp.png';
-                let imageAlt = 'Награда получена';
-                let linkHref = reward.certificationId ? `/account/certification/${reward.certificationId}` : '#';
-                
-                if (reward.rewardType === 'BADGE' && reward.badgeUrl) {
-                  // Для ачивки используем badgeUrl
-                  imageUrl = reward.badgeUrl;
-                  imageAlt = `Ачивка: ${reward.title}`;
-                } else if (reward.rewardType === 'CERTIFICATE' && reward.certificationId) {
-                  // Для сертификата ищем сгенерированный сертификат
-                  const cert = certifications.find(c => c.id === reward.certificationId);
-                  if (cert?.certificateTemplateId) {
-                    const generatedCert = userCertificates.find(
-                      (gc) => gc.templateId === cert.certificateTemplateId
-                    );
-                    if (generatedCert && generatedCert.imageUrl) {
-                      imageUrl = generatedCert.imageUrl;
-                      imageAlt = `Сертификат: ${reward.title}`;
-                    }
-                  }
-                }
-                
-                return (
-                  <Link
-                    key={reward.id}
-                    href={linkHref}
-                    className="group relative overflow-hidden rounded-2xl border-2 border-[#5858E2]/20 bg-white p-6 shadow-sm transition-all hover:shadow-md hover:border-[#5858E2]/40"
-                  >
-                    {/* Бейдж с иконкой */}
-                    <div className="mb-2 flex justify-center">
-                      <div className="transition-transform group-hover:scale-105">
-                        <Image
-                          src={imageUrl}
-                          alt={imageAlt}
-                          width={200}
-                          height={200}
-                          className="h-56 w-56 object-contain"
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Год */}
-                    <p className="mb-1 text-center text-sm font-medium text-gray-500">
-                      {awardedYear}
-                    </p>
-                    
-                    {/* Название награды */}
-                    <h3 className="text-center text-base font-semibold text-gray-900 group-hover:text-[#5858E2]">
-                      {reward.title}
-                    </h3>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
+          <AwardsSection
+            awards={allRewards}
+            certifications={certifications}
+            userCertificates={userCertificates}
+          />
         )}
 
         {/* РАЗДЕЛ 2 — Доступные сертификации */}

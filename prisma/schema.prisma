@@ -681,6 +681,7 @@ model Award {
   badgeUrl              String?
   certificateTemplateId String?
   awardText             String?
+  explanationText       String?            @db.Text
   isPublic              Boolean            @default(false)
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt

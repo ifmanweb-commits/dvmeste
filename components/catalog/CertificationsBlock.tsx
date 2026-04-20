@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { AwardModal } from './AwardModal';
 
 interface CertificateTemplate {
   id: string;
@@ -19,6 +20,7 @@ interface Certification {
   awardedAt: string | null;
   verificationCode: string | null;
   certificateImageUrl: string | null;
+  explanationText: string | null;
 }
 
 interface CertificationsBlockProps {
@@ -29,6 +31,7 @@ export function CertificationsBlock({ psychologistSlug }: CertificationsBlockPro
   const [certifications, setCertifications] = useState<Certification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedAward, setSelectedAward] = useState<Certification | null>(null);
 
   useEffect(() => {
     const fetchCertifications = async () => {
@@ -51,6 +54,14 @@ export function CertificationsBlock({ psychologistSlug }: CertificationsBlockPro
       fetchCertifications();
     }
   }, [psychologistSlug]);
+
+  const handleAwardClick = (cert: Certification) => {
+    setSelectedAward(cert);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedAward(null);
+  };
 
   if (isLoading) {
     return (
@@ -117,15 +128,21 @@ export function CertificationsBlock({ psychologistSlug }: CertificationsBlockPro
                   <img
                     src={imageUrl}
                     alt={cert.title}
-                    className="h-24 w-auto object-contain rounded-lg bg-white"
+                    className="h-24 w-auto object-contain rounded-lg bg-white cursor-pointer"
                   />
                 </a>
               ) : (
-                <img
-                  src={imageUrl}
-                  alt={cert.title}
-                  className="h-24 w-auto object-contain rounded-lg bg-white"
-                />
+                <button
+                  onClick={() => handleAwardClick(cert)}
+                  className="block transition-opacity hover:opacity-80"
+                  title={`Награда: ${cert.title}`}
+                >
+                  <img
+                    src={imageUrl}
+                    alt={cert.title}
+                    className="h-24 w-auto object-contain rounded-lg bg-white cursor-pointer"
+                  />
+                </button>
               )}
               {/* Подпись с названием квалификации */}
               <span className="mt-1 text-xs text-gray-600 text-center max-w-[150px]">
@@ -135,6 +152,17 @@ export function CertificationsBlock({ psychologistSlug }: CertificationsBlockPro
           );
         })}
       </div>
+
+      {/* Модальное окно награды */}
+      {selectedAward && (
+        <AwardModal
+          isOpen={true}
+          onClose={handleCloseModal}
+          title={selectedAward.title}
+          imageUrl={getAwardImageUrl(selectedAward)}
+          explanationText={selectedAward.explanationText}
+        />
+      )}
     </div>
   );
 }
