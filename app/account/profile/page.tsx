@@ -47,7 +47,7 @@ export default async function ProfilePage({ searchParams }: PageProps) {
   const availableParadigms = (paradigmsData?.items as string[]) || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 sm:p-4 md:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl">
         {/* Заголовок страницы */}
         <div className="mb-8">

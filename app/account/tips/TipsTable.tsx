@@ -20,13 +20,13 @@ export default function TipsTable({ tips }: { tips: TipHistoryItem[] }) {
       <table className="w-full">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Дата
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Текст
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="hidden sm:table-cell px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
               Страница
             </th>
           </tr>
@@ -56,13 +56,13 @@ function TipRow({ tip }: { tip: TipHistoryItem }) {
 
   return (
     <tr className="hover:bg-gray-50 transition-colors">
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+      <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-600">
         {formatDate(tip.dismissedAt)}
       </td>
       <td className="px-6 py-4 text-sm text-gray-600 max-w-md">
         <ExpandableText text={tip.message} isLong={isLong} />
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-right">
+      <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap text-right">
         <Link
           href={tip.pageUrl}
           target="_blank"

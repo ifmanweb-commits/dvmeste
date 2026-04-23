@@ -299,14 +299,14 @@ export function ProfileFormContainer({
       <div>
         {/* Вкладка 1: Личные данные */}
         <div className={cn(activeTab !== 'basic' && "hidden")}>
-          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+          <div className="sm:rounded-2xl sm:border sm:border-gray-200 bg-white sm:shadow-sm overflow-hidden">
             {/* Заголовок вкладки */}
-            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-4 border-b border-gray-200">
+            <div className="bg-gradient-to-r from-indigo-50 to-blue-50 px-4 py-3 sm:px-6 sm:py-4 sm:border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">Личные данные</h2>
               <p className="text-sm text-gray-500 mt-1">Основная информация о вас для профиля</p>
             </div>
 
-            <div className="p-6">
+            <div className="px-4 py-4 sm:rounded-2xl sm:border sm:border-gray-200 sm:m-4 sm:mt-6 sm:p-6">
               <div className="space-y-8">
                 {/* Секция: ФИО */}
                 <div>
@@ -475,21 +475,21 @@ export function ProfileFormContainer({
         {/* Вкладка 2: Подробно */}
         <div className={cn(activeTab !== 'detailed' && "hidden")}>
           {isCandidate ? (
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="sm:rounded-2xl sm:border sm:border-gray-200 bg-white sm:shadow-sm px-4 py-4 sm:p-6">
               <LockedFeature 
                 title="Раздел закрыт" 
                 description="Раздел закрыт. Он доступен после прохождения любой сертификации, подтверждающей ваш уровень квалификации. Тогда вы можете размещать свою анкету в каталоге и пользоваться этим разделом." 
               />
             </div>
           ) : (
-            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+            <div className="sm:rounded-2xl sm:border sm:border-gray-200 bg-white sm:shadow-sm overflow-hidden">
               {/* Заголовок вкладки */}
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-4 py-3 sm:px-6 sm:py-4 sm:border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">Подробная информация</h2>
                 <p className="text-sm text-gray-500 mt-1">Данные для расширенного профиля психолога</p>
               </div>
 
-              <div className="p-6">
+              <div className="px-4 py-4 sm:rounded-2xl sm:border sm:border-gray-200 sm:m-4 sm:mt-6 sm:p-6">
                 <div className="space-y-6">
                   {/* Индикатор статуса черновика */}
                   {(user as any).draftStatus === 'PENDING' && (
@@ -570,11 +570,11 @@ export function ProfileFormContainer({
                 </div>
 
                 {/* Кнопка сохранения */}
-                <div className="mt-8 pt-6 border-t border-gray-100 flex justify-end">
+                <div className="mt-6 pt-4 sm:mt-8 sm:pt-6 border-t border-gray-100 flex justify-end">
                   <button 
                     onClick={handleSaveDetailed} 
                     disabled={loading} 
-                    className="bg-[#5858E2] text-white px-8 py-2.5 rounded-lg hover:bg-[#4a4ac9] transition-colors font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-[#5858E2] text-white px-6 py-2.5 sm:px-8 rounded-lg hover:bg-[#4a4ac9] transition-colors font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                   >
                     {loading ? "Сохранение..." : (user as any).draftStatus === 'PENDING' ? "Обновить черновик" : "Сохранить черновик"}
                   </button>
@@ -587,21 +587,21 @@ export function ProfileFormContainer({
         {/* Вкладка 3: Фотографии */}
         <div className={cn(activeTab !== 'photos' && "hidden")}>
           {isCandidate ? (
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="sm:rounded-2xl sm:border sm:border-gray-200 bg-white sm:shadow-sm px-4 py-4 sm:p-6">
               <LockedFeature 
                 title="Загрузка фото недоступна" 
                 description="Раздел закрыт. Он доступен после прохождения любой сертификации, подтверждающей ваш уровень квалификации. Тогда вы можете размещать свою анкету в каталоге и пользоваться этим разделом." 
               />
             </div>
           ) : (
-            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+            <div className="sm:rounded-2xl sm:border sm:border-gray-200 bg-white sm:shadow-sm overflow-hidden">
               {/* Заголовок вкладки */}
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-4 border-b border-gray-200">
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 sm:px-6 sm:py-4 sm:border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">Фотографии</h2>
                 <p className="text-sm text-gray-500 mt-1">Добавьте до 5 фотографий вашего профиля</p>
               </div>
 
-              <div className="p-6">
+              <div className="px-4 py-4 sm:rounded-2xl sm:border sm:border-gray-200 sm:m-4 sm:mt-6 sm:p-6">
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     {photos.map(photo => (
@@ -673,14 +673,14 @@ export function ProfileFormContainer({
         {/* Вкладка 4: Документы */}
         <div className={cn(activeTab !== 'docs' && "hidden")}>
           {isCandidate ? (
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="sm:rounded-2xl sm:border sm:border-gray-200 bg-white sm:shadow-sm px-4 py-4 sm:p-6">
               <LockedFeature 
                 title="Документы недоступны" 
                 description="Раздел закрыт. Он доступен после прохождения любой сертификации, подтверждающей ваш уровень квалификации. Тогда вы можете размещать свою анкету в каталоге и пользоваться этим разделом." 
               />
             </div>
           ) : (
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="sm:rounded-2xl sm:border sm:border-gray-200 bg-white sm:shadow-sm px-4 py-4 sm:p-6">
               <DocumentsTab 
                 documents={user.documents}
                 loading={loading}

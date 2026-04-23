@@ -17,7 +17,7 @@ const navItems: { id: ActiveTab; label: string; href: string; icon: React.Elemen
 export default function ProfileNav({ activeTab }: ProfileNavProps) {
   return (
     <nav className="mb-8 border-b border-gray-200">
-      <ul className="flex gap-6">
+      <ul className="flex flex-wrap gap-4 sm:gap-6">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;

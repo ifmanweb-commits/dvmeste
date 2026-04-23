@@ -78,7 +78,8 @@ export default function AcArticleTable({ articles }: { articles: Article[] }) {
         </div>
       )}
 
-      <table className="w-full text-left border-collapse bg-white">
+      {/* Десктопная таблица */}
+      <table className="hidden sm:table w-full text-left border-collapse bg-white">
         <thead>
           <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[11px] font-semibold tracking-wide">
             <th className="px-4 sm:px-6 py-3">Статус / Дата</th>
@@ -146,6 +147,54 @@ export default function AcArticleTable({ articles }: { articles: Article[] }) {
           ))}
         </tbody>
       </table>
+
+      {/* Мобильные карточки */}
+      <div className="sm:hidden divide-y divide-slate-100">
+        {articles.map((article) => (
+          <div key={article.id} className="p-4 bg-white">
+            {/* Статус */}
+            <div className="mb-3">
+              {article.moderationStatus === 'REVISION' && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-bold uppercase">
+                  <AlertCircle size={14}/> Нужны правки
+                </span>
+              )}
+              {article.moderationStatus === 'DRAFT' && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-500 text-xs font-bold uppercase">
+                  <FileText size={14}/> Черновик
+                </span>
+              )}
+              {article.moderationStatus === 'PENDING' && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold uppercase">
+                  <Clock size={14}/> На проверке
+                </span>
+              )}
+            </div>
+
+            {/* Название */}
+            <h3 className="text-base font-bold text-slate-800 leading-snug mb-2">
+              {article.title || "Новая статья без заголовка"}
+            </h3>
+
+            {/* Комментарий модератора */}
+            {article.moderationStatus === 'REVISION' && article.moderatorComment && (
+              <div className="mb-3 text-sm text-red-600 bg-red-50 p-3 rounded-lg border-l-2 border-red-400 italic">
+                <span className="font-semibold not-italic">Замечание:</span> {article.moderatorComment}
+              </div>
+            )}
+
+            {/* Дата и доступ */}
+            <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+              <span>
+                {new Date(article.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </span>
+              <span className={article.moderationStatus === 'PENDING' ? 'text-amber-600' : 'text-slate-500'}>
+                {article.moderationStatus === 'PENDING' ? 'Только чтение' : 'Полный доступ'}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

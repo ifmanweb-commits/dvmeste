@@ -29,7 +29,7 @@ export default async function PushPage() {
 
         {/* Горизонтальное меню */}
         <nav className="mb-6 border-b border-gray-200">
-          <ul className="flex gap-6">
+          <ul className="flex flex-wrap gap-4 sm:gap-6">
             <li>
               <Link
                 href="/account/notifications"
@@ -45,7 +45,7 @@ export default async function PushPage() {
                 className="inline-flex items-center gap-2 border-b-2 border-[#5858E2] pb-3 text-sm font-medium text-[#5858E2]"
               >
                 <Monitor className="h-4 w-4" />
-                В браузере
+                В&nbsp;браузере
               </Link>
             </li>
             <li>
