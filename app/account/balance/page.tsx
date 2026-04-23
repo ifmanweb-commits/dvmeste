@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Wallet, X } from 'lucide-react';
+import { DepositModal } from '@/components/account/DepositModal';
 
 interface Transaction {
   id: string;
@@ -45,6 +46,7 @@ export default function BalancePage() {
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -218,40 +220,46 @@ export default function BalancePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-8">
+    <div className="min-h-screen bg-gray-50 p-2 md:p-6 lg:p-8">
+      <div className="w-full max-w-7xl md:mx-auto">
+        <header className="mb-6 md:mb-8">
           <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
             Мой счёт
           </h1>
         </header>
 
-        <section className="mb-10">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+        <section className="mb-4 md:mb-6">
+          <h2 className="mb-3 md:mb-4 text-lg font-semibold text-gray-900">
             Баланс
           </h2>
         
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm mb-6">
-            <div className="flex items-center justify-between">
+          <div className="rounded-2xl border border-gray-200 bg-white p-3 md:p-5 shadow-sm mb-4 md:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <p className="text-sm font-medium text-gray-600 mb-1">
                   Текущий баланс
                 </p>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="text-2xl md:text-3xl font-bold text-gray-900">
                   {formatAmount(balance)}
                 </p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  onClick={() => setIsDepositModalOpen(true)}
+                  className="flex-1 sm:flex-none px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+                >
+                  Пополнить
+                </button>
                 {isSupervisor && (
                   <button
                     onClick={() => setIsModalOpen(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
                   >
-                    Вывести деньги
+                    Вывести
                   </button>
                 )}
-                <div className="rounded-full bg-green-100 p-4">
-                  <Wallet className="h-8 w-8 text-green-600" />
+                <div className="rounded-full bg-green-100 p-3 flex-shrink-0">
+                  <Wallet className="h-6 w-6 md:h-8 md:w-8 text-green-600" />
                 </div>
               </div>
             </div>
@@ -260,11 +268,11 @@ export default function BalancePage() {
 
         {/* Заявки на вывод - только для супервизоров и только если есть необработанные заявки */}
         {isSupervisor && withdrawalRequests.some(r => r.status === 'PENDING') && (
-          <section className="mb-10">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+          <section className="mb-4 md:mb-6">
+            <h2 className="mb-3 md:mb-4 text-lg font-semibold text-gray-900">
               Заявки на вывод
             </h2>
-            <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="rounded-2xl border border-gray-200 bg-white p-3 md:p-5 shadow-sm">
               <div className="space-y-3">
                 {withdrawalRequests
                   .filter(r => r.status === 'PENDING')
@@ -272,17 +280,17 @@ export default function BalancePage() {
                   .map((request) => (
                     <div
                       key={request.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 md:p-4 bg-gray-50 rounded-lg"
                     >
                       <div>
                         <p className="font-medium text-gray-900">
                           {formatAmount(request.amount)}
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs md:text-sm text-gray-500">
                           {formatDate(request.createdAt)}
                         </p>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(request.status)}`}>
+                      <span className={`px-3 py-1 rounded-full text-xs md:text-sm font-medium ${getStatusColor(request.status)}`}>
                         {getStatusLabel(request.status)}
                       </span>
                     </div>
@@ -292,12 +300,12 @@ export default function BalancePage() {
           </section>
         )}
 
-        <section className="mb-10">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">
+        <section className="mb-4 md:mb-6">
+          <h2 className="mb-3 md:mb-4 text-lg font-semibold text-gray-900">
             История операций
           </h2>
         
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-gray-200 bg-white p-3 md:p-5 shadow-sm">
 
           {error && (
             <div className="p-6">
@@ -317,7 +325,38 @@ export default function BalancePage() {
 
           {!error && transactions.length > 0 && (
             <>
-              <div className="overflow-x-auto">
+              {/* Мобильный вид - карточки */}
+              <div className="md:hidden space-y-2">
+                {transactions.map((transaction) => (
+                  <div
+                    key={transaction.id}
+                    className="p-3 bg-gray-50 rounded-lg border border-gray-100"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${getTypeColor(transaction.type)} bg-opacity-10`}>
+                        {getTypeLabel(transaction.type)}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(transaction.createdAt).toLocaleDateString('ru-RU')}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2 truncate">
+                      {transaction.description}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm font-medium ${getTypeColor(transaction.type)}`}>
+                        {getAmountSign(transaction.type)}{formatAmount(Math.abs(transaction.amount))}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        Баланс: {formatAmount(transaction.balanceAfter)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Десктопный вид - таблица */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
@@ -369,11 +408,11 @@ export default function BalancePage() {
               </div>
 
               {/* Пагинация */}
-              <div className="flex items-center justify-between border-t border-gray-200 px-6 py-4">
+              <div className="flex flex-col sm:flex-row items-center gap-3 border-t border-gray-200 pt-4 mt-4">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   ← Назад
                 </button>
@@ -383,7 +422,7 @@ export default function BalancePage() {
                 <button
                   onClick={() => setPage((p) => p + 1)}
                   disabled={!transactions.some((_, i) => i >= limit - 1)}
-                  className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Вперёд →
                 </button>
@@ -394,14 +433,21 @@ export default function BalancePage() {
         </section>
       </div>
 
+      {/* Модальное окно для пополнения */}
+      <DepositModal
+        isOpen={isDepositModalOpen}
+        onClose={() => setIsDepositModalOpen(false)}
+        minAmount={100}
+      />
+
       {/* Модальное окно для вывода средств */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div 
-            className="absolute inset-0 bg-black bg-opacity-50"
+            className="absolute inset-0 backdrop-blur-sm bg-black/30"
             onClick={() => setIsModalOpen(false)}
           />
-          <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
+          <div className="relative bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 border border-white/20">
             <button
               onClick={() => setIsModalOpen(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"

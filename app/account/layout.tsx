@@ -34,7 +34,7 @@ export default async function AccountLayout({
       <AccountHeader user={user} />
       
       {/* Grid layout для десктопа */}
-      <div className="grid grid-cols-[256px_1fr] min-h-screen">
+      <div className="grid grid-cols-1 md:grid-cols-[256px_1fr] min-h-screen">
         {/* Боковая панель - скрыта на мобильном, видна на md+ */}
         <aside className="hidden md:block border-r border-gray-200 bg-white">
           <AccountNav user={{ ...user, balance }} menuItems={menuItems} />
