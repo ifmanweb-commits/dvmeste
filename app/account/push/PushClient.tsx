@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { subscribePush, unsubscribeAllPush } from "@/lib/actions/push"
 import { Instructions } from "./Instructions"
 import { ActiveSubscriptions } from "./ActiveSubscriptions"
-import { Bell, BellOff, Loader2, AlertCircle } from "lucide-react"
+import { Bell, BellOff, Loader2, AlertCircle, Send } from "lucide-react"
 
 interface PushSubscription {
   id: string
@@ -156,6 +156,25 @@ export function PushClient({ initialSubscribed, initialSubscriptions }: PushClie
     }
   }, [])
 
+  const [testLoading, setTestLoading] = useState(false)
+  const [testResult, setTestResult] = useState<{ success: boolean; message?: string; error?: string } | null>(null)
+
+  const handleSendTestNotification = useCallback(async () => {
+    setTestLoading(true)
+    setTestResult(null)
+
+    try {
+      const res = await fetch("/api/push/test", { method: "POST" })
+      const data = await res.json()
+      setTestResult(data)
+    } catch (err) {
+      console.error("Error sending test notification:", err)
+      setTestResult({ success: false, error: "Ошибка при отправке тестового уведомления" })
+    } finally {
+      setTestLoading(false)
+    }
+  }, [])
+
   // Показываем лоадер до монтирования (гидратация)
   if (!isMounted) {
     return (
@@ -259,6 +278,41 @@ export function PushClient({ initialSubscribed, initialSubscriptions }: PushClie
             : "Включите уведомления, чтобы не пропустить важные события"}
         </p>
       </div>
+
+      {/* Кнопка тестового уведомления */}
+      {subscribed && (
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Тестирование
+          </h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Нажмите кнопку ниже, чтобы отправить тестовое push-уведомление на все ваши устройства.
+          </p>
+          <button
+            onClick={handleSendTestNotification}
+            disabled={testLoading}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#5858E2] hover:bg-[#4a4ac4] text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {testLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+            {testLoading ? "Отправка..." : "Отправить тестовое уведомление"}
+          </button>
+          {testResult && (
+            <div className={`mt-4 p-3 rounded-lg text-sm ${
+              testResult.success 
+                ? "bg-green-50 text-green-700 border border-green-200" 
+                : "bg-red-50 text-red-700 border border-red-200"
+            }`}>
+              {testResult.success 
+                ? `✅ ${testResult.message}` 
+                : `❌ ${testResult.error || "Ошибка"}`}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Список активных подписок */}
       <ActiveSubscriptions subscriptions={subscriptions} />

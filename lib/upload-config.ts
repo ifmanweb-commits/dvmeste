@@ -19,7 +19,7 @@ export const UPLOAD_POLICIES: Record<UploadScope, ScopeConfig> = {
       'image/webp', 
       'application/pdf'
     ],
-    maxSizeMb: 10,
+    maxSizeMb: 5,
   },
   pages: {
     allowedMimeTypes: [
@@ -28,7 +28,7 @@ export const UPLOAD_POLICIES: Record<UploadScope, ScopeConfig> = {
       'image/webp', 
       'application/pdf'
     ],
-    maxSizeMb: 10,
+    maxSizeMb: 5,
   },
   articles: {
     allowedMimeTypes: [
@@ -37,6 +37,6 @@ export const UPLOAD_POLICIES: Record<UploadScope, ScopeConfig> = {
       'image/webp', 
       'application/pdf'
     ],
-    maxSizeMb: 10,
+    maxSizeMb: 5,
   },
 };

@@ -78,4 +78,29 @@ body {
       transform: translateX(0);
     }
   }
+  
+  @keyframes bounce-attention {
+    0%, 100% {
+      transform: translateY(0) scale(1);
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateY(0) scale(1);
+    }
+    20% {
+      transform: translateY(-12px) scale(1.02);
+    }
+    40% {
+      transform: translateY(-8px) scale(1);
+    }
+    60% {
+      transform: translateY(-6px) scale(1.01);
+    }
+    80% {
+      transform: translateY(-3px) scale(1);
+    }
+  }
+}
+
+.animate-bounce-attention {
+  animation: bounce-attention 1.5s ease-in-out infinite;
 }

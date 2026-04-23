@@ -6,7 +6,7 @@ typescript:{
 },
   experimental: {
     serverActions: {
-      bodySizeLimit: "100mb",
+      bodySizeLimit: "40mb",
     },
   },
 

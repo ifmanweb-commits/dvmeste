@@ -86,10 +86,13 @@ export default function DashboardClient({
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Заявки</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link href="/account/leads" className="p-4 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-100 transition-colors">
-              <p className="text-sm text-indigo-600 mb-1">Всего заявок</p>
-              <p className="text-3xl font-bold text-indigo-900">{totalLeadsCount}</p>
-            </Link>
+            {/* Новые заявки - первым блоком (если есть) */}
+            {newLeadsCount > 0 && (
+              <Link href="/account/leads" className="p-4 bg-amber-50 rounded-lg border border-amber-100 hover:bg-amber-100 transition-colors animate-bounce-attention">
+                <p className="text-sm text-amber-600 mb-1">Новые заявки</p>
+                <p className="text-3xl font-bold text-amber-900">{newLeadsCount}</p>
+              </Link>
+            )}
             <Link href="/account/leads" className="p-4 bg-green-50 rounded-lg border border-green-100 hover:bg-green-100 transition-colors">
               <p className="text-sm text-green-600 mb-1">Активные</p>
               <p className="text-3xl font-bold text-green-900">{acceptedLeadsCount}</p>
@@ -98,12 +101,11 @@ export default function DashboardClient({
               <p className="text-sm text-blue-600 mb-1">Было принято</p>
               <p className="text-3xl font-bold text-blue-900">{totalAcceptedLeadsCount}</p>
             </Link>
-            {newLeadsCount > 0 && (
-              <Link href="/account/leads" className="p-4 bg-amber-50 rounded-lg border border-amber-100 hover:bg-amber-100 transition-colors">
-                <p className="text-sm text-amber-600 mb-1">Новые заявки</p>
-                <p className="text-3xl font-bold text-amber-900">{newLeadsCount}</p>
-              </Link>
-            )}
+            {/* Всего заявок - последним блоком */}
+            <Link href="/account/leads" className="p-4 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-100 transition-colors">
+              <p className="text-sm text-indigo-600 mb-1">Всего заявок</p>
+              <p className="text-3xl font-bold text-indigo-900">{totalLeadsCount}</p>
+            </Link>
           </div>
         </div>
 

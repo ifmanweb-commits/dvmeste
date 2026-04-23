@@ -179,7 +179,7 @@ async function sendPushNotification(userId: string, data: NotificationData, abso
       title: data.title,
       body: data.message,
       url: absoluteUrl || data.linkUrl || `${SITE.baseUrl}/account/notifications`,
-      icon: "/icon.png",
+      icon: "/logo.png",
     })
 
     let sentCount = 0
