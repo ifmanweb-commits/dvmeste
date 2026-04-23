@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     const email = searchParams.get('email')
     
     if (!token || !email) {
-      return NextResponse.redirect(new URL('/client/auth/login?error=invalid', req.url))
+      return NextResponse.redirect(new URL('/auth/login?error=invalid', req.url))
     }
 
     const normalizedEmail = email.toLowerCase().trim()
@@ -44,7 +44,7 @@ export async function GET(req: Request) {
       })
       
       return NextResponse.redirect(
-        new URL('/client/auth/login?error=expired', req.url)
+        new URL('/auth/login?error=expired', req.url)
       )
     }
     
@@ -70,7 +70,7 @@ export async function GET(req: Request) {
       })
       
       return NextResponse.redirect(
-        new URL('/client/auth/login?error=client_not_found', req.url)
+        new URL('/auth/login?error=client_not_found', req.url)
       )
     }
     
@@ -119,7 +119,7 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error('Client verify error:', error)
     return NextResponse.redirect(
-      new URL('/client/auth/login?error=server_error', req.url)
+      new URL('/auth/login?error=server_error', req.url)
     )
   }
 }

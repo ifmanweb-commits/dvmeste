@@ -28,7 +28,7 @@ export default function ClientLeadsPage() {
         const res = await fetch('/api/client/account/leads')
         if (!res.ok) {
           if (res.status === 401) {
-            router.push('/client/auth/login')
+            router.push('/auth/login')
             return
           }
           throw new Error('Ошибка загрузки')

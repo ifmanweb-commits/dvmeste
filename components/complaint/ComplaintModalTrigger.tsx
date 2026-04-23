@@ -273,7 +273,7 @@ export function ComplaintModalTrigger({
                   Для отправки жалобы необходимо войти в личный кабинет клиента
                 </p>
                 <a
-                  href="/client/auth/login"
+                  href="/auth/login"
                   className="inline-block bg-[#5858E2] text-white py-2 px-6 rounded-lg hover:bg-[#4d4dd0] transition-colors"
                 >
                   Войти / Зарегистрироваться

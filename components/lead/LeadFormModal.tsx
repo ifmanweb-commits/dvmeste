@@ -1,4 +1,3 @@
-"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -128,7 +127,7 @@ export default function LeadFormModal({
       const openTime = localStorage.getItem("leadFormOpenTime");
       const formOpenTimeValue = openTime ? parseInt(openTime, 10) : null;
 
-      const response = await fetch("/api/client/account/leads", {
+      const response = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -255,7 +254,7 @@ export default function LeadFormModal({
                   Для отправки заявки необходимо войти в личный кабинет клиента
                 </p>
                 <Link
-                  href="/client/auth/login"
+                  href="/auth/login"
                   className="inline-block bg-[#5858E2] text-white py-2 px-6 rounded-lg hover:bg-[#4d4dd0] transition-colors"
                 >
                   Войти / Зарегистрироваться

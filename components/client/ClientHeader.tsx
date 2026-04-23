@@ -30,7 +30,7 @@ export function ClientHeader({ className }: ClientHeaderProps) {
         const res = await fetch('/api/client/account/me')
         if (!res.ok) {
           if (res.status === 401) {
-            router.push('/client/auth/login')
+router.push('/auth/login')
             return
           }
           throw new Error('Ошибка загрузки')
@@ -50,7 +50,7 @@ export function ClientHeader({ className }: ClientHeaderProps) {
   const handleLogout = async () => {
     setIsLoggingOut(true)
     try {
-      await fetch('/api/client/auth/logout', { method: 'POST' })
+      await fetch('/api/auth/logout', { method: 'POST' })
       router.push('/catalog')
     } catch (error) {
       console.error('Logout error:', error)

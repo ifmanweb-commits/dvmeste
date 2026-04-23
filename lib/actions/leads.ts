@@ -68,6 +68,13 @@ export interface ClientWithComplaintCount {
   complaintCount: number;
 }
 
+// Интерфейс для создания заявки от авторизованного клиента
+export interface CreateLeadForAuthenticatedClientInput {
+  psychologistId: string;
+  clientId: string;
+  message: string;
+}
+
 // ==================== SERVER ACTIONS ====================
 
 /**
@@ -185,6 +192,92 @@ export async function createLead(
     return { success: true, leadId: lead.id, clientId: client.id };
   } catch (error) {
     console.error("Error creating lead:", error);
+    return { success: false, error: "Ошибка при создании заявки" };
+  }
+}
+
+/**
+ * Создание заявки от авторизованного клиента
+ * Использует готовый clientId из сессии, проверяет shadow ban и complaintCount
+ */
+export async function createLeadForAuthenticatedClient(
+  data: CreateLeadForAuthenticatedClientInput,
+  request: Request
+): Promise<{ success: boolean; leadId?: string; clientId?: string; error?: string }> {
+  try {
+    // 1. Получение клиента по ID
+    const client = await prisma.client.findUnique({
+      where: { id: data.clientId },
+    });
+
+    if (!client) {
+      return { success: false, error: "Клиент не найден" };
+    }
+
+    // 2. Получение IP адреса
+    const ipAddress = getClientIpFromRequest(request);
+
+    // 3. Проверка лимита заявок (не больше 5 за последний час с этого email + IP)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+    const recentLeadsCount = await prisma.lead.count({
+      where: {
+        client: {
+          emailHash: client.emailHash,
+        },
+        createdAt: {
+          gte: oneHourAgo,
+        },
+      },
+    });
+
+    if (recentLeadsCount >= 5) {
+      return {
+        success: false,
+        error: "Слишком много заявок. Попробуйте позже",
+      };
+    }
+
+    // 4. Проверка на shadow ban и suspicious статус
+    let isSuspicious = false;
+    let suspiciousReason: string | null = null;
+
+    if (client.isShadowBanned) {
+      isSuspicious = true;
+      suspiciousReason = "Клиент в shadow ban";
+    } else if (client.complaintCount >= 3) {
+      isSuspicious = true;
+      suspiciousReason = `Много жалоб (${client.complaintCount})`;
+    }
+
+    // 5. Создание заявки
+    const lead = await prisma.lead.create({
+      data: {
+        clientId: client.id,
+        psychologistId: data.psychologistId,
+        message: data.message,
+        status: LeadStatus.NEW,
+        isSuspicious,
+        suspiciousReason,
+        ipAddress,
+      },
+      include: {
+        client: true,
+        psychologist: true,
+      },
+    });
+
+    // 6. Отправка уведомлений психологу
+    try {
+      await sendLeadNotifications(lead);
+    } catch (notifyError) {
+      console.error("Error sending notifications:", notifyError);
+      // Не блокируем создание заявки при ошибке уведомления
+    }
+
+    return { success: true, leadId: lead.id, clientId: client.id };
+  } catch (error) {
+    console.error("Error creating lead for authenticated client:", error);
     return { success: false, error: "Ошибка при создании заявки" };
   }
 }
@@ -550,7 +643,7 @@ async function sendLeadNotifications(lead: any) {
   }
 
   // Используем SITE.baseUrl для консистентности с другими уведомлениями
-  const absoluteUrl = `${SITE.baseUrl}/account/leads/${lead.id}`;
+  const absoluteUrl = `${SITE.baseUrl}/account/leads`;
 
   console.log("[sendLeadNotifications] Sending notification to psychologist:", psychologist.id, "URL:", absoluteUrl);
 

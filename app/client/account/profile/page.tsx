@@ -32,8 +32,8 @@ export default function ClientProfilePage() {
       try {
         const res = await fetch('/api/client/account/me')
         if (!res.ok) {
-          if (res.status === 401) {
-            router.push('/client/auth/login')
+if (res.status === 401) {
+            router.push('/auth/login')
             return
           }
           throw new Error('Ошибка загрузки')
