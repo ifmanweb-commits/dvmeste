@@ -26,9 +26,6 @@ COPY . .
 # Генерируем Prisma Client
 RUN npx prisma generate
 
-# Создаем папку для загрузок с правильными правами
-RUN mkdir -p /app/uploads && chown -R node:node /app/uploads
-
 # Собираем приложение
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
@@ -56,12 +53,26 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Создаем папки для загрузок и выдаем права приложению
-RUN mkdir -p /app/uploads /app/public/uploads /app/public/articles/files /app/public/pages/files \
-  && chown -R nextjs:nodejs /app/uploads /app/public/uploads /app/public/articles /app/public/pages
+# Создаем папки для данных и выдаем права приложению
+# Эти папки монтируются как volumes для сохранения данных при перезапуске
+RUN mkdir -p /app/public/articles/files \
+  /app/public/pages/files \
+  /app/public/certificates \
+  /app/public/files/articles \
+  /app/public/files/pages \
+  /app/public/files/secret-pages \
+  /app/public/files/users \
+  /app/public/images/certificates-tmpl \
+  /app/public/images/certification-badges \
+  /app/public/images/edu-icons \
+  /app/public/images/icons \
+  /app/backups \
+  && chown -R nextjs:nodejs /app/public/files \
+  /app/public/images \
+  /app/backups
 
 # Указываем постоянные директории как volume
-VOLUME ["/app/uploads", "/app/public/uploads", "/app/public/articles/files", "/app/public/pages/files"]
+VOLUME ["/app/public/articles/files", "/app/public/pages/files", "/app/public/certificates", "/app/public/files/articles", "/app/public/files/pages", "/app/public/files/secret-pages", "/app/public/files/users", "/app/public/images/certificates-tmpl", "/app/public/images/certification-badges", "/app/public/images/edu-icons", "/app/public/images/icons", "/app/backups"]
 
 USER nextjs
 
@@ -69,6 +80,5 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-ENV UPLOAD_DIR="/app/uploads"
 
 CMD ["node", "server.js"]

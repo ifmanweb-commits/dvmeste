@@ -9,7 +9,6 @@ export const RESERVED_SLUGS = [
   // Публичные разделы
   'catalog',
   'articles',
-  'uploads',
   
   // Системные страницы
   'login',

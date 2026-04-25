@@ -1,48 +1,71 @@
 version: '3.8'
 
 services:
+  # PostgreSQL - база данных
   postgres:
     image: postgres:15-alpine
-    container_name: psychologist-db
+    container_name: dvmeste-db
     environment:
-      POSTGRES_USER: ${DB_USER:-psychologist}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-psychologist_password}
-      POSTGRES_DB: ${DB_NAME:-psychologist_db}
+      POSTGRES_USER: ${DB_USER:-dvmeste}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-dvmeste_password}
+      POSTGRES_DB: ${DB_NAME:-dvmeste_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     restart: unless-stopped
+    networks:
+      - dvmeste-network
 
+  # Maildev - тестовый SMTP сервер для локальной разработки
   maildev:
     image: maildev/maildev
-    container_name: maildev
+    container_name: dvmeste-maildev
     ports:
       - "1080:1080"  # Web интерфейс
       - "1025:1025"  # SMTP порт
     restart: unless-stopped
+    networks:
+      - dvmeste-network
 
+  # Приложение Next.js
   app:
     build: .
-    container_name: psychologist-app
+    container_name: dvmeste-app
     ports:
       - "${APP_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL_DOCKER:-postgresql://psychologist:psychologist_password@postgres:5432/psychologist_db}
-      UPLOAD_DIR: /app/uploads
+      DATABASE_URL: ${DATABASE_URL_DOCKER:-postgresql://dvmeste:dvmeste_password@postgres:5432/dvmeste_db}
+      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
+      # Админка
+      ADMIN_LOGIN: ${ADMIN_LOGIN:-Gasan123}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-1111}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-change-in-production}
     volumes:
-      - uploads_volume:/app/uploads
-      - public_uploads_volume:/app/public/uploads
-      - articles_files_volume:/app/public/articles/files
-      - pages_files_volume:/app/public/pages/files
+      # Пользовательские файлы (сохраняются при перезапуске)
+      - ./public/articles/files:/app/public/articles/files
+      - ./public/pages/files:/app/public/pages/files
+      - ./public/certificates:/app/public/certificates
+      - ./public/files/articles:/app/public/files/articles
+      - ./public/files/pages:/app/public/files/pages
+      - ./public/files/secret-pages:/app/public/files/secret-pages
+      - ./public/files/users:/app/public/files/users
+      - ./public/images/certificates-tmpl:/app/public/images/certificates-tmpl
+      - ./public/images/certification-badges:/app/public/images/certification-badges
+      - ./public/images/edu-icons:/app/public/images/edu-icons
+      - ./public/images/icons:/app/public/images/icons
+      # Бекапы БД
+      - ./backups:/app/backups
     depends_on:
       - postgres
     restart: unless-stopped
+    networks:
+      - dvmeste-network
 
 volumes:
   postgres_data:
-  uploads_volume:
-  public_uploads_volume:
-  articles_files_volume:
-  pages_files_volume:
+
+networks:
+  dvmeste-network:
+    driver: bridge

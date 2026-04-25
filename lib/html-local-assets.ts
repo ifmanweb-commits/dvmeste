@@ -1,14 +1,10 @@
-const LOCAL_ASSET_PREFIXES = ["/uploads/", "/api/uploads/", "/pages/files/", "/articles/files/"] as const;
+const LOCAL_ASSET_PREFIXES = ["/pages/files/", "/articles/files/"] as const;
 
 function normalizeLocalAssetPath(rawPath: string): string | null {
   const value = rawPath.trim();
   if (!value) return null;
 
   const pathWithSlash = value.startsWith("/") ? value : `/${value}`;
-
-  if (pathWithSlash.startsWith("/api/uploads/")) {
-    return pathWithSlash.replace(/^\/api\/uploads\//, "/uploads/");
-  }
 
   if (LOCAL_ASSET_PREFIXES.some((prefix) => pathWithSlash.startsWith(prefix))) {
     return pathWithSlash;

@@ -285,11 +285,11 @@ export async function deletePage(id: string): Promise<ActionResult> {
 
     // Удаляем файлы с диска
     if (page.images && page.images.length > 0) {
-      const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'pages', page.slug);
+      const filesDir = path.join(process.cwd(), 'public', 'files', 'pages', page.slug);
       
       try {
-        await fs.rm(uploadsDir, { recursive: true, force: true });
-        console.log(`🗑️ Удалена папка с файлами: ${uploadsDir}`);
+        await fs.rm(filesDir, { recursive: true, force: true });
+        console.log(`🗑️ Удалена папка с файлами: ${filesDir}`);
       } catch (fileError) {
         console.error('Ошибка при удалении файлов:', fileError);
         // Продолжаем удаление страницы даже если файлы не удалились
@@ -321,8 +321,8 @@ export async function deletePage(id: string): Promise<ActionResult> {
   }
 }
 async function moveFiles(tempKey: string, finalKey: string) {
-  const tempDir = path.join(process.cwd(), 'public', 'uploads', 'pages', tempKey);
-  const finalDir = path.join(process.cwd(), 'public', 'uploads', 'pages', finalKey);
+  const tempDir = path.join(process.cwd(), 'public', 'files', 'pages', tempKey);
+  const finalDir = path.join(process.cwd(), 'public', 'files', 'pages', finalKey);
   
   try {
     // Проверяем, есть ли временная папка

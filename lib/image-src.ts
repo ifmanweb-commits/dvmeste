@@ -3,17 +3,13 @@
                                                                       
                                                                               
    
-const LOCAL_IMAGE_PATH_PREFIXES = ["/uploads/", "/api/uploads/", "/pages/files/", "/articles/files/"] as const;
+const LOCAL_IMAGE_PATH_PREFIXES = ["/pages/files/", "/articles/files/"] as const;
 
 function normalizeLocalImagePath(rawPath: string): string | null {
   const value = rawPath.trim();
   if (!value) return null;
 
   const pathWithSlash = value.startsWith("/") ? value : `/${value}`;
-
-  if (pathWithSlash.startsWith("/api/uploads/")) {
-    return pathWithSlash.replace(/^\/api\/uploads\//, "/uploads/");
-  }
 
   if (LOCAL_IMAGE_PATH_PREFIXES.some((prefix) => pathWithSlash.startsWith(prefix))) {
     return pathWithSlash;
