@@ -55,6 +55,7 @@ export function buildMetadata(meta: PageMeta): Metadata {
       card: "summary_large_image",
       title,
       description,
+      images: [image],
       ...(SITE.twitterHandle && { creator: SITE.twitterHandle }),
     },
   };

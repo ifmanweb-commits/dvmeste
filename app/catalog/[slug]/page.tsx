@@ -5,6 +5,7 @@ import { Button } from "@/components/ui";
 import { Badge } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { buildMetadata, canonicalUrl, personJsonLd } from "@/lib/seo";
+import { normalizeImageSrc } from "@/lib/image-src";
 import { ComplaintModalTrigger } from "@/components/complaint/ComplaintModalTrigger";
 import LeadFormModal from "@/components/lead/LeadFormModal";
 import { normalizeEmbeddedLocalAssetUrls } from "@/lib/html-local-assets";
@@ -134,6 +135,8 @@ function looksLikeHtml(value: string): boolean {
   return /<\s*[a-z][^>]*>/i.test(value);
 }
 
+import { SITE } from "@/lib/config";
+
 export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params;
   if (!prisma) return buildMetadata({ title: "Психолог", path: `/catalog/${slug}` });
@@ -146,15 +149,20 @@ export async function generateMetadata({ params }: PageProps) {
         firstName: true,
         lastName: true,
         middleName: true,
-        shortBio: true 
+        shortBio: true,
+        avatarUrl: true,
       },
     });
     if (!user) return buildMetadata({ title: "Психолог", path: `/catalog/${slug}` });
     const fullFio = getFullFio(user);
+    const imageUrl = user.avatarUrl 
+      ? normalizeImageSrc(user.avatarUrl)
+      : `${SITE.baseUrl}/logo.png`;
     return buildMetadata({
       title: fullFio,
       description: user.shortBio?.slice(0, 160) || "",
       path: `/catalog/${slug}`,
+      image: imageUrl,
     });
   } catch (err) {
     if (isDbError(err)) return buildMetadata({ title: "Психолог", path: `/catalog/${slug}` });

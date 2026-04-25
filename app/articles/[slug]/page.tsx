@@ -9,6 +9,7 @@ import { normalizeEmbeddedLocalAssetUrls } from "@/lib/html-local-assets";
 import { Calendar, User, ArrowLeft, Clock, Share2, ArrowUp } from "lucide-react";
 import styles from './articles.module.css';
 import { prisma } from "@/lib/prisma";
+import { SITE } from "@/lib/config";
 import { ArticleClient } from "../ArticleClient";
 import { LayoutShell } from "@/components/layout/LayoutShell";
 
@@ -16,13 +17,46 @@ type PageProps = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params;
-  const article = await getArticleBySlug(slug);
+  
+  // Получаем статью с изображениями
+  const article = await prisma.article.findUnique({
+    where: { slug },
+    include: {
+      articleImages: {
+        orderBy: { createdAt: 'asc' },
+      },
+      user: {
+        select: {
+          slug: true,
+          id: true,
+          email: true,
+          fullName: true,
+          certificationLevel: true,
+          shortBio: true,
+          avatarUrl: true,
+        }
+      }
+    }
+  });
+  
   if (!article)
     return buildMetadata({ title: "Статья", path: `/articles/${slug}` });
+  
+  // Определяем OG-изображение: article.image -> articleImages[0] -> логотип
+  let ogImage: string | undefined;
+  if (article.image) {
+    ogImage = normalizeImageSrc(article.image);
+  } else if (article.articleImages && article.articleImages.length > 0) {
+    ogImage = normalizeImageSrc(article.articleImages[0].url);
+  } else {
+    ogImage = `${SITE.baseUrl}/logo.png`;
+  }
+  
   return buildMetadata({
     title: article.title,
-    description: article.content.slice(0, 160).replace(/<[^>]+>/g, ""),
+    description: article.excerpt ?? article.content.slice(0, 160).replace(/<[^>]+>/g, ""),
     path: `/articles/${slug}`,
+    image: ogImage,
   });
 }
 
