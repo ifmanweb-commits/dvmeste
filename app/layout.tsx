@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import BlockRenderer from "@/components/BlockRenderer";
 import CookieBanner from "@/components/layout/CookieBanner";
+import CsrfTokenHandler from "@/components/CsrfTokenHandler";
+import { cookies } from 'next/headers';
 
 import {
   buildMetadata,
@@ -64,6 +66,10 @@ export default async function RootLayout({
 }>) {
   const webSiteSchema = webSiteJsonLd();
   const organizationSchema = organizationJsonLd();
+  
+  // Получаем CSRF токен из cookie (устанавливается в proxy.ts)
+  const cookieStore = await cookies()
+  const csrfToken = cookieStore.get('csrf_token')?.value || ''
 
   return (
     <html lang="ru" className="scroll-smooth">
@@ -76,26 +82,31 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: organizationSchema }}
         />
+        {/* CSRF токен для JS */}
+        <meta name="csrf-token" content={csrfToken} />
         {/* Глобальные блоки для head — загружаются по slug'ам */}
         <BlockRenderer slugs={['head-scripts']} variant="head" />
       </head>
-      <body
-        className={`${inter.variable} ${displayFont.variable} font-sans antialiased`}
-      >
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-primary focus:px-3 focus:py-2 focus:text-white"
+        <body
+          className={`${inter.variable} ${displayFont.variable} font-sans antialiased`}
         >
-          Перейти к содержимому
-        </a>
-        {children}
-        
-        {/* Глобальные блоки body-end перед закрывающим тегом body */}
-        <BlockRenderer slugs={['body-end']} variant="body" />
-        
-        {/* Баннер cookie */}
-        <CookieBanner />
-      </body>
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-primary focus:px-3 focus:py-2 focus:text-white"
+          >
+            Перейти к содержимому
+          </a>
+          {children}
+          
+          {/* CSRF токен handler для клиента */}
+          <CsrfTokenHandler />
+          
+          {/* Глобальные блоки body-end перед закрывающим тегом body */}
+          <BlockRenderer slugs={['body-end']} variant="body" />
+          
+          {/* Баннер cookie */}
+          <CookieBanner />
+        </body>
     </html>
   );
 }
