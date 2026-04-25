@@ -65,6 +65,28 @@ export async function POST(request: NextRequest) {
     console.log(`Webhook: Processing payment ${OrderId}, Tinkoff status: ${Status}, internal status: ${internalStatus}, PaymentId: ${PaymentId}`);
     
     if (Status === 'CONFIRMED') {
+      // ПРОВЕРКА 1: Проверяем, не была ли уже создана транзакция с этим paymentId
+      // Это защищает от double-spending атаки
+      const existingTransaction = await prisma.transaction.findUnique({
+        where: { paymentId: paymentLink.payment.id },
+      });
+
+      if (existingTransaction) {
+        console.log(`Webhook: Transaction already exists for payment ${paymentLink.payment.id}`);
+        return new NextResponse('OK');
+      }
+
+      // ПРОВЕРКА 2: Проверяем соответствие суммы в webhook ожидаемой сумме
+      const expectedAmountInKopecks = paymentLink.amount * 100;
+      const receivedAmountInKopecks = Amount || expectedAmountInKopecks;
+      
+      if (receivedAmountInKopecks !== expectedAmountInKopecks) {
+        console.error(
+          `Webhook: Amount mismatch for payment ${OrderId}. Expected: ${expectedAmountInKopecks}, Received: ${receivedAmountInKopecks}`
+        );
+        // Не прерываем обработку, используем ожидаемую сумму для безопасности
+      }
+
       // Получаем пользователя для расчёта нового баланса
       const user = await prisma.user.findUnique({
         where: { id: paymentLink.userId },
@@ -75,14 +97,14 @@ export async function POST(request: NextRequest) {
         return new NextResponse('OK');
       }
 
-      // Сумма в копейках из уведомления (или из Payment.amount)
-      const amountInKopecks = Amount || paymentLink.amount * 100;
-      const amountInRubles = Math.floor(amountInKopecks / 100);
+      // Сумма в рублях (используем ожидаемую сумму из paymentLink для безопасности)
+      const amountInRubles = paymentLink.amount;
 
       // Вычисляем новый баланс
       const newBalance = user.balance + amountInRubles;
 
       // Выполняем транзакцию: создаём Transaction и обновляем User
+      // Используем paymentId для защиты от дублирования
       await prisma.$transaction([
         prisma.transaction.create({
           data: {
@@ -95,7 +117,7 @@ export async function POST(request: NextRequest) {
             metadata: {
               tinkoffPaymentId: PaymentId,
               tinkoffStatus: Status,
-              originalAmount: amountInKopecks,
+              originalAmount: expectedAmountInKopecks,
             },
           },
         }),

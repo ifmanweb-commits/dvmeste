@@ -3,8 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { UPLOAD_POLICIES, UploadScope } from '@/lib/upload-config';
 import { saveFileToDisk } from '@/lib/storage-service';
-
-
+import { getCurrentUser } from '@/lib/auth/session';
 
 export const runtime = "nodejs";
 
@@ -336,12 +335,39 @@ async function deleteByPublicUrl(rawUrl: string): Promise<boolean> {
   }
 }
 
+/**
+ * Проверка прав доступа к файлам пользователя
+ * Только админ может получать файлы других пользователей
+ */
+function canAccessUserFiles(user: Awaited<ReturnType<typeof getCurrentUser>>, entityKey: string): boolean {
+  if (!user) return false;
+  // Админы могут получать файлы всех пользователей
+  if (user.isAdmin || user.isManager) return true;
+  // Пользователь может получать только свои файлы
+  return user.id === entityKey;
+}
+
 export async function GET(request: NextRequest) {
   try {
+    // ПРОВЕРКА 1: Аутентификация
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ success: false, error: "Требуется аутентификация" }, { status: 401 });
+    }
+
     const normalized = normalizeScopeAndKey(request.nextUrl.searchParams);
     if (!normalized) {
       return NextResponse.json({ success: false, error: "1Некорректные scope/entityKey" }, { status: 400 });
     }
+
+    // ПРОВЕРКА 2: Авторизация - доступ к файлам пользователя
+    // Для users-photos и users-docs проверяем, что пользователь имеет право доступа
+    if (normalized.scope === 'users-photos' || normalized.scope === 'users-docs') {
+      if (!canAccessUserFiles(user, normalized.entityKey)) {
+        return NextResponse.json({ success: false, error: "Доступ запрещён" }, { status: 403 });
+      }
+    }
+    // Для articles и pages доступ публичный (это контент статей и страниц)
 
     const files = await listEntityFiles(normalized.scope, normalized.entityKey);
     return NextResponse.json({ success: true, files });
@@ -353,24 +379,45 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // ПРОВЕРКА 1: Аутентификация
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ success: false, error: "Требуется аутентификация" }, { status: 401 });
+    }
+
     const formData = await request.formData();
     
-    // 1. Извлекаем и типизируем scope
+    // 2. Извлекаем и типизируем scope
     const rawScope = formData.get("scope")?.toString() ?? null;
     const scope = parseScope(rawScope) as UploadScope | null;
     const entityKey = sanitizeEntityKey(formData.get("entityKey")?.toString() ?? null);
     const file = formData.get("file") as File;
 
-    // 2. Базовые проверки наличия данных
+    // 3. Базовые проверки наличия данных
     if (!scope || !entityKey) {
       return NextResponse.json({ success: false, error: "Некорректные scope/entityKey" }, { status: 400 });
+    }
+
+    // ПРОВЕРКА 2: Авторизация - пользователь может загружать файлы только себе
+    // Админы могут загружать файлы всем пользователям
+    if (scope === 'users-photos' || scope === 'users-docs') {
+      if (!user.isAdmin && !user.isManager && user.id !== entityKey) {
+        return NextResponse.json({ success: false, error: "Доступ запрещён" }, { status: 403 });
+      }
+    }
+    // Для articles и pages - нужна отдельная проверка прав на редактирование
+    // Пока разрешаем только админам
+    if (scope === 'articles' || scope === 'pages') {
+      if (!user.isAdmin && !user.isManager) {
+        return NextResponse.json({ success: false, error: "Доступ запрещён" }, { status: 403 });
+      }
     }
 
     if (!(file instanceof File) || file.size <= 0) {
       return NextResponse.json({ success: false, error: "Файл не передан или пустой" }, { status: 400 });
     }
 
-    // 3. ПРОВЕРКА ПО ПОЛИТИКЕ (UPLOAD_POLICIES)
+    // 4. ПРОВЕРКА ПО ПОЛИТИКЕ (UPLOAD_POLICIES)
     const policy = UPLOAD_POLICIES[scope];
     if (!policy) {
       return NextResponse.json({ success: false, error: "Политика для данного scope не найдена" }, { status: 400 });
@@ -393,7 +440,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // 4. Логика сохранения (твой стандартный процесс)
+    // 5. Логика сохранения (твой стандартный процесс)
     const dir = getEntityDir(scope, entityKey);
     await fs.mkdir(dir, { recursive: true });
 
@@ -428,8 +475,19 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // ПРОВЕРКА 1: Аутентификация
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ success: false, error: "Требуется аутентификация" }, { status: 401 });
+    }
+
     const byUrl = request.nextUrl.searchParams.get("url");
     if (byUrl) {
+      // Для удаления по URL проверяем, что пользователь имеет право
+      // Удалять файлы из /pages/ и /articles/ могут только админы
+      if (!user.isAdmin && !user.isManager) {
+        return NextResponse.json({ success: false, error: "Доступ запрещён" }, { status: 403 });
+      }
       const deleted = await deleteByPublicUrl(byUrl);
       if (!deleted) {
         return NextResponse.json({ success: false, error: "Некорректный URL файла" }, { status: 400 });
@@ -440,6 +498,18 @@ export async function DELETE(request: NextRequest) {
     const normalized = normalizeScopeAndKey(request.nextUrl.searchParams);
     if (!normalized) {
       return NextResponse.json({ success: false, error: "3Некорректные scope/entityKey" }, { status: 400 });
+    }
+
+    // ПРОВЕРКА 2: Авторизация
+    if (normalized.scope === 'users-photos' || normalized.scope === 'users-docs') {
+      if (!canAccessUserFiles(user, normalized.entityKey)) {
+        return NextResponse.json({ success: false, error: "Доступ запрещён" }, { status: 403 });
+      }
+    }
+    if (normalized.scope === 'articles' || normalized.scope === 'pages') {
+      if (!user.isAdmin && !user.isManager) {
+        return NextResponse.json({ success: false, error: "Доступ запрещён" }, { status: 403 });
+      }
     }
 
     const rawName = request.nextUrl.searchParams.get("name");
@@ -483,6 +553,12 @@ export async function DELETE(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    // ПРОВЕРКА 1: Аутентификация
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ success: false, error: "Требуется аутентификация" }, { status: 401 });
+    }
+
     const body = (await request.json()) as {
       scope?: string;
       entityKey?: string;
@@ -494,6 +570,18 @@ export async function PATCH(request: NextRequest) {
     const entityKey = sanitizeEntityKey(body.entityKey ?? null);
     const currentName = body.name ? path.basename(body.name) : "";
     const requestedName = (body.newName || "").trim();
+
+    // ПРОВЕРКА 2: Авторизация
+    if (scope === 'users-photos' || scope === 'users-docs') {
+      if (!canAccessUserFiles(user, entityKey || '')) {
+        return NextResponse.json({ success: false, error: "Доступ запрещён" }, { status: 403 });
+      }
+    }
+    if (scope === 'articles' || scope === 'pages') {
+      if (!user.isAdmin && !user.isManager) {
+        return NextResponse.json({ success: false, error: "Доступ запрещён" }, { status: 403 });
+      }
+    }
 
     if (!scope || !entityKey || !currentName || !requestedName) {
       return NextResponse.json({ success: false, error: "4Некорректные данные для переименования" }, { status: 400 });
