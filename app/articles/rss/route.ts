@@ -11,6 +11,10 @@ function escapeXml(str: string): string {
     .replace(/'/g, "\x27apos;");
 }
 
+function convertRelativeUrlsToAbsolute(html: string, baseUrl: string): string {
+  return html.replace(/src="\/files\//g, `src="${baseUrl}/files/`);
+}
+
 export async function GET() {
   const articles = await prisma.article.findMany({
     where: { 
@@ -32,24 +36,27 @@ export async function GET() {
   const baseUrl = SITE.baseUrl.replace(/\/$/, "");
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
     <title>Давай вместе — Статьи</title>
     <link>${baseUrl}/articles</link>
     <description>Статьи по психологии от психологов реестра «Давай вместе»</description>
     <atom:link href="${baseUrl}/articles/rss" rel="self" type="application/rss+xml"/>
     <language>ru-ru</language>
-    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>${articles.map(article => `
+    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>${articles.map(article => {
+      const absoluteContent = convertRelativeUrlsToAbsolute(article.content, baseUrl);
+      return `
     <item>
       <title>${escapeXml(article.title)}</title>
       <link>${baseUrl}/articles/${article.slug}</link>
       <guid isPermaLink="true">${baseUrl}/articles/${article.slug}</guid>
       <description>${escapeXml(article.excerpt || article.content.replace(/<[^>]+>/g, '').slice(0, 200))}</description>
-      <content:encoded><![CDATA[${article.content}]]></content:encoded>
+      <content:encoded><![CDATA[${absoluteContent}]]></content:encoded>
       <pubDate>${new Date(article.publishedAt!).toUTCString()}</pubDate>${article.user?.fullName ? `
-      <author>${escapeXml(article.user.fullName)}</author>` : ''}${article.tags.length > 0 ? `
+      <dc:creator>${escapeXml(article.user.fullName)}</dc:creator>` : ''}${article.tags.length > 0 ? `
       ${article.tags.map(tag => `<category>${escapeXml(tag)}</category>`).join('')}` : ''}
-    </item>`).join('')}
+    </item>`;
+  }).join('')}
   </channel>
 </rss>`;
 
