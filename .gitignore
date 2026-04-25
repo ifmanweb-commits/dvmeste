@@ -23,12 +23,14 @@
 public/images/certificates-tmpl/
 public/images/certification-badges/
 /private/
+/tmp-photos/
 
 # misc
 .DS_Store
-START-DEV.bat
 dvmeste-backup.tar.gz
 *.pem
+/ТЗ/
+_docker-compose.yaml
 
 # debug
 npm-debug.log*
