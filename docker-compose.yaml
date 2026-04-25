@@ -54,6 +54,7 @@ services:
             - 'y8scwo8884cog4kwok4os0wc-psykhologi:/app/public/uploads'
             - 'y8scwo8884cog4kwok4os0wc-articles:/app/public/articles/files'
             - 'y8scwo8884cog4kwok4os0wc-pages:/app/public/pages'
+            - './backups:/app/backups'
 networks:
     coolify:
         external: true

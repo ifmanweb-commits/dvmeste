@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HorNav from "./HorNav";
 
 export default function ManagementPage() {
   const [shuffleLoading, setShuffleLoading] = useState(false);
   const [recalculateLoading, setRecalculateLoading] = useState(false);
+  const [backupLoading, setBackupLoading] = useState(false);
   const [shuffleResult, setShuffleResult] = useState<{ success?: boolean; error?: string } | null>(null);
   const [recalculateResult, setRecalculateResult] = useState<{ success?: boolean; message?: string; error?: string } | null>(null);
+  const [backupResult, setBackupResult] = useState<{ success?: boolean; error?: string } | null>(null);
+  const [lastBackup, setLastBackup] = useState<{ timestamp: string; filename: string } | null>(null);
 
   const handleShuffle = async () => {
     setShuffleLoading(true);
@@ -54,6 +57,49 @@ export default function ManagementPage() {
       setRecalculateLoading(false);
     }
   };
+
+  const handleBackup = async () => {
+    setBackupLoading(true);
+    setBackupResult(null);
+
+    try {
+      const response = await fetch("/api/admin/backup-database", {
+        method: "POST",
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setBackupResult({ success: true });
+        // Обновляем информацию о последнем бекапе
+        setLastBackup({
+          timestamp: new Date().toLocaleString("ru-RU"),
+          filename: data.filename
+        });
+      } else {
+        setBackupResult({ error: data.error || "Ошибка при создании бекапа" });
+      }
+    } catch (error) {
+      setBackupResult({ error: "Ошибка сети" });
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  // Загрузка информации о последнем бекапе при монтировании
+  useEffect(() => {
+    fetch("/api/admin/backup-database")
+      .then(res => res.json())
+      .then(data => {
+        if (data.lastBackup) {
+          setLastBackup({
+            timestamp: data.lastBackup.timestamp,
+            filename: data.lastBackup.filename
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div>
@@ -154,6 +200,66 @@ export default function ManagementPage() {
               {recalculateResult.success 
                 ? `✅ ${recalculateResult.message}` 
                 : `❌ ${recalculateResult.error}`}
+            </div>
+          )}
+        </div>
+
+        {/* Карточка 3: Бекап базы данных */}
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">
+            База данных
+          </h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Резервное копирование базы данных.
+            Бекапы создаются автоматически ежедневно в 3:30.
+          </p>
+
+          {/* Информация о последнем бекапе */}
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600">Последний бекап:</p>
+            {lastBackup ? (
+              <p className="text-sm font-medium text-gray-900 mt-1">
+                📁 {lastBackup.timestamp}
+              </p>
+            ) : (
+              <p className="text-sm text-gray-400 mt-1">
+                Бекапы ещё не создавались
+              </p>
+            )}
+          </div>
+
+          <button
+            onClick={handleBackup}
+            disabled={backupLoading}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#5858E2] text-white rounded-lg hover:bg-[#5858E2]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {backupLoading ? (
+              <>
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Создание бекапа...
+              </>
+            ) : (
+              <>
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                Сделать бекап БД
+              </>
+            )}
+          </button>
+
+          {backupResult && (
+            <div className={`mt-4 p-3 rounded-lg text-sm ${
+              backupResult.success 
+                ? "bg-green-50 text-green-700" 
+                : "bg-red-50 text-red-700"
+            }`}>
+              {backupResult.success 
+                ? "✅ Бекап успешно создан" 
+                : `❌ ${backupResult.error}`}
             </div>
           )}
         </div>

@@ -40,8 +40,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Установка fontconfig для работы со шрифтами
-RUN apt-get update && apt-get install -y fontconfig && rm -rf /var/lib/apt/lists/*
+# Установка fontconfig и postgresql-client для работы со шрифтами и бекапов БД
+RUN apt-get update && apt-get install -y fontconfig postgresql-client && rm -rf /var/lib/apt/lists/*
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

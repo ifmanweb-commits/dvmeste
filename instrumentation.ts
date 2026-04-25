@@ -18,5 +18,8 @@ export async function register() {
 
     const { startCleanupAccessLogsCron } = await import('@/lib/cron/cleanup-access-logs')
     startCleanupAccessLogsCron()
+
+    const { startBackupDatabaseCron } = await import('@/lib/cron/backup-database')
+    startBackupDatabaseCron()
   }
 }

@@ -9,6 +9,7 @@
 - **Next.js 16** (App Router)
 - **Tailwind CSS** — дизайн (primary #5858E2, accent #A7FF5A)
 - **Prisma** + **PostgreSQL** — база данных
+- **node-cron** — фоновые задачи (бекапы, очистка данных)
 
 ---
 
@@ -138,11 +139,81 @@ npm run dev
 
 ## Деплой
 
-1. Собери образ: `docker build -t davay-vmeste .`
+### Docker Compose
+
+1. Собери образ: `docker build -t dvmeste .`
 2. Запусти контейнер с переменной `DATABASE_URL` и портом 3000.
 3. Либо на сервере: `npm run build` и `npm run start` (нужны Node.js и PostgreSQL).
 
 Для продакшена задай в окружении **ADMIN_SESSION_SECRET** (длинная случайная строка) и смени **ADMIN_PASSWORD**.
+
+### Переменные окружения для Docker
+
+```yaml
+environment:
+  - DATABASE_URL=postgresql://user:password@host:5432/dbname
+  - NEXT_PUBLIC_BASE_URL=https://dvmeste.ru
+  - ADMIN_SESSION_SECRET=your-secret-key-here
+```
+
+---
+
+## Система бекапов БД
+
+Автоматическое резервное копирование базы данных реализовано на основе `node-cron`.
+
+### Как работает
+
+- **Расписание:** каждый день в 3:30 утра
+- **Формат:** `backup_YYYY-MM-DD_HHMMSS.sql.gz` (сжатый дамп PostgreSQL)
+- **Хранение:** последние 30 бекапов (старые автоматически удаляются)
+- **Путь внутри контейнера:** `/app/backups`
+- **Путь на хосте:** `./backups` (монтируется через Docker volume)
+
+### Структура
+
+```
+backups/
+├── backup_2025-01-27_033000.sql.gz
+├── backup_2025-01-28_033000.sql.gz
+└── ...
+```
+
+### Восстановление из бекапа
+
+```bash
+# Распаковать и восстановить
+gunzip -c backups/backup_2025-01-27_033000.sql.gz | psql -h localhost -U username -d database
+```
+
+### Логи
+
+Логи бекапов доступны через:
+
+```bash
+docker compose logs app | grep Backup
+```
+
+Формат логов:
+- `✅ Backup created: backup_YYYY-MM-DD_HHMMSS.sql.gz (size: X.X MB)` — успех
+- `❌ Backup failed: ...` — ошибка
+
+### Требования
+
+- В Docker-образе установлен `postgresql-client` (предоставляет `pg_dump`)
+- Том `./backups:/app/backups` добавлен в `docker-compose.yaml`
+
+---
+
+## Фоновые задачи (Cron)
+
+| Задача | Расписание | Описание |
+|--------|------------|----------|
+| `shuffle-catalog` | Ежедневно в 3:00 | Перемешивание порядка психологов в каталоге |
+| `cleanup-article-drafts` | Ежедневно в 4:00 | Очистка старых черновиков статей |
+| `recalculate-article-bonus` | Ежедневно в 3:00 | Пересчет бонусов за статьи |
+| `cleanup-access-logs` | Еженедельно (вс) в 3:00 | Удаление записей AccessLog старше 1 года |
+| `backup-database` | Ежедневно в 3:30 | **Бекап базы данных** |
 
 ---
 
@@ -154,7 +225,8 @@ npm run dev
 - **app/admin/** — админка (вход, психологи, страницы).
 - **app/catalog/** — логика фильтров и параметров каталога.
 - **components/** — UI: блоки главной (`home/`), каталог (`catalog/`), админка (`admin/`), общие (`ui/`, `layout/`).
-- **lib/** — БД, авторизация админки, SEO, утилиты.
+- **lib/** — БД, авторизация админки, SEO, утилиты, cron-задачи.
 - **prisma/** — схема БД и миграции.
+- **scripts/** — вспомогательные скрипты.
 
 Код разбит по смыслу: один компонент — одна задача, названия файлов и функций понятные, чтобы было легко ориентироваться новичкам.
