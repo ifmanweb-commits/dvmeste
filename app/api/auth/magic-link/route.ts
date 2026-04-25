@@ -3,12 +3,13 @@ import { prisma } from '@/lib/prisma'
 import { createMagicLink } from '@/lib/auth/magic-link'
 import { createHash } from 'crypto'
 import { headers } from 'next/headers'
+import { checkRateLimit, incrementLoginAttempt, verifySmartCaptcha } from '@/lib/auth/rate-limiter'
 
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
   try {
-    const { email, userType, consentGiven } = await req.json()
+    const { email, userType, consentGiven, captchaToken } = await req.json()
     
     if (!email || typeof email !== 'string') {
       return NextResponse.json(
@@ -22,6 +23,34 @@ export async function POST(req: Request) {
         { error: 'Неверный тип пользователя' },
         { status: 400 }
       )
+    }
+
+    // Проверяем лимит попыток
+    const rateLimit = await checkRateLimit(email)
+    
+    // Если лимит превышен - требуем капчу
+    if (rateLimit.isLimited || rateLimit.remainingAttempts <= 0) {
+      if (!captchaToken) {
+        return NextResponse.json(
+          { 
+            error: 'Превышено количество попыток. Требуется проверка капчи',
+            requiresCaptcha: true
+          },
+          { status: 429 }
+        )
+      }
+      
+      // Проверяем капчу
+      const captchaResult = await verifySmartCaptcha(captchaToken)
+      if (!captchaResult.success) {
+        return NextResponse.json(
+          { 
+            error: 'Неверная капча',
+            requiresCaptcha: true
+          },
+          { status: 400 }
+        )
+      }
     }
 
     const normalizedEmail = email.toLowerCase().trim()
@@ -81,12 +110,17 @@ export async function POST(req: Request) {
       }
     }
     
-    // 3. Отправляем Magic Link с типом пользователя
+    // 3. Увеличиваем счетчик попыток
+    const attemptResult = await incrementLoginAttempt(email)
+    
+    // 4. Отправляем Magic Link с типом пользователя
     await createMagicLink(normalizedEmail, userType)
     
     // Всегда возвращаем успех (не раскрываем, существует пользователь или нет)
     return NextResponse.json({ 
-      message: 'Ссылка для входа отправлена на указанный email' 
+      message: 'Ссылка для входа отправлена на указанный email',
+      remainingAttempts: attemptResult.remainingAttempts,
+      requiresCaptcha: attemptResult.isLimited
     })
     
   } catch (error) {

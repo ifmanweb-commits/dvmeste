@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import SmartCaptcha from '@/components/auth/SmartCaptcha'
 
 type UserType = 'client' | 'psychologist' | null
 
@@ -12,6 +13,9 @@ export default function LoginPage() {
   const [isSent, setIsSent] = useState(false)
   const [error, setError] = useState('')
   const [consentGiven, setConsentGiven] = useState(false)
+  const [requiresCaptcha, setRequiresCaptcha] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState('')
+  const [isCaptchaVerified, setIsCaptchaVerified] = useState(false)
   const router = useRouter()
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,6 +29,13 @@ export default function LoginPage() {
       return
     }
     
+    // Если требуется капча, проверяем её наличие
+    if (requiresCaptcha && !captchaToken) {
+      setError('Требуется подтверждение, что вы не робот')
+      setIsLoading(false)
+      return
+    }
+    
     try {
       const res = await fetch('/api/auth/magic-link', {
         method: 'POST',
@@ -32,17 +43,34 @@ export default function LoginPage() {
         body: JSON.stringify({ 
           email, 
           userType: userType || 'psychologist',
-          consentGiven: true
+          consentGiven: true,
+          captchaToken: requiresCaptcha ? captchaToken : undefined
         })
       })
       
       const data = await res.json()
       
       if (!res.ok) {
-        throw new Error(data.error || 'Что-то пошло не так')
+        // Если получили 429 (превышен лимит) или ошибку с флагом requiresCaptcha
+        if (data.requiresCaptcha || res.status === 429) {
+          setRequiresCaptcha(true)
+          setError(data.error || 'Превышено количество попыток. Подтвердите, что вы не робот')
+        } else {
+          throw new Error(data.error || 'Что-то пошло не так')
+        }
+        setIsLoading(false)
+        return
+      }
+      
+      // Если сервер вернул флаг requiresCaptcha для будущих запросов
+      if (data.requiresCaptcha) {
+        setRequiresCaptcha(true)
       }
       
       setIsSent(true)
+      setRequiresCaptcha(false)
+      setCaptchaToken('')
+      setIsCaptchaVerified(false)
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Ошибка отправки')
     } finally {
@@ -50,11 +78,25 @@ export default function LoginPage() {
     }
   }
   
+  const handleCaptchaVerify = (token: string) => {
+    setCaptchaToken(token)
+    setIsCaptchaVerified(true)
+    setError('')
+  }
+  
+  const handleCaptchaExpire = () => {
+    setCaptchaToken('')
+    setIsCaptchaVerified(false)
+  }
+  
   const handleBack = () => {
     setUserType(null)
     setEmail('')
     setError('')
     setIsSent(false)
+    setRequiresCaptcha(false)
+    setCaptchaToken('')
+    setIsCaptchaVerified(false)
   }
   
   // Экран выбора типа пользователя
@@ -185,9 +227,19 @@ export default function LoginPage() {
               <p className="text-red-600 text-sm bg-red-50 p-2 rounded">{error}</p>
             )}
             
+            {requiresCaptcha && (
+              <div className="flex justify-center my-4">
+                <SmartCaptcha
+                  sitekey={process.env.NEXT_PUBLIC_SMARTCAPTCHA_CLIENT_KEY || ''}
+                  onVerify={handleCaptchaVerify}
+                  onExpire={handleCaptchaExpire}
+                />
+              </div>
+            )}
+            
             <button
               type="submit"
-              disabled={isLoading || !consentGiven}
+              disabled={isLoading || !consentGiven || (requiresCaptcha && !isCaptchaVerified)}
               className={`w-full py-2 px-4 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                 userType === 'client' 
                   ? 'bg-primary hover:bg-primary-hover text-white' 

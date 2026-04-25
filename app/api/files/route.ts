@@ -7,6 +7,50 @@ import { getCurrentUser } from '@/lib/auth/session';
 
 export const runtime = "nodejs";
 
+/**
+ * Magic Bytes (сигнатуры файлов) для проверки соответствия MIME-типа
+ * https://en.wikipedia.org/wiki/List_of_file_signatures
+ */
+const MAGIC_BYTES: Record<string, { bytes: string; offset?: number }> = {
+  'image/jpeg': { bytes: 'ffd8ff' },
+  'image/png': { bytes: '89504e470d0a1a0a' },
+  'image/webp': { bytes: '52494646', offset: 0 }, // RIFF
+  'application/pdf': { bytes: '25504446' }, // %PDF
+};
+
+/**
+ * Проверяет Magic Bytes файла на соответствие MIME-типу
+ * @param file - Файл для проверки
+ * @param mimeType - Ожидаемый MIME-тип
+ * @returns true если сигнатура совпадает или неизвестна для этого типа
+ */
+async function verifyMagicBytes(file: File, mimeType: string): Promise<boolean> {
+  const signature = MAGIC_BYTES[mimeType];
+  if (!signature) return true; // Нет сигнатуры для этого типа - пропускаем
+
+  try {
+    // Для WebP нужна дополнительная проверка структуры
+    if (mimeType === 'image/webp') {
+      const buffer = await file.slice(0, 12).arrayBuffer();
+      const hex = Buffer.from(buffer).toString('hex');
+      // WebP: RIFF....WEBP
+      return hex.startsWith('52494646') && hex.substring(8, 12) === '57454250';
+    }
+
+    // Для остальных типов проверяем сигнатуру
+    const bytesToRead = signature.bytes.length / 2;
+    const offset = signature.offset || 0;
+    const buffer = await file.slice(offset, offset + bytesToRead).arrayBuffer();
+    const hex = Buffer.from(buffer).toString('hex');
+    
+    return hex.toLowerCase() === signature.bytes.toLowerCase();
+  } catch (error) {
+    console.error(`[verifyMagicBytes] Error checking ${mimeType}:`, error);
+    // В случае ошибки чтения - не блокируем файл
+    return true;
+  }
+}
+
 type FileScope = "articles" | "pages" | "users-photos" | "users-docs";
 
 type ManagedFile = {
@@ -428,6 +472,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         success: false, 
         error: `Формат ${file.type} не разрешен для раздела ${scope}` 
+      }, { status: 400 });
+    }
+
+    // ПРОВЕРКА 3: Проверка Magic Bytes (сигнатуры файла)
+    // Защита от подделки MIME-типа (когда файл .exe называют .jpg)
+    const isMagicBytesValid = await verifyMagicBytes(file, file.type);
+    if (!isMagicBytesValid) {
+      console.error(`[api/files][POST] Magic Bytes mismatch for file ${file.name}, type: ${file.type}`);
+      return NextResponse.json({ 
+        success: false, 
+        error: `Файл не соответствует заявленному формату ${file.type}` 
       }, { status: 400 });
     }
 

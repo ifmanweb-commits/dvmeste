@@ -5,7 +5,10 @@ import { User } from '@prisma/client'
 import { SUPERADMIN_EMAIL } from '@/lib/config'
 
 const SESSION_NAME = 'session'
-const SESSION_DURATION = 30 * 24 * 60 * 60 * 1000 // 30 дней
+const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000 // 7 дней
+
+// Определяем, работает ли приложение на localhost
+const isLocalhost = process.env.IS_LOCALHOST === 'true'
 
 // Тип пользователя со всеми нужными полями (берем напрямую из Prisma)
 export type UserWithAllFields = User & { isSuperAdmin: boolean }
@@ -54,7 +57,7 @@ export async function setSessionCookie(sessionToken: string, expires: Date) {
   const cookieStore = await cookies()
   cookieStore.set(SESSION_NAME, sessionToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: !isLocalhost,  // false для локалки, true для прода
     sameSite: 'lax',
     expires
   })

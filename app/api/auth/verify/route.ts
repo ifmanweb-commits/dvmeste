@@ -4,6 +4,7 @@ import { createSession, setSessionCookie } from '@/lib/auth/session'
 import { createHash } from 'crypto'
 import { headers } from 'next/headers'
 import { logLoginSuccess, logLoginFailed } from '@/lib/actions/access-log'
+import { resetLoginAttempts } from '@/lib/auth/rate-limiter'
 
 export const runtime = 'nodejs'
 
@@ -124,6 +125,9 @@ export async function GET(req: Request) {
         email: normalizedEmail
       })
       
+      // Сбрасываем счетчик попыток входа
+      await resetLoginAttempts(normalizedEmail)
+      
       // Редирект в ЛК клиента
       return NextResponse.redirect(new URL('/client/account', req.url))
     } else {
@@ -178,6 +182,9 @@ export async function GET(req: Request) {
         userAgent: userAgent || undefined,
         email: normalizedEmail
       })
+      
+      // Сбрасываем счетчик попыток входа
+      await resetLoginAttempts(normalizedEmail)
       
       // 5. Редирект по ролям
       if (user.isAdmin || user.isManager) {

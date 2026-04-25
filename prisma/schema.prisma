@@ -1112,3 +1112,15 @@ model AccessLog {
   @@index([emailHash])
   @@index([ipAddress])
 }
+
+// Rate limiting для защиты от brute-force атак
+model RateLimit {
+  id        String   @id @default(cuid())
+  key       String   @unique  // например: "login:email@example.com"
+  count     Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([key])
+  @@index([expiresAt])
+}
