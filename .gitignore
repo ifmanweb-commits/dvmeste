@@ -27,7 +27,6 @@ public/images/certification-badges/
 
 # misc
 .DS_Store
-dvmeste-backup.tar.gz
 *.pem
 /ТЗ/
 _docker-compose.yaml
