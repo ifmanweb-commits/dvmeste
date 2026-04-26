@@ -42,6 +42,9 @@ RUN apt-get update && apt-get install -y fontconfig postgresql-client gzip && rm
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
+# Создаём домашнюю директорию для nextjs
+RUN mkdir -p /home/nextjs && chown -R nextjs:nodejs /home/nextjs
+ENV HOME=/home/nextjs
 
 # Копируем шрифты в системную папку
 COPY private/PT-Serif/PT_Serif-Web-Regular.ttf /usr/share/fonts/truetype/
