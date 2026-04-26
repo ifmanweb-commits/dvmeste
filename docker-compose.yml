@@ -21,56 +21,26 @@ services:
 
   # Приложение Next.js
   app:
-    build: .
+    build:
+      context: .
+      target: runner
     container_name: dvmeste-app
-    user: "1001:1001"
-    ports:
-      - "127.0.0.1:${APP_PORT:-3001}:3000"
+
+  # Сервис для миграций (использует builder этап с полным node_modules)
+  app-migrate:
+    build:
+      context: .
+      target: builder
+    container_name: dvmeste-migrate
     environment:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL:-postgresql://dvmeste:dvmeste_password@postgres:5432/dvmeste_db}
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-https://dvmeste.ru}
-      # Суперадмин (для доступа к /admin/settings)
       ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-change-in-production}
-      # Encryption
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-k1.aesgcm256.0Cq_c9UDIz9gLFSgTcfUgei21TvOsR0m2tbqKDKL-uw=}
-      # Email (Unisender)
-      UNISENDER_API_KEY: ${UNISENDER_API_KEY:-}
-      UNISENDER_LIST_ID: ${UNISENDER_LIST_ID:-4}
-      EMAIL_FROM: ${EMAIL_FROM:-info@dvmeste.ru}
-      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Давай вместе}
-      # Yandex SmartCaptcha
-      SMARTCAPTCHA_SERVER_KEY: ${SMARTCAPTCHA_SERVER_KEY:-}
-      NEXT_PUBLIC_SMARTCAPTCHA_CLIENT_KEY: ${NEXT_PUBLIC_SMARTCAPTCHA_CLIENT_KEY:-}
-      # VAPID для WebPush
-      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
-      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
-      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:info@dvmeste.ru}
-      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
-      # Tinkoff
-      TINKOFF_TERMINAL_KEY: ${TINKOFF_TERMINAL_KEY:-}
-      TINKOFF_PASSWORD: ${TINKOFF_PASSWORD:-}
-      # Окружение
-      IS_LOCALHOST: ${IS_LOCALHOST:-false}
-    volumes:
-      # Пользовательские файлы (сохраняются при перезапуске)
-      - ./public/articles/files:/app/public/articles/files
-      - ./public/pages/files:/app/public/pages/files
-      - ./public/certificates:/app/public/certificates
-      - ./public/files/articles:/app/public/files/articles
-      - ./public/files/pages:/app/public/files/pages
-      - ./public/files/secret-pages:/app/public/files/secret-pages
-      - ./public/files/users:/app/public/files/users
-      - ./public/images/certificates-tmpl:/app/public/images/certificates-tmpl
-      - ./public/images/certification-badges:/app/public/images/certification-badges
-      - ./public/images/edu-icons:/app/public/images/edu-icons
-      - ./public/images/icons:/app/public/images/icons
-      # Бекапы БД
-      - ./backups:/app/backups
     depends_on:
       postgres:
         condition: service_healthy
-    restart: unless-stopped
     networks:
       - dvmeste-network
 
