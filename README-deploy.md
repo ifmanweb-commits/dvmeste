@@ -25,7 +25,7 @@ sudo usermod -aG docker $USER
 
 # Проверка установки
 docker --version
-docker-compose --version
+docker compose version
 ```
 
 ### Установка Caddy
@@ -177,32 +177,32 @@ chmod +x scripts/update-deploy.sh
 
 ```bash
 # Просмотр статуса контейнеров
-docker-compose ps
+docker compose ps
 
 # Просмотр логов приложения
-docker-compose logs -f app
+docker compose logs -f app
 
 # Просмотр логов базы данных
-docker-compose logs -f postgres
+docker compose logs -f postgres
 
 # Перезапуск приложения
-docker-compose restart app
+docker compose restart app
 
 # Остановка всех сервисов
-docker-compose down
+docker compose down
 
 # Остановка с удалением volumes (осторожно!)
-docker-compose down -v
+docker compose down -v
 ```
 
 ### Бекап базы данных:
 
 ```bash
 # Создать бекап
-docker-compose exec postgres pg_dump -U dvmeste dvmeste_db > backup_$(date +%Y%m%d_%H%M%S).sql
+docker compose exec postgres pg_dump -U dvmeste dvmeste_db > backup_$(date +%Y%m%d_%H%M%S).sql
 
 # Восстановить из бекапа
-cat backup.sql | docker-compose exec -T postgres psql -U dvmeste -d dvmeste_db
+cat backup.sql | docker compose exec -T postgres psql -U dvmeste -d dvmeste_db
 ```
 
 ---
@@ -213,30 +213,30 @@ cat backup.sql | docker-compose exec -T postgres psql -U dvmeste -d dvmeste_db
 
 ```bash
 # Проверьте логи
-docker-compose logs app
+docker compose logs app
 
 # Проверьте, что PostgreSQL запущен
-docker-compose ps postgres
+docker compose ps postgres
 
 # Проверьте подключение к БД
-docker-compose exec postgres pg_isready -U dvmeste -d dvmeste_db
+docker compose exec postgres pg_isready -U dvmeste -d dvmeste_db
 ```
 
 ### Ошибки миграции:
 
 ```bash
 # Применить миграции вручную
-docker-compose run --rm app npx prisma migrate deploy
+docker compose run --rm app npx prisma migrate deploy
 
 # Проверить статус миграций
-docker-compose run --rm app npx prisma migrate status
+docker compose run --rm app npx prisma migrate status
 ```
 
 ### Сброс базы данных (только для разработки!):
 
 ```bash
 # ОСТОРОЖНО: Удалит все данные!
-docker-compose down -v
+docker compose down -v
 ./scripts/init-first-deploy.sh
 ```
 
