@@ -28,7 +28,8 @@ public/images/certification-badges/
 # misc
 .DS_Store
 *.pem
-/ТЗ/*
+/ТЗ/
+/dvmeste/
 
 # debug
 npm-debug.log*
