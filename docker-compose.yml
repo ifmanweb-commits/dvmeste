@@ -25,6 +25,10 @@ services:
       context: .
       target: runner
     container_name: dvmeste-app
+    ports:
+      - "127.0.0.1:3001:3000"
+    environment:
+      - PORT=3000
 
   # Сервис для миграций (использует builder этап с полным node_modules)
   app-migrate:
