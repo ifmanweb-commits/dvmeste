@@ -44,6 +44,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 # Создаём домашнюю директорию для nextjs
 RUN mkdir -p /home/nextjs && chown -R nextjs:nodejs /home/nextjs
+RUN mkdir -p /home/nextjs/.npm && chown -R nextjs:nodejs /home/nextjs/.npm
 ENV HOME=/home/nextjs
 
 # Копируем шрифты в системную папку
