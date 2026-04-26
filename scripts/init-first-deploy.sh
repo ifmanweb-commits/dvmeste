@@ -29,20 +29,24 @@ echo "📦 Шаг 1/5: Поднятие PostgreSQL..."
 docker compose up -d postgres
 
 echo ""
-echo "⏳ Шаг 2/5: Ожидание готовности PostgreSQL (30 секунд)..."
-sleep 30
+echo "⏳ Шаг 2/5: Ожидание готовности PostgreSQL..."
 
-# Проверка доступности базы
-echo ""
-echo "🔍 Проверка подключения к PostgreSQL..."
-docker compose exec -T postgres pg_isready -U dvmeste -d dvmeste_db || {
+# Ждём до 60 секунд с проверкой каждые 2 секунды
+for i in {1..30}; do
+    if docker compose exec -T postgres pg_isready -U dvmeste -d dvmeste_db > /dev/null 2>&1; then
+        echo "✅ PostgreSQL готов!"
+        break
+    fi
+    echo "⏳ Ожидание PostgreSQL... (попытка $i из 30)"
+    sleep 2
+done
+
+# Финальная проверка
+if ! docker compose exec -T postgres pg_isready -U dvmeste -d dvmeste_db > /dev/null 2>&1; then
     echo "❌ PostgreSQL не готов. Проверьте логи:"
     docker compose logs postgres
     exit 1
-}
-
-echo ""
-echo "✅ PostgreSQL готов!"
+fi
 
 echo ""
 echo "📦 Шаг 3/5: Применение схемы базы данных (prisma db push)..."
