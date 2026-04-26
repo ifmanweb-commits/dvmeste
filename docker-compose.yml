@@ -32,12 +32,10 @@ services:
       context: .
       target: builder
     container_name: dvmeste-migrate
+    env_file:
+      - .env
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://dvmeste:dvmeste_password@postgres:5432/dvmeste_db}
-      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-https://dvmeste.ru}
-      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-change-in-production}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-k1.aesgcm256.0Cq_c9UDIz9gLFSgTcfUgei21TvOsR0m2tbqKDKL-uw=}
     depends_on:
       postgres:
         condition: service_healthy
