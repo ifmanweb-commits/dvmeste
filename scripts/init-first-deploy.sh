@@ -50,7 +50,7 @@ fi
 
 echo ""
 echo "📦 Шаг 3/5: Применение схемы базы данных (prisma db push)..."
-docker compose run --rm app npx prisma db push
+docker compose run --rm app ./node_modules/.bin/prisma db push
 
 echo ""
 echo "📦 Шаг 4/5: Заполнение базы начальными данными..."

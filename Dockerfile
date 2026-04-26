@@ -57,6 +57,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Копируем Prisma для миграций (из deps этапа)
+COPY --from=deps /app/node_modules/prisma ./node_modules/prisma
+COPY --from=deps /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+
 # Создаем папки для данных и выдаем права приложению
 # Эти папки монтируются как volumes для сохранения данных при перезапуске
 RUN mkdir -p /app/public/articles/files \
