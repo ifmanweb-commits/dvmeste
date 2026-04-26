@@ -40,8 +40,11 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
-# vercel
+# 
 .vercel
+.nixpacks
+.roo
+.vscode
 
 # typescript
 *.tsbuildinfo
