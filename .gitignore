@@ -28,8 +28,7 @@ public/images/certification-badges/
 # misc
 .DS_Store
 *.pem
-/ТЗ/
-_docker-compose.yaml
+/ТЗ/*
 
 # debug
 npm-debug.log*

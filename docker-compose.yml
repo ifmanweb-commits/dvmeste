@@ -11,37 +11,48 @@ services:
       POSTGRES_DB: ${DB_NAME:-dvmeste_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     restart: unless-stopped
     networks:
       - dvmeste-network
-
-  # Maildev - тестовый SMTP сервер для локальной разработки
-  maildev:
-    image: maildev/maildev
-    container_name: dvmeste-maildev
-    ports:
-      - "1080:1080"  # Web интерфейс
-      - "1025:1025"  # SMTP порт
-    restart: unless-stopped
-    networks:
-      - dvmeste-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-dvmeste} -d ${DB_NAME:-dvmeste_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # Приложение Next.js
   app:
     build: .
     container_name: dvmeste-app
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "127.0.0.1:${APP_PORT:-3001}:3000"
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL_DOCKER:-postgresql://dvmeste:dvmeste_password@postgres:5432/dvmeste_db}
-      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
-      # Админка
-      ADMIN_LOGIN: ${ADMIN_LOGIN:-Gasan123}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-1111}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://dvmeste:dvmeste_password@postgres:5432/dvmeste_db}
+      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-https://dvmeste.ru}
+      # Суперадмин (для доступа к /admin/settings)
       ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-change-in-production}
+      # Encryption
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-k1.aesgcm256.0Cq_c9UDIz9gLFSgTcfUgei21TvOsR0m2tbqKDKL-uw=}
+      # Email (Unisender)
+      UNISENDER_API_KEY: ${UNISENDER_API_KEY:-}
+      UNISENDER_LIST_ID: ${UNISENDER_LIST_ID:-4}
+      EMAIL_FROM: ${EMAIL_FROM:-info@dvmeste.ru}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Давай вместе}
+      # Yandex SmartCaptcha
+      SMARTCAPTCHA_SERVER_KEY: ${SMARTCAPTCHA_SERVER_KEY:-}
+      NEXT_PUBLIC_SMARTCAPTCHA_CLIENT_KEY: ${NEXT_PUBLIC_SMARTCAPTCHA_CLIENT_KEY:-}
+      # VAPID для WebPush
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:info@dvmeste.ru}
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
+      # Tinkoff
+      TINKOFF_TERMINAL_KEY: ${TINKOFF_TERMINAL_KEY:-}
+      TINKOFF_PASSWORD: ${TINKOFF_PASSWORD:-}
+      # Окружение
+      IS_LOCALHOST: ${IS_LOCALHOST:-false}
     volumes:
       # Пользовательские файлы (сохраняются при перезапуске)
       - ./public/articles/files:/app/public/articles/files
@@ -58,7 +69,8 @@ services:
       # Бекапы БД
       - ./backups:/app/backups
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - dvmeste-network
