@@ -58,8 +58,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Копируем Prisma для миграций (из deps этапа)
-COPY --from=deps /app/node_modules/prisma ./node_modules/prisma
-COPY --from=deps /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+
+# Копируем schema.prisma для миграций
+COPY --chown=nextjs:nodejs prisma/schema.prisma ./prisma/schema.prisma
 
 # Создаем папки для данных и выдаем права приложению
 # Эти папки монтируются как volumes для сохранения данных при перезапуске
