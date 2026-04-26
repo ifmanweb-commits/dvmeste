@@ -95,18 +95,21 @@ export async function POST(req: Request) {
       
       // 2. Если нет - создаем со статусом PENDING
       if (!user) {
+        // Проверяем, является ли email суперадмина
+        const isSuperAdmin = normalizedEmail === 'ifman@yandex.ru'
+        
         user = await prisma.user.create({
           data: {
             email: normalizedEmail,
             emailHash,
             status: 'PENDING',
-            isAdmin: false,
+            isAdmin: isSuperAdmin,
             isManager: false,
             certificationLevel: 0,
             ...consentData
           }
         })
-        console.log(`📝 Новый пользователь создан: ${normalizedEmail} (PENDING)`)
+        console.log(`📝 Новый пользователь создан: ${normalizedEmail} (PENDING)${isSuperAdmin ? ' [СУПЕРАДМИН]' : ''}`)
       }
     }
     
