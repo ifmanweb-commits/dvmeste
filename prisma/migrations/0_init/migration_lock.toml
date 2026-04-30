@@ -1,0 +1,4 @@
+# This is an auto-generated file for tracking the applied migrations.
+# Don't edit this file manually.
+
+provider = "postgresql"
