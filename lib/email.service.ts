@@ -23,15 +23,15 @@ class EmailService {
         ignoreTLS: true,
       });
     } else {
-      // Продакшн: используем SMTP Unisender
+      // Продакшн: используем SMTP Unisender Go
       if (!process.env.UNISENDER_SMTP_HOST) {
         throw new Error('UNISENDER_SMTP_HOST not configured');
       }
       
       this.transporter = nodemailer.createTransport({
         host: process.env.UNISENDER_SMTP_HOST,
-        port: Number(process.env.UNISENDER_SMTP_PORT) || 465,
-        secure: true,
+        port: Number(process.env.UNISENDER_SMTP_PORT) || 587,
+        secure: false, // false для TLS на порту 587 (STARTTLS)
         auth: {
           user: process.env.UNISENDER_SMTP_USER || '',
           pass: process.env.UNISENDER_SMTP_PASS || '',
@@ -115,7 +115,7 @@ class EmailService {
 
     return this.sendEmail({
       to,
-      subject: 'Подтверждение email для каталога психологов',
+      subject: 'Подтверждение email для ДавайВместе - каталога психологов',
       html,
     });
   }
