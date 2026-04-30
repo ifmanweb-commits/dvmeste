@@ -1,0 +1,48 @@
+# Caddyfile для dvmeste.ru
+# Скопируйте это содержимое в /etc/caddy/Caddyfile на сервере
+
+push.psy-zrosta.ru {
+    reverse_proxy localhost:3000
+}
+
+dvmeste.ru {
+    # Раздача загруженных файлов напрямую из storage
+    handle /files/* {
+        root * /opt/dvmeste/storage
+        file_server
+    }
+    
+    handle /images/* {
+        root * /opt/dvmeste/storage
+        file_server
+    }
+    
+    handle /certificates/* {
+        root * /opt/dvmeste/storage
+        file_server
+    }
+    
+    # Остальные запросы — в Next.js приложение
+    reverse_proxy localhost:3001
+}
+
+www.dvmeste.ru {
+    # Раздача загруженных файлов напрямую из storage
+    handle /files/* {
+        root * /opt/dvmeste/storage
+        file_server
+    }
+    
+    handle /images/* {
+        root * /opt/dvmeste/storage
+        file_server
+    }
+    
+    handle /certificates/* {
+        root * /opt/dvmeste/storage
+        file_server
+    }
+    
+    # Остальные запросы — в Next.js приложение
+    reverse_proxy localhost:3001
+}
