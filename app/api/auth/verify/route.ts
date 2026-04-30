@@ -8,14 +8,22 @@ import { resetLoginAttempts } from '@/lib/auth/rate-limiter'
 
 export const runtime = 'nodejs'
 
+// Базовый URL для редиректов
+function getBaseUrl() {
+  return process.env.NEXT_PUBLIC_BASE_URL 
+    || process.env.NEXTAUTH_URL 
+    || 'https://dvmeste.ru'
+}
+
 export async function GET(req: Request) {
   try {
+    const baseUrl = getBaseUrl()
     const { searchParams } = new URL(req.url)
     const token = searchParams.get('token')
     const email = searchParams.get('email')
     
     if (!token || !email) {
-      return NextResponse.redirect(new URL('/auth/login?error=invalid', req.url))
+      return NextResponse.redirect(new URL('/auth/login?error=invalid', baseUrl))
     }
 
     const normalizedEmail = email.toLowerCase().trim()
@@ -45,7 +53,7 @@ export async function GET(req: Request) {
       })
       
       return NextResponse.redirect(
-        new URL('/auth/login?error=expired', req.url)
+        new URL('/auth/login?error=expired', baseUrl)
       )
     }
     
@@ -84,7 +92,7 @@ export async function GET(req: Request) {
         })
         
         return NextResponse.redirect(
-          new URL('/auth/login?error=user_not_found', req.url)
+          new URL('/auth/login?error=user_not_found', baseUrl)
         )
       }
       
@@ -129,7 +137,7 @@ export async function GET(req: Request) {
       await resetLoginAttempts(normalizedEmail)
       
       // Редирект в ЛК клиента
-      return NextResponse.redirect(new URL('/client/account', req.url))
+      return NextResponse.redirect(new URL('/client/account', baseUrl))
     } else {
       // Ищем психолога
       let user = await prisma.user.findUnique({
@@ -146,7 +154,7 @@ export async function GET(req: Request) {
         })
         
         return NextResponse.redirect(
-          new URL('/auth/login?error=user_not_found', req.url)
+          new URL('/auth/login?error=user_not_found', baseUrl)
         )
       }
       
@@ -188,16 +196,16 @@ export async function GET(req: Request) {
       
       // 5. Редирект по ролям
       if (user.isAdmin || user.isManager) {
-        return NextResponse.redirect(new URL('/admin', req.url))
+        return NextResponse.redirect(new URL('/admin', baseUrl))
       }
-      
-      return NextResponse.redirect(new URL('/account', req.url))
+
+      return NextResponse.redirect(new URL('/account', baseUrl))
     }
     
   } catch (error) {
     console.error('Verify error:', error)
     return NextResponse.redirect(
-      new URL('/auth/login?error=server_error', req.url)
+      new URL('/auth/login?error=server_error', getBaseUrl())
     )
   }
 }
