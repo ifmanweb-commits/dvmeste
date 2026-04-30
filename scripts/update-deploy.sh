@@ -22,49 +22,24 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
-echo ""
-echo "📦 Шаг 1/6: Остановка приложения..."
-docker compose stop app
+echo "📦 Шаг 1/5: Pull нового кода..."
+git pull origin main
+
+echo "📦 Шаг 2/5: Пересборка Docker образа..."
+docker compose build app
+
+echo "📦 Шаг 3/5: Пересоздание и запуск контейнеров..."
+docker compose up -d --force-recreate postgres app
+
+echo "⏳ Шаг 4/5: Ожидание готовности PostgreSQL..."
+sleep 5
+docker compose exec -T postgres pg_isready -U dvmeste -d dvmeste_db
+
+echo "📦 Шаг 5/5: Применение миграций..."
+docker compose run --rm app npx prisma migrate deploy
 
 echo ""
-echo "📦 Шаг 2/6: Pull нового кода (git pull)..."
-# Предполагается, что git pull уже сделан вручную перед запуском скрипта
-# Если нужно раскомментировать:
-# git pull origin main
-
-echo ""
-echo "📦 Шаг 3/6: Пересборка Docker образа..."
-docker compose build
-
-echo ""
-echo "📦 Шаг 4/6: Поднятие PostgreSQL (если не запущен)..."
-docker compose up -d postgres
-
-echo ""
-echo "⏳ Шаг 5/6: Ожидание готовности PostgreSQL..."
-sleep 10
-
-# Проверка доступности базы
-docker compose exec -T postgres pg_isready -U dvmeste -d dvmeste_db || {
-    echo "❌ PostgreSQL не готов. Проверьте логи:"
-    docker compose logs postgres
-    exit 1
-}
-
-echo ""
-echo "📦 Шаг 6/6: Применение изменений базы данных..."
-# Проверка наличия миграций в папке prisma/migrations
-if [ -z "$(ls -A prisma/migrations 2>/dev/null)" ]; then
-    echo "⚠️  Папка migrations пуста. Используем prisma db push..."
-    docker compose run --rm app npx prisma db push
-else
-    echo "📦 Применение миграций базы данных..."
-    docker compose run --rm app npx prisma migrate deploy
-fi
-
-echo ""
-echo "🔄 Перезапуск приложения..."
-docker compose up -d app --force-recreate
+docker compose ps
 
 echo ""
 echo "============================================"
