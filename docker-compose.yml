@@ -31,6 +31,21 @@ services:
       - .env
     environment:
       - PORT=3000
+    volumes:
+      # Файлы пользователей (фото, документы)
+      - ./storage/files/users:/app/public/files/users
+      # Файлы статей
+      - ./storage/files/articles:/app/public/files/articles
+      # Файлы страниц
+      - ./storage/files/pages:/app/public/files/pages
+      # Файлы секретных страниц
+      - ./storage/files/secret-pages:/app/public/files/secret-pages
+      # Изображения (значки, шаблоны, иконки)
+      - ./storage/images:/app/public/images
+      # Сертификаты
+      - ./storage/certificates:/app/public/certificates
+      # Бэкапы
+      - ./backups:/app/backups
     depends_on:
       postgres:
         condition: service_healthy
