@@ -145,6 +145,52 @@ export async function deleteKey(id: string) {
   revalidatePath('/admin/keys');
 }
 
+export async function deleteExpiredKeys() {
+  const now = new Date();
+
+  // Находим ключи с истёкшим сроком
+  const expiredByDate = await prisma.key.findMany({
+    where: {
+      expiresAt: {
+        lt: now,
+      },
+    },
+    select: { id: true },
+  });
+
+  // Находим ключи с исчерпанным лимитом
+  const exhaustedByUses = await prisma.key.findMany({
+    where: {
+      maxUses: { gt: 0 },
+    },
+    select: { id: true, maxUses: true, usedCount: true },
+  });
+
+  const exhaustedIds = exhaustedByUses
+    .filter((k) => k.usedCount >= k.maxUses)
+    .map((k) => k.id);
+
+  // Объединяем и убираем дубликаты
+  const allIds = [...new Set([...expiredByDate.map((k) => k.id), ...exhaustedIds])];
+
+  if (allIds.length === 0) {
+    return { deleted: 0, message: 'Нет неактуальных ключей' };
+  }
+
+  // Удаляем все неактуальные ключи
+  await prisma.key.deleteMany({
+    where: {
+      id: {
+        in: allIds,
+      },
+    },
+  });
+
+  revalidatePath('/admin/keys');
+
+  return { deleted: allIds.length, message: `Удалено ключей: ${allIds.length}` };
+}
+
 export async function getKeyById(id: string) {
   return prisma.key.findUnique({ where: { id } });
 }

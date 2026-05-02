@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import { manualAdjustment } from '@/lib/billing';
 import { KeyAction } from '@/app/(admin)/admin/keys/actions';
+import { revokeAwardByType } from '@/lib/actions/admin-psychologists';
 
 export async function POST(request: NextRequest) {
   try {
@@ -248,13 +249,8 @@ async function executeAction(action: KeyAction, userId: string) {
     case 'revoke_award': {
       if (!action.awardId) throw new Error('Не указан awardId');
       
-      // Удаляем запись о награде из CertificationAward
-      await prisma.certificationAward.deleteMany({
-        where: {
-          userId,
-          awardId: action.awardId,
-        },
-      });
+      // Используем общую функцию отзыва награды (удаляет Certificate + файл + CertificationAward)
+      await revokeAwardByType(userId, action.awardId);
       break;
     }
 

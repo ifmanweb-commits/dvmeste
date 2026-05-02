@@ -1,10 +1,11 @@
 'use client';
 
 import Link from "next/link";
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import DeleteKeyButton from "./DeleteKeyButton";
 import SecretsTabs from "../secrets/components/SecretsTabs";
+import { deleteExpiredKeys } from "./actions";
 
 interface Key {
   id: string;
@@ -112,6 +113,8 @@ function KeysTable({ keys }: KeysTableProps) {
 export default function KeysPage() {
   const [keys, setKeys] = useState<Key[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchKeys = async () => {
@@ -137,6 +140,24 @@ export default function KeysPage() {
     );
   }
 
+  const handleDeleteExpired = async () => {
+    if (!confirm('Удалить все неактуальные ключи (с истёкшим сроком или исчерпанным лимитом)?')) return;
+    setIsDeleting(true);
+    setDeleteMessage(null);
+    try {
+      const result = await deleteExpiredKeys();
+      setDeleteMessage(result.message);
+      // Перезагружаем список ключей
+      const response = await fetch('/api/admin/keys');
+      const data = await response.json();
+      setKeys(data.keys);
+    } catch (error) {
+      setDeleteMessage('Ошибка при удалении ключей');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div>
       <div className="mb-6">
@@ -145,13 +166,31 @@ export default function KeysPage() {
             <h1 className="text-3xl font-bold text-gray-900">Ключи доступа</h1>
             <p className="text-gray-500 mt-1">Управление ключами доступа</p>
           </div>
-          <Link
-            href="/admin/keys/new"
-            className="rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
-          >
-            + Создать ключ
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleDeleteExpired}
+              disabled={isDeleting}
+              className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              {isDeleting ? 'Удаление...' : 'Удалить неактуальные'}
+            </button>
+            <Link
+              href="/admin/keys/new"
+              className="rounded-lg bg-[#5858E2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4a4ac9]"
+            >
+              + Создать ключ
+            </Link>
+          </div>
         </div>
+
+        {deleteMessage && (
+          <div className={`mt-3 px-4 py-2 rounded-lg text-sm font-medium ${
+            deleteMessage.includes('Нет') ? 'bg-gray-100 text-gray-600' : 'bg-green-50 text-green-700'
+          }`}>
+            {deleteMessage}
+          </div>
+        )}
 
         {/* Вкладки */}
         <SecretsTabs />

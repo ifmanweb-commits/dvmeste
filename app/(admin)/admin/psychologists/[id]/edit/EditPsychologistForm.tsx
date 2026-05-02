@@ -6,7 +6,9 @@ import {
   updatePsychologist, 
   getPsychologistById, 
   deleteDocumentAsAdmin,
-  togglePsychologistPublish
+  togglePsychologistPublish,
+  getPsychologistAwards,
+  revokePsychologistAward
 } from "@/lib/actions/admin-psychologists";
 import { getAllCoursesForSelect } from "@/lib/actions/courses";
 import { CoursesBlock } from "@/components/admin/CoursesBlock";
@@ -37,6 +39,9 @@ function EditPsychologistForm() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [lastUpdated, setLastUpdated] = useState(Date.now());
+  const [awards, setAwards] = useState<any[]>([]);
+  const [revokeModal, setRevokeModal] = useState<{ open: boolean; awardId: string; awardName: string }>({ open: false, awardId: '', awardName: '' });
+  const [isRevoking, setIsRevoking] = useState(false);
   // Таймер для скрытия сообщения
   useEffect(() => {
     if (message) {
@@ -48,14 +53,16 @@ function EditPsychologistForm() {
 
   useEffect(() => {
     async function loadData() {
-      const [data, allCourses] = await Promise.all([
+      const [data, allCourses, awardsData] = await Promise.all([
         getPsychologistById(id),
         getAllCoursesForSelect(),
+        getPsychologistAwards(id),
       ]);
       if (data) {
         setUser(data);
         setParadigms(data.mainParadigm || []);
         setCourses(allCourses);
+        setAwards(awardsData);
       }
       setLoading(false);
     }
@@ -190,6 +197,25 @@ function EditPsychologistForm() {
       }));
     } else {
       alert(result.error || "Ошибка при удалении");
+    }
+  };
+
+  const handleRevokeAward = async () => {
+    if (!revokeModal.awardId) return;
+    setIsRevoking(true);
+    try {
+      const result = await revokePsychologistAward(revokeModal.awardId);
+      if (result.success) {
+        setAwards(prev => prev.filter(a => a.id !== revokeModal.awardId));
+        setMessage({ type: 'success', text: 'Награда отозвана' });
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Ошибка при отзыве награды' });
+      }
+    } catch (e) {
+      setMessage({ type: 'error', text: 'Ошибка при отзыве награды' });
+    } finally {
+      setIsRevoking(false);
+      setRevokeModal({ open: false, awardId: '', awardName: '' });
     }
   };
 
@@ -606,6 +632,110 @@ function EditPsychologistForm() {
               />
             </div>
           </section>
+
+          {/* СЕКЦИЯ 6: Награды */}
+          <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+              <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-gray-400" /> Награды
+              </h2>
+            </div>
+            <div className="p-6">
+              {awards.length === 0 ? (
+                <p className="text-sm text-gray-400 py-4 italic">Нет наград</p>
+              ) : (
+                <div className="space-y-3">
+                  {awards.map((awardItem) => (
+                    <div
+                      key={awardItem.id}
+                      className="flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-gray-50"
+                    >
+                      <div className="flex items-center gap-4">
+                        {awardItem.award?.badgeUrl ? (
+                          <img
+                            src={awardItem.award.badgeUrl}
+                            alt={awardItem.award.name}
+                            className="w-12 h-12 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-[#5858E2]/10 flex items-center justify-center">
+                            <CheckCircle2 className="w-6 h-6 text-[#5858E2]" />
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {awardItem.award?.name || 'Без названия'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {awardItem.award?.type === 'BADGE' ? 'Ачивка' : 'Сертификат'}
+                            {awardItem.certification && ` • ${awardItem.certification.title}`}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Выдана: {new Date(awardItem.awardedAt).toLocaleDateString('ru-RU')}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setRevokeModal({
+                          open: true,
+                          awardId: awardItem.id,
+                          awardName: awardItem.award?.name || 'Награда',
+                        })}
+                        className="text-sm text-red-600 hover:text-red-800 font-medium px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 transition-colors"
+                      >
+                        Отозвать
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Модалка подтверждения отзыва награды */}
+          {revokeModal.open && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div
+                className="absolute inset-0 bg-black/50"
+                onClick={() => setRevokeModal({ open: false, awardId: '', awardName: '' })}
+              />
+              <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Отозвать награду
+                </h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  Вы уверены, что хотите отозвать награду{' '}
+                  <span className="font-medium text-gray-900">«{revokeModal.awardName}»</span>?
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setRevokeModal({ open: false, awardId: '', awardName: '' })}
+                    disabled={isRevoking}
+                    className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRevokeAward}
+                    disabled={isRevoking}
+                    className="px-4 py-2 rounded-lg bg-red-600 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isRevoking ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Отзыв...
+                      </>
+                    ) : (
+                      'Отозвать'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Финальные действия */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">

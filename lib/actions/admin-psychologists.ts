@@ -683,3 +683,138 @@ export async function addModerationComment(userId: string, comment: string) {
     return null
   }
 }
+
+// ======================================
+// НАГРАДЫ ПСИХОЛОГА
+// ======================================
+
+export async function getPsychologistAwards(psychologistId: string) {
+  await requireAdmin()
+  
+  if (!prisma) return []
+
+  try {
+    const awards = await prisma.certificationAward.findMany({
+      where: { userId: psychologistId },
+      include: {
+        award: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            badgeUrl: true,
+          }
+        },
+        certification: {
+          select: {
+            id: true,
+            title: true,
+            level: true,
+          }
+        },
+      },
+      orderBy: { awardedAt: 'desc' },
+    })
+
+    return awards
+  } catch (error) {
+    console.error('Error fetching psychologist awards:', error)
+    return []
+  }
+}
+
+// Внутренняя функция для удаления Certificate и файла
+async function deleteCertificateAndFile(certificateId: string) {
+  const certificate = await prisma!.certificate.findUnique({
+    where: { id: certificateId },
+  })
+
+  if (!certificate) return
+
+  // Удаляем файл сгенерированного сертификата
+  if (certificate.imageUrl) {
+    const filePath = path.join(process.cwd(), "public", certificate.imageUrl)
+    await fs.unlink(filePath).catch(() => console.log("Файл сертификата уже удалён или путь неверный"))
+  }
+
+  // Удаляем запись из БД
+  await prisma!.certificate.delete({
+    where: { id: certificateId },
+  })
+}
+
+/**
+ * Отозвать конкретную CertificationAward по ID (используется в админке профиля)
+ */
+export async function revokePsychologistAward(certificationAwardId: string) {
+  await requireAdmin()
+  
+  if (!prisma) return { success: false, error: "Нет подключения к БД" }
+
+  try {
+    const existing = await prisma.certificationAward.findUnique({
+      where: { id: certificationAwardId },
+    })
+
+    if (!existing) {
+      return { success: false, error: "Награда не найдена" }
+    }
+
+    // Если есть связанный сертификат — удаляем его и файл
+    if (existing.certificateId) {
+      await deleteCertificateAndFile(existing.certificateId)
+    }
+
+    // Удаляем запись о награде
+    await prisma.certificationAward.delete({
+      where: { id: certificationAwardId },
+    })
+
+    revalidatePath(`/admin/psychologists/${existing.userId}/edit`)
+    return { success: true }
+  } catch (error) {
+    console.error('Error revoking award:', error)
+    return { success: false, error: "Ошибка при отзыве награды" }
+  }
+}
+
+/**
+ * Отозвать награду по типу (awardId) для конкретного пользователя (используется при активации ключа)
+ */
+export async function revokeAwardByType(userId: string, awardId: string) {
+  if (!prisma) return { success: false, error: "Нет подключения к БД" }
+
+  try {
+    // Находим все CertificationAward у пользователя с данным awardId
+    const awards = await prisma.certificationAward.findMany({
+      where: {
+        userId,
+        awardId,
+      },
+    })
+
+    if (awards.length === 0) {
+      return { success: false, error: "Награда не найдена у пользователя" }
+    }
+
+    // Для каждой найденной награды удаляем Certificate (если есть) и саму награду
+    for (const award of awards) {
+      if (award.certificateId) {
+        await deleteCertificateAndFile(award.certificateId)
+      }
+    }
+
+    // Удаляем все найденные записи
+    await prisma.certificationAward.deleteMany({
+      where: {
+        userId,
+        awardId,
+      },
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error revoking award by type:', error)
+    return { success: false, error: "Ошибка при отзыве награды" }
+  }
+}
