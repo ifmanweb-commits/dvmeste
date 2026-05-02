@@ -14,7 +14,8 @@ export interface KeyAction {
     | 'add_balance'
     | 'subtract_balance'
     | 'add_attempts'
-    | 'give_award';
+    | 'give_award'
+    | 'revoke_award';
   pageId?: string;
   courseId?: string;
   challengeId?: string;

@@ -54,6 +54,7 @@ const ACTION_TYPES = [
   { value: 'subtract_balance', label: 'Списать рубли' },
   { value: 'add_attempts', label: 'Дать попытки' },
   { value: 'give_award', label: 'Выдать награду' },
+  { value: 'revoke_award', label: 'Отобрать награду' },
 ] as const;
 
 export default function KeyForm({ pages, courses, challenges, initialData }: KeyFormProps) {
@@ -365,10 +366,10 @@ export default function KeyForm({ pages, courses, challenges, initialData }: Key
                       required
                     />
                   </div>
-                ) : action.type === 'give_award' ? (
+                ) : action.type === 'give_award' || action.type === 'revoke_award' ? (
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
-                      Награда (ачивка)
+                      {action.type === 'revoke_award' ? 'Награда для отзыва' : 'Награда (ачивка)'}
                     </label>
                     <select
                       value={action.awardId || ''}

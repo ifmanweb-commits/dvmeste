@@ -107,6 +107,7 @@ function getActionLabel(action: KeyAction): string {
     subtract_balance: 'Списание средств',
     add_attempts: 'Добавление попыток',
     give_award: 'Выдача награды',
+    revoke_award: 'Отзыв награды',
   };
   return labels[action.type] || action.type;
 }
@@ -157,7 +158,8 @@ async function getActionDescription(action: KeyAction): Promise<string> {
       return `-${action.amount} ₽`;
     case 'add_attempts':
       return `+${action.quantity} попыток`;
-    case 'give_award': {
+    case 'give_award':
+    case 'revoke_award': {
       if (!action.awardId) return '';
       try {
         const award = await prisma.award.findUnique({

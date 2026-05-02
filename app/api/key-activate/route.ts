@@ -245,6 +245,19 @@ async function executeAction(action: KeyAction, userId: string) {
       break;
     }
 
+    case 'revoke_award': {
+      if (!action.awardId) throw new Error('Не указан awardId');
+      
+      // Удаляем запись о награде из CertificationAward
+      await prisma.certificationAward.deleteMany({
+        where: {
+          userId,
+          awardId: action.awardId,
+        },
+      });
+      break;
+    }
+
     default:
       console.warn(`Неизвестный тип действия: ${action.type}`);
   }
@@ -261,6 +274,7 @@ function getActionLabel(action: KeyAction): string {
     subtract_balance: 'Списаны средства',
     add_attempts: 'Добавлены попытки',
     give_award: 'Выдана награда',
+    revoke_award: 'Отозвана награда',
   };
   return labels[action.type] || action.type;
 }
