@@ -222,12 +222,20 @@ export async function getCertificateTemplateById(id: string) {
 
 // Создать шаблон
 export async function createCertificateTemplate(formData: FormData) {
+  console.log('[createCertificateTemplate] Начало выполнения');
+  console.log('[createCertificateTemplate] process.cwd():', process.cwd());
+  console.log('[createCertificateTemplate] CERTIFICATES_DIR:', CERTIFICATES_DIR);
+  
   await checkAdminOrManagerAccess();
+  console.log('[createCertificateTemplate] Проверка доступа пройдена');
   
   const name = formData.get('name') as string;
   const slug = formData.get('slug') as string;
   const isActive = formData.get('isActive') === 'on';
   const backgroundFile = formData.get('background') as File;
+  
+  console.log('[createCertificateTemplate] name:', name, 'slug:', slug, 'isActive:', isActive);
+  console.log('[createCertificateTemplate] backgroundFile:', backgroundFile?.name, 'size:', backgroundFile?.size);
   
   if (!name || !slug) {
     return { error: 'Название и slug обязательны' };
@@ -238,29 +246,38 @@ export async function createCertificateTemplate(formData: FormData) {
   if (existing) {
     return { error: 'Шаблон с таким slug уже существует' };
   }
+  console.log('[createCertificateTemplate] Slug уникален');
   
   let backgroundUrl = '';
   let fieldsJson: any = { fields: [], background: { width: 0, height: 0 } };
   
   if (backgroundFile && backgroundFile.size > 0) {
+    console.log('[createCertificateTemplate] Обработка фонового изображения...');
     // Сохраняем файл
     const bytes = await backgroundFile.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    console.log('[createCertificateTemplate] Buffer создан, размер:', buffer.length);
     
     // Создаём уникальное имя файла
     const filename = `${Date.now()}-${slug}-background.png`;
     const filepath = join(CERTIFICATES_DIR, filename);
+    console.log('[createCertificateTemplate] Путь сохранения:', filepath);
     
     // Создаём директорию если не существует
     await mkdir(CERTIFICATES_DIR, { recursive: true });
+    console.log('[createCertificateTemplate] Директория создана/проверена');
     
     // Получаем размеры изображения через loadImage
+    console.log('[createCertificateTemplate] Загрузка изображения для получения размеров...');
     const img = await loadImage(buffer);
+    console.log('[createCertificateTemplate] Изображение загружено, размеры:', img.width, 'x', img.height);
     const originalWidth = img.width;
     const originalHeight = img.height;
     
     // Сохраняем оригинал
+    console.log('[createCertificateTemplate] Сохранение файла...');
     await writeFile(filepath, buffer);
+    console.log('[createCertificateTemplate] Файл сохранён');
     
     backgroundUrl = `/images/certificates-tmpl/${filename}`;
     fieldsJson = {
@@ -272,8 +289,11 @@ export async function createCertificateTemplate(formData: FormData) {
         previewHeight: Math.round(originalHeight * (Math.min(originalWidth, 1920) / originalWidth))
       }
     };
+  } else {
+    console.log('[createCertificateTemplate] Фоновое изображение не предоставлено или пустое');
   }
   
+  console.log('[createCertificateTemplate] Создание записи в БД...');
   const template = await prisma.certificateTemplate.create({
     data: {
       name,
@@ -283,8 +303,10 @@ export async function createCertificateTemplate(formData: FormData) {
       isActive
     }
   });
+  console.log('[createCertificateTemplate] Запись создана, ID:', template.id);
   
   revalidatePath('/admin/certificate-templates');
+  console.log('[createCertificateTemplate] Путь перевалидирован');
   return { success: true, template };
 }
 
