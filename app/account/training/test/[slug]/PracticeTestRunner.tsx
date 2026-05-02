@@ -58,11 +58,11 @@ export default function PracticeTestRunner({ challenge, userId }: PracticeTestRu
           setState("ready");
         } else {
           console.error("Ошибка загрузки вопросов:", data.error);
-          router.push("/account/training");
+          router.push("/account/key-active");
         }
       } catch (error) {
         console.error("Ошибка при загрузке вопросов:", error);
-        router.push("/account/training");
+        router.push("/account/key-active");
       }
     };
 

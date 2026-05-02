@@ -25,12 +25,12 @@ export default async function PracticeTestPage({
   });
 
   if (!challenge || !challenge.test) {
-    redirect("/account/training");
+    redirect("/account/key-active");
   }
 
   // Проверяем, что это тест
   if (challenge.type !== "TEST") {
-    redirect("/account/training");
+    redirect("/account/key-active");
   }
 
   // Проверяем доступ пользователя через курсы
@@ -40,7 +40,7 @@ export default async function PracticeTestPage({
   });
 
   if (userCourses.length === 0) {
-    redirect("/account/training");
+    redirect("/account/key-active");
   }
 
   const courseIds = userCourses.map((uc) => uc.courseId);
@@ -57,7 +57,7 @@ export default async function PracticeTestPage({
   });
 
   if (!access) {
-    redirect("/account/training");
+    redirect("/account/key-active");
   }
 
   return (

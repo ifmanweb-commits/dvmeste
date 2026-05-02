@@ -62,12 +62,6 @@ export default async function CoursesPage() {
 
                 <div className="flex flex-wrap gap-2">
                   <Link
-                    href={`/admin/courses/${course.id}/keys`}
-                    className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200"
-                  >
-                    Промокоды
-                  </Link>
-                  <Link
                     href={`/admin/courses/${course.id}/students`}
                     className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200"
                   >

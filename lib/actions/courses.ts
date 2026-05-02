@@ -19,21 +19,6 @@ export interface UpdateCourseInput {
   description?: string;
 }
 
-export interface CreateCourseKeyInput {
-  courseId: string;
-  key?: string;
-  status: 'enrolled' | 'graduated';
-  maxUses: number;
-  expiresAt?: Date | null;
-}
-
-export interface UpdateCourseKeyInput {
-  key?: string;
-  status?: 'enrolled' | 'graduated';
-  maxUses?: number;
-  expiresAt?: Date | null;
-}
-
 // ==================== ДЛЯ ПОЛЬЗОВАТЕЛЯ ====================
 
 /**
@@ -49,111 +34,6 @@ export async function getUserCourses(userId: string) {
   });
 
   return userCourses;
-}
-
-/**
- * Активировать промокод
- */
-export async function activateCourseKey(key: string, userId: string) {
-  // Проверка авторизации
-  if (!userId) {
-    return { error: 'Необходимо войти в систему' };
-  }
-
-  try {
-    const result = await prisma.$transaction(async (tx) => {
-      // Найти ключ
-      const courseKey = await tx.courseKey.findUnique({
-        where: { key },
-        include: { course: true },
-      });
-
-      if (!courseKey) {
-        throw new Error('Ключ не найден');
-      }
-
-      // Проверка срока действия
-      if (courseKey.expiresAt && courseKey.expiresAt < new Date()) {
-        throw new Error('Срок действия ключа истёк');
-      }
-
-      // Проверка лимита (если maxUses > 0)
-      if (courseKey.maxUses > 0 && courseKey.usedCount >= courseKey.maxUses) {
-        throw new Error('Ключ больше не действителен');
-      }
-
-      // Проверка: не активирован ли уже этот ключ пользователем
-      const existingUse = await tx.courseKeyUse.findFirst({
-        where: {
-          keyId: courseKey.id,
-          userId,
-        },
-      });
-
-      if (existingUse) {
-        throw new Error('Вы уже активировали этот ключ');
-      }
-
-      // Проверка: есть ли уже запись в UserCourse для этого курса
-      const existingEnrollment = await tx.userCourse.findFirst({
-        where: {
-          userId,
-          courseId: courseKey.courseId,
-        },
-      });
-
-      if (!existingEnrollment) {
-        // Создаём запись в UserCourse
-        await tx.userCourse.create({
-          data: {
-            userId,
-            courseId: courseKey.courseId,
-            status: courseKey.status,
-          },
-        });
-      } else {
-        // Обновляем статус, если отличается
-        if (existingEnrollment.status !== courseKey.status) {
-          await tx.userCourse.update({
-            where: { id: existingEnrollment.id },
-            data: { status: courseKey.status },
-          });
-        }
-      }
-
-      // Увеличиваем usedCount
-      await tx.courseKey.update({
-        where: { id: courseKey.id },
-        data: { usedCount: { increment: 1 } },
-      });
-
-      // Создаём запись в CourseKeyUse
-      await tx.courseKeyUse.create({
-        data: {
-          keyId: courseKey.id,
-          userId,
-        },
-      });
-
-      return {
-        course: courseKey.course,
-        status: courseKey.status,
-      };
-    });
-
-    revalidatePath('/account/training');
-
-    return {
-      success: true,
-      course: result.course,
-      status: result.status,
-    };
-  } catch (error) {
-    if (error instanceof Error) {
-      return { error: error.message };
-    }
-    return { error: 'Произошла ошибка при активации ключа' };
-  }
 }
 
 // ==================== АДМИНСКИЕ ====================
@@ -195,7 +75,6 @@ export async function getCourseById(id: string) {
       _count: {
         select: {
           enrollments: true,
-          keys: true,
         },
       },
     },
@@ -251,98 +130,6 @@ export async function deleteCourse(id: string) {
     return { success: true };
   } catch (error) {
     return { error: 'Ошибка при удалении курса' };
-  }
-}
-
-/**
- * Получить все промокоды курса
- */
-export async function getCourseKeys(courseId: string) {
-  return prisma.courseKey.findMany({
-    where: { courseId },
-    include: {
-      _count: {
-        select: {
-          uses: true,
-        },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-}
-
-/**
- * Получить промокод по ID
- */
-export async function getCourseKeyById(id: string) {
-  return prisma.courseKey.findUnique({
-    where: { id },
-  });
-}
-
-/**
- * Создать промокод
- */
-export async function createCourseKey(data: CreateCourseKeyInput) {
-  try {
-    // Генерация ключа, если не указан
-    const key = data.key || generateRandomKey();
-
-    const courseKey = await prisma.courseKey.create({
-      data: {
-        ...data,
-        key,
-      },
-    });
-
-    revalidatePath(`/admin/courses/${data.courseId}/keys`);
-
-    return { success: true, courseKey };
-  } catch (error) {
-    return { error: 'Ошибка при создании промокода' };
-  }
-}
-
-/**
- * Обновить промокод
- */
-export async function updateCourseKey(id: string, data: UpdateCourseKeyInput) {
-  try {
-    const courseKey = await prisma.courseKey.update({
-      where: { id },
-      data,
-    });
-
-    revalidatePath(`/admin/courses/${courseKey.courseId}/keys`);
-
-    return { success: true, courseKey };
-  } catch (error) {
-    return { error: 'Ошибка при обновлении промокода' };
-  }
-}
-
-/**
- * Удалить промокод
- */
-export async function deleteCourseKey(id: string) {
-  try {
-    const courseKey = await prisma.courseKey.findUnique({
-      where: { id },
-    });
-
-    if (!courseKey) {
-      return { error: 'Промокод не найден' };
-    }
-
-    await prisma.courseKey.delete({
-      where: { id },
-    });
-
-    revalidatePath(`/admin/courses/${courseKey.courseId}/keys`);
-
-    return { success: true };
-  } catch (error) {
-    return { error: 'Ошибка при удалении промокода' };
   }
 }
 
@@ -455,19 +242,3 @@ export async function getAllPsychologists() {
   });
 }
 
-// ==================== ВСПОМОГАТЕЛЬНЫЕ ====================
-
-/**
- * Генерация случайного ключа
- */
-function generateRandomKey(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
-  for (let i = 0; i < 12; i++) {
-    if (i > 0 && i % 4 === 0) {
-      result += '-';
-    }
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}

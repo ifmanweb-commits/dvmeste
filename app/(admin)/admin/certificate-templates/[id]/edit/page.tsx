@@ -156,14 +156,18 @@ export default function EditCertificateTemplatePage() {
   async function handleSaveBasicInfo(formData: FormData) {
     setSaving(true);
     setError(null);
-    const result = await updateCertificateTemplate(templateId, formData);
-    if (result.error) {
-      setError(result.error);
-    } else {
-      // Обновляем локально
-      if (result.template) {
-        setTemplate(result.template);
+    try {
+      const result = await updateCertificateTemplate(templateId, formData);
+      if (result.error) {
+        setError(result.error);
+      } else {
+        // Обновляем локально
+        if (result.template) {
+          setTemplate(result.template);
+        }
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Произошла ошибка');
     }
     setSaving(false);
   }
@@ -171,17 +175,25 @@ export default function EditCertificateTemplatePage() {
   async function handleSaveFields() {
     setSaving(true);
     setError(null);
-    await updateTemplateFields(templateId, fieldsJson);
+    try {
+      await updateTemplateFields(templateId, fieldsJson);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Произошла ошибка');
+    }
     setSaving(false);
   }
 
   async function handleGeneratePreview() {
     setGeneratingPreview(true);
-    const result = await generateCertificatePreview(templateId, testValues);
-    if (result.success && result.dataUrl) {
-      setPreviewImage(result.dataUrl);
-    } else {
-      setError(result.error || 'Ошибка генерации');
+    try {
+      const result = await generateCertificatePreview(templateId, testValues);
+      if (result.success && result.dataUrl) {
+        setPreviewImage(result.dataUrl);
+      } else {
+        setError(result.error || 'Ошибка генерации');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Произошла ошибка');
     }
     setGeneratingPreview(false);
   }

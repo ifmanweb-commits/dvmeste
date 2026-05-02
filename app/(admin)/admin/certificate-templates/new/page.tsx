@@ -15,13 +15,18 @@ export default function NewCertificateTemplatePage() {
     setLoading(true);
     setError(null);
 
-    const result = await createCertificateTemplate(formData);
+    try {
+      const result = await createCertificateTemplate(formData);
 
-    if (result.error) {
-      setError(result.error);
+      if (result.error) {
+        setError(result.error);
+        setLoading(false);
+      } else {
+        router.push('/admin/certificate-templates');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Произошла ошибка');
       setLoading(false);
-    } else {
-      router.push('/admin/certificate-templates');
     }
   }
 
