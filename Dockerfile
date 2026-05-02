@@ -84,8 +84,7 @@ RUN mkdir -p /app/public/articles/files \
   /app/public/images \
   /app/backups
 
-# Указываем постоянные директории как volume
-VOLUME ["/app/public/articles/files", "/app/public/pages/files", "/app/public/certificates", "/app/public/files/articles", "/app/public/files/pages", "/app/public/files/secret-pages", "/app/public/files/users", "/app/public/images/certificates-tmpl", "/app/public/images/certification-badges", "/app/public/images/edu-icons", "/app/public/images/icons", "/app/backups"]
+# VOLUME удалены - docker-compose.yml управляет bind mounts
 
 USER nextjs
 
