@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { hashEmail } from '@/lib/utils/hash-email'
 import { requireAdmin } from '@/lib/auth/require'
+import { checkRateLimit, incrementAttempt } from '@/lib/auth/rate-limiter'
 
 export interface UserAccessRecord {
   id: string
@@ -144,7 +145,15 @@ export async function getUserAccesses(params: {
 }
 
 export async function grantAccess(formData: FormData) {
-  await requireAdmin()
+  const admin = await requireAdmin()
+
+  // Rate limiting для административных действий
+  const rateLimit = await checkRateLimit('admin-action', admin.id)
+  if (rateLimit.isLimited) {
+    return { error: 'Превышен лимит административных действий' }
+  }
+
+  await incrementAttempt('admin-action', admin.id)
 
   try {
     const email = formData.get('email') as string
@@ -218,7 +227,15 @@ export async function grantAccess(formData: FormData) {
 }
 
 export async function revokeAccess(id: string) {
-  await requireAdmin()
+  const admin = await requireAdmin()
+
+  // Rate limiting для административных действий
+  const rateLimit = await checkRateLimit('admin-action', admin.id)
+  if (rateLimit.isLimited) {
+    return { error: 'Превышен лимит административных действий' }
+  }
+
+  await incrementAttempt('admin-action', admin.id)
 
   try {
     await prisma.userAccess.delete({

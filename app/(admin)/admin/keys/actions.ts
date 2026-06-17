@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth/require';
+import { checkRateLimit, incrementAttempt } from '@/lib/auth/rate-limiter';
 
 export interface KeyAction {
   type:
@@ -31,7 +32,13 @@ export interface KeyActionsData {
 }
 
 export async function createKey(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  
+  // Rate limiting для административных действий
+  const rateLimit = await checkRateLimit('admin-action', admin.id);
+  if (rateLimit.isLimited) {
+    throw new Error('Превышен лимит административных действий');
+  }
 
   const code = formData.get('code') as string;
   const maxUses = parseInt(formData.get('maxUses') as string, 10);
@@ -58,6 +65,9 @@ export async function createKey(formData: FormData) {
     throw new Error('Ключ должен содержать хотя бы одно действие');
   }
 
+  // Увеличиваем счётчик попыток
+  await incrementAttempt('admin-action', admin.id);
+
   await prisma.key.create({
     data: {
       code,
@@ -73,7 +83,16 @@ export async function createKey(formData: FormData) {
 }
 
 export async function updateKey(id: string, formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  
+  // Rate limiting для административных действий
+  const rateLimit = await checkRateLimit('admin-action', admin.id);
+  if (rateLimit.isLimited) {
+    throw new Error('Превышен лимит административных действий');
+  }
+  
+  // Увеличиваем счётчик попыток
+  await incrementAttempt('admin-action', admin.id);
 
   const code = formData.get('code') as string;
   const maxUses = parseInt(formData.get('maxUses') as string, 10);
@@ -123,7 +142,15 @@ export async function updateKey(id: string, formData: FormData) {
 }
 
 export async function updateKeyAction(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  
+  // Rate limiting для административных действий
+  const rateLimit = await checkRateLimit('admin-action', admin.id);
+  if (rateLimit.isLimited) {
+    throw new Error('Превышен лимит административных действий');
+  }
+  
+  await incrementAttempt('admin-action', admin.id);
 
   const code = formData.get('code') as string;
   const maxUses = parseInt(formData.get('maxUses') as string, 10);
@@ -136,7 +163,15 @@ export async function updateKeyAction(formData: FormData) {
 }
 
 export async function deleteKey(id: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  
+  // Rate limiting для административных действий
+  const rateLimit = await checkRateLimit('admin-action', admin.id);
+  if (rateLimit.isLimited) {
+    throw new Error('Превышен лимит административных действий');
+  }
+  
+  await incrementAttempt('admin-action', admin.id);
 
   const key = await prisma.key.findUnique({ where: { id } });
   if (!key) {
@@ -155,7 +190,15 @@ export async function deleteKey(id: string) {
 }
 
 export async function deleteExpiredKeys() {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  
+  // Rate limiting для административных действий
+  const rateLimit = await checkRateLimit('admin-action', admin.id);
+  if (rateLimit.isLimited) {
+    throw new Error('Превышен лимит административных действий');
+  }
+  
+  await incrementAttempt('admin-action', admin.id);
 
   const now = new Date();
 

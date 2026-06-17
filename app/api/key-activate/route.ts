@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { manualAdjustment } from '@/lib/billing';
 import { KeyAction } from '@/app/(admin)/admin/keys/actions';
 import { revokeAwardByType } from '@/lib/actions/admin-psychologists';
+import { checkRateLimit, incrementAttempt } from '@/lib/auth/rate-limiter';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,6 +23,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Требуется авторизация' },
         { status: 401 }
+      );
+    }
+
+    // 1.1. Проверить rate limiting для активации ключей
+    const rateLimit = await checkRateLimit('key-activate', user.id);
+    if (rateLimit.isLimited) {
+      return NextResponse.json(
+        { error: `Превышен лимит активации ключей. Попробуйте через ${Math.ceil((rateLimit.resetAt!.getTime() - Date.now()) / 60000)} мин` },
+        { status: 429 }
       );
     }
 
@@ -70,6 +80,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // 5.1. Увеличить счётчик попыток
+    await incrementAttempt('key-activate', user.id);
 
     // 6. Получить действия из ключа
     const actionsData = key.actionsJson as any;

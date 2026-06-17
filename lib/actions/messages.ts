@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/auth/require"
 import { DialogStatus, NotificationType } from "@prisma/client"
 import { sendNotification } from "@/lib/notifications"
+import { checkRateLimit, incrementAttempt } from '@/lib/auth/rate-limiter'
 
 // Очистка текста от HTML-тегов
 function sanitizeHtml(text: string): string {
@@ -67,6 +68,12 @@ export async function sendMessage(text: string) {
       return { success: false, error: "Доступ заблокирован" }
     }
 
+    // Rate limiting для отправки сообщений
+    const rateLimit = await checkRateLimit('message-send', user.id)
+    if (rateLimit.isLimited) {
+      return { success: false, error: 'Превышен лимит отправки сообщений' }
+    }
+
     const sanitizedText = sanitizeHtml(text).trim()
 
     if (!sanitizedText) {
@@ -81,6 +88,9 @@ export async function sendMessage(text: string) {
     if (!dialog) {
       return { success: false, error: "Диалог не найден" }
     }
+
+    // Увеличиваем счётчик попыток
+    await incrementAttempt('message-send', user.id)
 
     // Создаем сообщение и обновляем диалог в одной транзакции
     await prisma.$transaction([

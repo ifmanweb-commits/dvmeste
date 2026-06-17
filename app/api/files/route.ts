@@ -4,6 +4,7 @@ import path from "path";
 import { UPLOAD_POLICIES, UploadScope } from '@/lib/upload-config';
 import { saveFileToDisk } from '@/lib/storage-service';
 import { getCurrentUser } from '@/lib/auth/session';
+import { checkRateLimit, incrementAttempt } from '@/lib/auth/rate-limiter';
 
 export const runtime = "nodejs";
 
@@ -429,6 +430,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Требуется аутентификация" }, { status: 401 });
     }
 
+    // ПРОВЕРКА 2: Rate Limiting для загрузки файлов
+    const rateLimit = await checkRateLimit('file-upload', user.id);
+    if (rateLimit.isLimited) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `Превышен лимит загрузки файлов. Попробуйте через ${Math.ceil((rateLimit.resetAt!.getTime() - Date.now()) / 60000)} мин` 
+      }, { status: 429 });
+    }
+
     const formData = await request.formData();
     
     // 2. Извлекаем и типизируем scope
@@ -460,6 +470,9 @@ export async function POST(request: NextRequest) {
     if (!(file instanceof File) || file.size <= 0) {
       return NextResponse.json({ success: false, error: "Файл не передан или пустой" }, { status: 400 });
     }
+
+    // Увеличиваем счётчик попыток
+    await incrementAttempt('file-upload', user.id);
 
     // 4. ПРОВЕРКА ПО ПОЛИТИКЕ (UPLOAD_POLICIES)
     const policy = UPLOAD_POLICIES[scope];

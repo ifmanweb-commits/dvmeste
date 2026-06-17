@@ -1,19 +1,21 @@
 import { prisma } from '@/lib/prisma'
-
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000 // 1 час
-const MAX_ATTEMPTS = 3
+import { getRateLimitRule, createRateLimitKey, type RateLimitRule } from '@/lib/auth/rate-limit-config'
 
 /**
- * Проверяет лимит попыток входа для email
- * Возвращает информацию о текущем состоянии
+ * Универсальная проверка rate limit
+ * 
+ * @param action - тип операции (login, file-upload, etc)
+ * @param identifier - идентификатор (email, userId, IP)
+ * @returns информация о текущем состоянии лимита
  */
-export async function checkRateLimit(email: string): Promise<{
+export async function checkRateLimit(action: string, identifier: string): Promise<{
   isLimited: boolean
   remainingAttempts: number
   resetAt: Date | null
+  rule: RateLimitRule
 }> {
-  const normalizedEmail = email.toLowerCase().trim()
-  const key = `login:${normalizedEmail}`
+  const rule = getRateLimitRule(action)
+  const key = createRateLimitKey(action, identifier)
   
   const now = new Date()
   
@@ -26,34 +28,41 @@ export async function checkRateLimit(email: string): Promise<{
   if (!rateLimit || rateLimit.expiresAt < now) {
     return {
       isLimited: false,
-      remainingAttempts: MAX_ATTEMPTS,
-      resetAt: null
+      remainingAttempts: rule.maxAttempts,
+      resetAt: null,
+      rule
     }
   }
   
-  const remainingAttempts = MAX_ATTEMPTS - rateLimit.count
+  const remainingAttempts = rule.maxAttempts - rateLimit.count
   const isLimited = remainingAttempts <= 0
   
   return {
     isLimited,
-    remainingAttempts,
-    resetAt: rateLimit.expiresAt
+    remainingAttempts: Math.max(0, remainingAttempts),
+    resetAt: rateLimit.expiresAt,
+    rule
   }
 }
 
 /**
- * Увеличивает счетчик попыток для email
+ * Увеличивает счетчик попыток
+ * 
+ * @param action - тип операции
+ * @param identifier - идентификатор
+ * @returns обновлённое состояние лимита
  */
-export async function incrementLoginAttempt(email: string): Promise<{
+export async function incrementAttempt(action: string, identifier: string): Promise<{
   isLimited: boolean
   remainingAttempts: number
   resetAt: Date
+  rule: RateLimitRule
 }> {
-  const normalizedEmail = email.toLowerCase().trim()
-  const key = `login:${normalizedEmail}`
+  const rule = getRateLimitRule(action)
+  const key = createRateLimitKey(action, identifier)
   
   const now = new Date()
-  const expiresAt = new Date(now.getTime() + RATE_LIMIT_WINDOW_MS)
+  const expiresAt = new Date(now.getTime() + rule.windowMs)
   
   // Используем upsert для атомарного обновления
   const rateLimit = await prisma.rateLimit.upsert({
@@ -69,28 +78,82 @@ export async function incrementLoginAttempt(email: string): Promise<{
     }
   })
   
-  const remainingAttempts = MAX_ATTEMPTS - rateLimit.count
+  const remainingAttempts = rule.maxAttempts - rateLimit.count
   const isLimited = remainingAttempts <= 0
   
   return {
     isLimited,
     remainingAttempts: Math.max(0, remainingAttempts),
-    resetAt: expiresAt
+    resetAt: expiresAt,
+    rule
   }
 }
 
 /**
- * Сбрасывает счетчик попыток для email (при успешном входе)
+ * Сбрасывает счетчик попыток (при успешном выполнении операции)
+ * 
+ * @param action - тип операции
+ * @param identifier - идентификатор
  */
-export async function resetLoginAttempts(email: string): Promise<void> {
-  const normalizedEmail = email.toLowerCase().trim()
-  const key = `login:${normalizedEmail}`
+export async function resetAttempts(action: string, identifier: string): Promise<void> {
+  const key = createRateLimitKey(action, identifier)
   
   await prisma.rateLimit.delete({
     where: { key }
   }).catch(() => {
     // Игнорируем ошибку если записи не существует
   })
+}
+
+/**
+ * Проверяет, нужно ли требовать капчу
+ */
+export function shouldRequireCaptcha(remainingAttempts: number, rule: RateLimitRule): boolean {
+  if (rule.requireCaptchaAfter === 0) return false
+  return remainingAttempts <= (rule.maxAttempts - rule.requireCaptchaAfter)
+}
+
+// ==========================================
+// Обратная совместимость — legacy функции для login
+// ==========================================
+
+/**
+ * @deprecated Используйте checkRateLimit('login', email)
+ */
+export async function checkLoginRateLimit(email: string): Promise<{
+  isLimited: boolean
+  remainingAttempts: number
+  resetAt: Date | null
+}> {
+  const result = await checkRateLimit('login', email)
+  return {
+    isLimited: result.isLimited,
+    remainingAttempts: result.remainingAttempts,
+    resetAt: result.resetAt
+  }
+}
+
+/**
+ * @deprecated Используйте incrementAttempt('login', email)
+ */
+export async function incrementLoginAttempt(email: string): Promise<{
+  isLimited: boolean
+  remainingAttempts: number
+  resetAt: Date
+}> {
+  const result = await incrementAttempt('login', email)
+  return {
+    isLimited: result.isLimited,
+    remainingAttempts: result.remainingAttempts,
+    resetAt: result.resetAt
+  }
+}
+
+/**
+ * @deprecated Используйте resetAttempts('login', email)
+ */
+export async function resetLoginAttempts(email: string): Promise<void> {
+  return resetAttempts('login', email)
 }
 
 /**

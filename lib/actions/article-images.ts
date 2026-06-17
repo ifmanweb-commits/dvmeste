@@ -7,6 +7,44 @@ import { writeFile, unlink, mkdir } from "fs/promises";
 import path from "path";
 import { revalidatePath } from "next/cache";
 
+/**
+ * Magic Bytes (сигнатуры файлов) для проверки соответствия MIME-типа
+ */
+const MAGIC_BYTES: Record<string, { bytes: string; offset?: number }> = {
+  'image/jpeg': { bytes: 'ffd8ff' },
+  'image/png': { bytes: '89504e470d0a1a0a' },
+  'image/webp': { bytes: '52494646', offset: 0 },
+};
+
+/**
+ * Проверяет Magic Bytes файла на соответствие MIME-типу
+ */
+async function verifyMagicBytes(file: File, mimeType: string): Promise<boolean> {
+  const signature = MAGIC_BYTES[mimeType];
+  if (!signature) return true; // Нет сигнатуры для этого типа - пропускаем
+
+  try {
+    // Для WebP нужна дополнительная проверка структуры
+    if (mimeType === 'image/webp') {
+      const buffer = await file.slice(0, 12).arrayBuffer();
+      const hex = Buffer.from(buffer).toString('hex');
+      // WebP: RIFF....WEBP
+      return hex.startsWith('52494646') && hex.substring(8, 12) === '57454250';
+    }
+
+    // Для остальных типов проверяем сигнатуру
+    const bytesToRead = signature.bytes.length / 2;
+    const offset = signature.offset || 0;
+    const buffer = await file.slice(offset, offset + bytesToRead).arrayBuffer();
+    const hex = Buffer.from(buffer).toString('hex');
+    
+    return hex.toLowerCase() === signature.bytes.toLowerCase();
+  } catch (error) {
+    console.error(`[verifyMagicBytes] Error checking ${mimeType}:`, error);
+    return true; // В случае ошибки - не блокируем
+  }
+}
+
 // Транслитерация для имени файла
 function transliterate(text: string): string {
   const map: Record<string, string> = {
@@ -88,6 +126,14 @@ export async function uploadArticleImage(articleId: string, formData: FormData) 
 
     if (file.size > 5 * 1024 * 1024) { // 5MB
       throw new Error("Размер файла не должен превышать 5 МБ");
+    }
+
+    // Проверка Magic Bytes (сигнатуры файла)
+    // Защита от подделки MIME-типа (когда файл .exe называют .jpg)
+    const isMagicBytesValid = await verifyMagicBytes(file, file.type);
+    if (!isMagicBytesValid) {
+      console.error(`[uploadArticleImage] Magic Bytes mismatch for file ${file.name}, type: ${file.type}`);
+      throw new Error("Файл не соответствует заявленному формату");
     }
 
     // Создаём папку, если её нет

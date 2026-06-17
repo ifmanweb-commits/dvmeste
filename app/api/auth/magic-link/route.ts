@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { createMagicLink } from '@/lib/auth/magic-link'
 import { createHash } from 'crypto'
 import { headers } from 'next/headers'
-import { checkRateLimit, incrementLoginAttempt, verifySmartCaptcha } from '@/lib/auth/rate-limiter'
+import { checkRateLimit, incrementAttempt, verifySmartCaptcha, shouldRequireCaptcha } from '@/lib/auth/rate-limiter'
 
 export const runtime = 'nodejs'
 
@@ -26,10 +26,10 @@ export async function POST(req: Request) {
     }
 
     // Проверяем лимит попыток
-    const rateLimit = await checkRateLimit(email)
+    const rateLimit = await checkRateLimit('login', email)
     
     // Если лимит превышен - требуем капчу
-    if (rateLimit.isLimited || rateLimit.remainingAttempts <= 0) {
+    if (rateLimit.isLimited || rateLimit.remainingAttempts <= 0 || shouldRequireCaptcha(rateLimit.remainingAttempts, rateLimit.rule)) {
       if (!captchaToken) {
         return NextResponse.json(
           { 
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
     }
     
     // 3. Увеличиваем счетчик попыток
-    const attemptResult = await incrementLoginAttempt(email)
+    const attemptResult = await incrementAttempt('login', email)
     
     // 4. Отправляем Magic Link с типом пользователя
     await createMagicLink(normalizedEmail, userType)

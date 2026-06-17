@@ -4,9 +4,16 @@ import { prisma } from '@/lib/prisma'
 import { requirePsychologist } from '@/lib/auth/require'
 import { revalidatePath } from 'next/cache'
 import { DocumentType } from '@prisma/client'
+import { checkRateLimit, incrementAttempt } from '@/lib/auth/rate-limiter'
 
 export async function updatePsychologistProfile(userId: string, formData: FormData) {
   const currentUser = await requirePsychologist()
+
+  // Rate limiting для изменения профиля
+  const rateLimit = await checkRateLimit('profile-update', currentUser.id)
+  if (rateLimit.isLimited) {
+    throw new Error(`Превышен лимит изменения профиля. Попробуйте через ${Math.ceil((rateLimit.resetAt!.getTime() - Date.now()) / 60000)} мин`)
+  }
 
   // Проверяем, что пользователь редактирует только свой профиль
   if (userId !== currentUser.id) {
@@ -44,6 +51,9 @@ export async function updatePsychologistProfile(userId: string, formData: FormDa
       mainParadigm: mainParadigm,
       hasUnpublishedChanges: true,
     }
+
+    // Увеличиваем счётчик попыток
+    await incrementAttempt('profile-update', currentUser.id)
 
     await prisma.user.update({
       where: { id: userId },

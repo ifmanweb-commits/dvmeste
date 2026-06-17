@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth/require";
+import { checkRateLimit, incrementAttempt } from '@/lib/auth/rate-limiter';
 
 // ==================== ИНТЕРФЕЙСЫ ====================
 
@@ -24,6 +25,12 @@ export async function createComplaint(
   data: CreateComplaintInput
 ): Promise<{ success: boolean; complaintId?: string; error?: string }> {
   try {
+    // Rate limiting для создания жалоб
+    const rateLimit = await checkRateLimit('message-send', data.fromId)
+    if (rateLimit.isLimited) {
+      return { success: false, error: 'Превышен лимит создания жалоб' }
+    }
+
     // Валидация входных данных
     if (!data.fromType || !data.fromId || !data.toType || !data.toId || !data.reason) {
       return { success: false, error: "Не все обязательные поля заполнены" };
@@ -58,6 +65,9 @@ export async function createComplaint(
     } else {
       complaintData.toPsychologistId = data.toId;
     }
+
+    // Увеличиваем счётчик попыток
+    await incrementAttempt('message-send', data.fromId)
 
     // Создание жалобы
     const complaint = await prisma.complaint.create({
