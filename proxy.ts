@@ -26,18 +26,6 @@ export function proxy(request: NextRequest) {
     const csrfToken = request.headers.get('X-CSRF-Token')
     const cookieToken = request.cookies.get('csrf_token')?.value
     
-    const url = new URL(request.url)
-    
-    // Исключения для webhook-ов (Tinkoff и другие внешние сервисы)
-    if (url.pathname.startsWith('/api/payments/webhook')) {
-      return response
-    }
-    
-    // Исключения для API файлов (там своя проверка авторизации)
-    if (url.pathname.startsWith('/api/files')) {
-      return response
-    }
-    
     // Проверяем CSRF токен
     if (!verifyCsrfToken(csrfToken, cookieToken)) {
       return NextResponse.json(
@@ -48,4 +36,19 @@ export function proxy(request: NextRequest) {
   }
   
   return response
+}
+
+/**
+ * Конфигурация matcher для proxy
+ * Исключаем:
+ * - _next/static (статические файлы Next.js)
+ * - _next/image (оптимизация изображений)
+ * - favicon.ico, sitemap.xml, robots.txt (метаданные)
+ * - api/payments/webhook (Tinkoff webhook)
+ * - api/files (загрузка файлов - своя авторизация)
+ */
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/payments/webhook|api/files).*)',
+  ],
 }

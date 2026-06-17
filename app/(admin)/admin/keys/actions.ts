@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { requireAdmin } from '@/lib/auth/require';
 
 export interface KeyAction {
   type:
@@ -30,6 +31,8 @@ export interface KeyActionsData {
 }
 
 export async function createKey(formData: FormData) {
+  await requireAdmin();
+
   const code = formData.get('code') as string;
   const maxUses = parseInt(formData.get('maxUses') as string, 10);
   const expiresAt = formData.get('expiresAt') as string;
@@ -70,6 +73,8 @@ export async function createKey(formData: FormData) {
 }
 
 export async function updateKey(id: string, formData: FormData) {
+  await requireAdmin();
+
   const code = formData.get('code') as string;
   const maxUses = parseInt(formData.get('maxUses') as string, 10);
   const expiresAt = formData.get('expiresAt') as string;
@@ -118,6 +123,8 @@ export async function updateKey(id: string, formData: FormData) {
 }
 
 export async function updateKeyAction(formData: FormData) {
+  await requireAdmin();
+
   const code = formData.get('code') as string;
   const maxUses = parseInt(formData.get('maxUses') as string, 10);
   const expiresAt = formData.get('expiresAt') as string;
@@ -129,6 +136,8 @@ export async function updateKeyAction(formData: FormData) {
 }
 
 export async function deleteKey(id: string) {
+  await requireAdmin();
+
   const key = await prisma.key.findUnique({ where: { id } });
   if (!key) {
     return { error: 'Ключ не найден' };
@@ -146,6 +155,8 @@ export async function deleteKey(id: string) {
 }
 
 export async function deleteExpiredKeys() {
+  await requireAdmin();
+
   const now = new Date();
 
   // Находим ключи с истёкшим сроком

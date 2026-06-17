@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { hashEmail } from '@/lib/utils/hash-email'
+import { requireAdmin } from '@/lib/auth/require'
 
 export interface UserAccessRecord {
   id: string
@@ -40,6 +41,8 @@ export async function getUserAccesses(params: {
   }
   error?: string
 }> {
+  await requireAdmin()
+
   try {
     const { page, limit, search, resourceType, resourceId, source } = params
 
@@ -141,6 +144,8 @@ export async function getUserAccesses(params: {
 }
 
 export async function grantAccess(formData: FormData) {
+  await requireAdmin()
+
   try {
     const email = formData.get('email') as string
     const resourceType = formData.get('resourceType') as string
@@ -213,6 +218,8 @@ export async function grantAccess(formData: FormData) {
 }
 
 export async function revokeAccess(id: string) {
+  await requireAdmin()
+
   try {
     await prisma.userAccess.delete({
       where: { id }
@@ -227,6 +234,8 @@ export async function revokeAccess(id: string) {
 }
 
 export async function getSecretPages() {
+  await requireAdmin()
+
   try {
     const pages = await prisma.secretPage.findMany({
       select: {

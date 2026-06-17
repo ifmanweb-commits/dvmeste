@@ -6,8 +6,11 @@ import { redirect } from 'next/navigation'
 import { writeFile, mkdir, rm, readdir, unlink } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import { requireAdmin } from '@/lib/auth/require'
 
 export async function createSecretPage(formData: FormData) {
+  await requireAdmin()
+
   const slug = formData.get('slug') as string
   const title = formData.get('title') as string
   const description = formData.get('description') as string
@@ -114,6 +117,8 @@ export async function createSecretPage(formData: FormData) {
 }
 
 export async function updateSecretPage(id: string, formData: FormData) {
+  await requireAdmin()
+
   const title = formData.get('title') as string
   const description = formData.get('description') as string
   const htmlFile = formData.get('htmlFile') as File | null
@@ -208,6 +213,8 @@ export async function updateSecretPage(id: string, formData: FormData) {
 }
 
 export async function deleteSecretPage(id: string) {
+  await requireAdmin()
+
   const page = await prisma.secretPage.findUnique({ where: { id } })
   if (!page) {
     return { error: 'Страница не найдена' }
@@ -235,6 +242,8 @@ export async function deleteSecretPage(id: string) {
 }
 
 export async function getSecretPageImages(slug: string): Promise<string[]> {
+  await requireAdmin()
+
   const imagesDir = join(process.cwd(), 'public', 'files', 'secret-pages', slug, 'images')
 
   if (!existsSync(imagesDir)) {

@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { requireAdmin } from '@/lib/auth/require';
 
 // ==================== ТИПЫ ====================
 
@@ -85,6 +86,8 @@ export async function getCourseById(id: string) {
  * Создать курс
  */
 export async function createCourse(data: CreateCourseInput) {
+  await requireAdmin();
+
   try {
     const course = await prisma.course.create({
       data,
@@ -102,6 +105,8 @@ export async function createCourse(data: CreateCourseInput) {
  * Обновить курс
  */
 export async function updateCourse(id: string, data: UpdateCourseInput) {
+  await requireAdmin();
+
   try {
     const course = await prisma.course.update({
       where: { id },
@@ -120,6 +125,8 @@ export async function updateCourse(id: string, data: UpdateCourseInput) {
  * Удалить курс
  */
 export async function deleteCourse(id: string) {
+  await requireAdmin();
+
   try {
     await prisma.course.delete({
       where: { id },

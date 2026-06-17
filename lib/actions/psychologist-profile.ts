@@ -6,7 +6,12 @@ import { revalidatePath } from 'next/cache'
 import { DocumentType } from '@prisma/client'
 
 export async function updatePsychologistProfile(userId: string, formData: FormData) {
-  await requirePsychologist()
+  const currentUser = await requirePsychologist()
+
+  // Проверяем, что пользователь редактирует только свой профиль
+  if (userId !== currentUser.id) {
+    throw new Error('Недостаточно прав для редактирования этого профиля')
+  }
 
   if (!prisma) {
     throw new Error('Database connection not available')

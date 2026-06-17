@@ -469,7 +469,8 @@ export async function approveProfileDraft(userId: string) {
       select: { 
         draftData: true,
         fullName: true,
-        email: true 
+        email: true,
+        slug: true 
       }
     });
 
@@ -528,7 +529,7 @@ export async function approveProfileDraft(userId: string) {
       type: NotificationType.CATALOG_PUBLISHED,
       title: 'Профиль размещён в каталоге',
       message: 'Ваш профиль успешно прошёл модерацию и теперь доступен в каталоге психологов.',
-      linkUrl: `/catalog/${user.email}`,
+      linkUrl: user.slug ? `/catalog/${user.slug}` : '/account/profile',
       linkText: 'Перейти к профилю',
       metadata: {
         userId,

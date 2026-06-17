@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { LeadStatus, LeadResolution, NotificationType } from "@prisma/client";
 import { sendNotification } from "@/lib/notifications";
 import { SITE } from "@/lib/config";
+import { requirePsychologist } from "@/lib/auth/require";
 
 // ==================== ИНТЕРФЕЙСЫ ====================
 
@@ -609,7 +610,23 @@ export async function updateLeadStatus(
  * Отметка заявки как просмотренной
  */
 export async function viewLead(leadId: string): Promise<{ success: boolean; error?: string }> {
+  const currentUser = await requirePsychologist();
+
   try {
+    const lead = await prisma.lead.findUnique({
+      where: { id: leadId },
+      select: { psychologistId: true },
+    });
+
+    if (!lead) {
+      return { success: false, error: "Заявка не найдена" };
+    }
+
+    // Проверяем, что пользователь — владелец лида
+    if (lead.psychologistId !== currentUser.id) {
+      return { success: false, error: "Недостаточно прав" };
+    }
+
     await prisma.lead.update({
       where: { id: leadId },
       data: {

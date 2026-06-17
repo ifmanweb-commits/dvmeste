@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth/require";
 
 // ==================== ИНТЕРФЕЙСЫ ====================
 
@@ -228,15 +229,16 @@ export async function getComplaintById(
  */
 export async function resolveComplaint(
   complaintId: string,
-  resolution: string,
-  resolvedBy: string
+  resolution: string
 ): Promise<{ success: boolean; error?: string }> {
+  const currentUser = await requireAdmin();
+
   try {
     await prisma.complaint.update({
       where: { id: complaintId },
       data: {
         resolvedAt: new Date(),
-        resolvedBy,
+        resolvedBy: currentUser.id,
         resolution,
       },
     });
