@@ -1,12 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { createHash } from 'crypto';
+import { SUPERADMIN_EMAILS } from '@/lib/config';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🚀 Запуск seed: создание администратора...');
 
-  const adminEmail = 'ifman@yandex.ru';
+  const adminEmail = SUPERADMIN_EMAILS[0]; // Берём первый email из списка
   const normalizedEmail = adminEmail.toLowerCase().trim();
   const emailHash = createHash('sha256').update(normalizedEmail).digest('hex');
 

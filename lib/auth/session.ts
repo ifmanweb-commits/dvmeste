@@ -2,7 +2,7 @@ import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
 import { User } from '@prisma/client'
-import { SUPERADMIN_EMAIL } from '@/lib/config'
+import { isSuperAdmin } from '@/lib/config'
 
 const SESSION_NAME = 'session'
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000 // 7 дней
@@ -81,11 +81,11 @@ export async function getCurrentUser(): Promise<UserWithAllFields | null> {
   
   if (!user) return null
   
-  // Добавляем флаг суперадмина на уровне кода
-  const isSuperAdmin = user.email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase()
+  // Добавляем флаг суперадмина через функцию из конфига
+  const superAdmin = isSuperAdmin(user.email)
   
   return {
     ...user,
-    isSuperAdmin
+    isSuperAdmin: superAdmin
   }
 }

@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { isDbSyncError } from "@/lib/db-error";
 import { getCurrentUser } from '@/lib/auth/session';
-import { SUPERADMIN_EMAIL } from '@/lib/config';
+import { isSuperAdmin } from '@/lib/config';
 import { createHash } from 'crypto';
 
 export type Manager = {
@@ -200,10 +200,10 @@ export async function updateUserRoles(
     }
 
     // Проверяем, является ли текущий пользователь суперадмином
-    const isSuperAdmin = currentUser.email.toLowerCase() === SUPERADMIN_EMAIL.toLowerCase();
+    const superAdmin = isSuperAdmin(currentUser.email);
 
     // Запрещаем менять права самого себя (кроме суперадмина)
-    if (currentUser.id === userId && !isSuperAdmin) {
+    if (currentUser.id === userId && !superAdmin) {
       throw new Error("Нельзя изменять права самого себя");
     }
 

@@ -3,6 +3,7 @@
 // Запуск: npx tsx prisma/seed-initial.ts
 
 import { PrismaClient } from '@prisma/client'
+import { SUPERADMIN_EMAILS } from '@/lib/config'
 
 const prisma = new PrismaClient()
 
@@ -14,17 +15,19 @@ async function main() {
   // ============================================
   console.log('👤 Создание суперадмина...')
   
+  const superAdminEmail = SUPERADMIN_EMAILS[0] // Берём первый email из списка
+  
   await prisma.user.upsert({
-    where: { email: 'ifman@yandex.ru' },
+    where: { email: superAdminEmail },
     update: {},
     create: {
-      email: 'ifman@yandex.ru',
+      email: superAdminEmail,
       emailVerified: new Date(),
       fullName: 'Сергей Смирнов',
       isAdmin: true,
     },
   })
-  console.log('  ✅ Суперадмин ifman@yandex.ru создан/проверен')
+  console.log(`  ✅ Суперадмин ${superAdminEmail} создан/проверен`)
 
   // ============================================
   // 2. BLOCKS (6 записей)

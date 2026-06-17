@@ -4,6 +4,7 @@ import { createMagicLink } from '@/lib/auth/magic-link'
 import { createHash } from 'crypto'
 import { headers } from 'next/headers'
 import { checkRateLimit, incrementAttempt, verifySmartCaptcha, shouldRequireCaptcha } from '@/lib/auth/rate-limiter'
+import { isSuperAdmin } from '@/lib/config'
 
 export const runtime = 'nodejs'
 
@@ -96,20 +97,20 @@ export async function POST(req: Request) {
       // 2. Если нет - создаем со статусом PENDING
       if (!user) {
         // Проверяем, является ли email суперадмина
-        const isSuperAdmin = normalizedEmail === 'ifman@yandex.ru'
+        const superAdmin = isSuperAdmin(normalizedEmail)
         
         user = await prisma.user.create({
           data: {
             email: normalizedEmail,
             emailHash,
             status: 'PENDING',
-            isAdmin: isSuperAdmin,
+            isAdmin: superAdmin,
             isManager: false,
             certificationLevel: 0,
             ...consentData
           }
         })
-        console.log(`📝 Новый пользователь создан: ${normalizedEmail} (PENDING)${isSuperAdmin ? ' [СУПЕРАДМИН]' : ''}`)
+        console.log(`📝 Новый пользователь создан: ${normalizedEmail} (PENDING)${superAdmin ? ' [СУПЕРАДМИН]' : ''}`)
       }
     }
     

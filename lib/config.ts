@@ -26,4 +26,18 @@ export const CATALOG_PAGE_SIZE_MAX = 50;
 // СУПЕРАДМИН
 // ============================================
 
-export const SUPERADMIN_EMAIL = "ifman@yandex.ru";
+/**
+ * Список email-адресов суперадминов
+ * Добавить нового суперадмина — просто добавьте email в массив
+ */
+export const SUPERADMIN_EMAILS = [
+  "ifman@yandex.ru",
+  // Добавить других суперадминов здесь
+] as const
+
+/**
+ * Проверяет, является ли email суперадмином
+ */
+export function isSuperAdmin(email: string): boolean {
+  return SUPERADMIN_EMAILS.includes(email.toLowerCase().trim() as any)
+}
