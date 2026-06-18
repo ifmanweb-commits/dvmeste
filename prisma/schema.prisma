@@ -1124,3 +1124,33 @@ model RateLimit {
   @@index([key])
   @@index([expiresAt])
 }
+
+// Системные логи — технические логи приложения (console.log/error/warn)
+// Дублируются из stdout/stderr в БД для просмотра в админке
+model SystemLog {
+  id        String   @id @default(cuid())
+  
+  // Уровень лога
+  level     String   // "LOG", "ERROR", "WARN", "INFO"
+  
+  // Сообщение (сериализованные аргументы console.log)
+  message   String   @db.Text
+  
+  // Стек (только для ошибок)
+  stack     String?  @db.Text
+  
+  // Источник (файл откуда вызван console.log)
+  source    String?
+  
+  // Контекст запроса
+  userId    String?  // ID текущего пользователя (если есть сессия)
+  requestId String?  // ID запроса (для группировки логов одного запроса)
+  url       String?  // URL запроса
+  
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  
+  @@index([level])
+  @@index([createdAt])
+  @@index([userId])
+  @@index([requestId])
+}

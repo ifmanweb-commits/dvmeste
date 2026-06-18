@@ -6,6 +6,10 @@
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    // Initialize system logger (intercepts console.log/error/warn/info)
+    const { initSystemLogger } = await import('@/lib/system-logger')
+    initSystemLogger()
+
     // Register cron jobs
     const { startShuffleCatalogCron } = await import('@/lib/cron/shuffle-catalog')
     startShuffleCatalogCron()
@@ -21,5 +25,8 @@ export async function register() {
 
     const { startBackupDatabaseCron } = await import('@/lib/cron/backup-database')
     startBackupDatabaseCron()
+
+    const { startCleanupSystemLogsCron } = await import('@/lib/cron/cleanup-system-logs')
+    startCleanupSystemLogsCron()
   }
 }

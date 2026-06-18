@@ -10,6 +10,7 @@ const tabs = [
   { label: 'Справочники', href: '/admin/ListDate' },
   { label: 'Политика', href: '/admin/management/policy' },
   { label: 'Авторизации', href: '/admin/management/access-logs' },
+  { label: 'Логи', href: '/admin/management/logs' },
   { label: 'Утилиты', href: '/admin/management' },
 ];
 
