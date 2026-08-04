@@ -100,24 +100,25 @@ export default function AccountNav({ user, isMobile, onNavigate, menuItems: site
       icon: FileText,
       show: user.status !== 'PENDING' // Только для кандидатов и активных
     },
-    {
-      href: '/account/certification',
-      label: 'Сертификация',
-      icon: Award,
-      show: user.status === 'ACTIVE' || user.status === 'CANDIDATE'
-    },
-    {
-      href: '/account/key-active',
-      label: 'Ключи',
-      icon: KeyRound,
-      show: user.status === 'ACTIVE' || user.status === 'CANDIDATE'
-    },
-    {
-      href: '/account/supervision',
-      label: 'Супервизия',
-      icon: ShieldCheck,
-      show: user.isSupervisor === true
-    },
+    // ВРЕМЕННО СКРЫТО — разделы в разработке
+    // {
+    //   href: '/account/certification',
+    //   label: 'Сертификация',
+    //   icon: Award,
+    //   show: user.status === 'ACTIVE' || user.status === 'CANDIDATE'
+    // },
+    // {
+    //   href: '/account/key-active',
+    //   label: 'Ключи',
+    //   icon: KeyRound,
+    //   show: user.status === 'ACTIVE' || user.status === 'CANDIDATE'
+    // },
+    // {
+    //   href: '/account/supervision',
+    //   label: 'Супервизия',
+    //   icon: ShieldCheck,
+    //   show: user.isSupervisor === true
+    // },
     {
       href: '/account/notifications',
       label: 'Уведомления',
@@ -178,8 +179,8 @@ export default function AccountNav({ user, isMobile, onNavigate, menuItems: site
           </div>
         </div>
         
-        {/* Баланс */}
-        <Link
+        {/* ВРЕМЕННО СКРЫТО — раздел в разработке */}
+        {/* <Link
           href="/account/balance"
           className="mt-3 flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
         >
@@ -188,7 +189,7 @@ export default function AccountNav({ user, isMobile, onNavigate, menuItems: site
             <span>Баланс</span>
           </div>
           <span className="text-gray-900">{formatBalance(balance)} ₽</span>
-        </Link>
+        </Link> */}
         
         {/* Статус пользователя */}
         <div className="mt-3 flex flex-wrap gap-2">
